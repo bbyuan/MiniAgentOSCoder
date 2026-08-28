@@ -199,6 +199,69 @@ export interface GovernanceResponse {
   executions: SandboxExecution[];
 }
 
+export interface SkillManifest {
+  id: string;
+  name: string;
+  description: string;
+  path: string;
+  modes: string[];
+  default_tools: string[];
+  risk: string;
+  recommended: boolean;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface MCPServerManifest {
+  id: string;
+  name: string;
+  transport: "stdio";
+  timeout_seconds: number;
+  env_allow: string[];
+  effect: string;
+  risk: string;
+  executable: string;
+  argument_count: number;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface HookManifest {
+  id: string;
+  name: string;
+  event: "run.before" | "run.after" | "tool.before" | "tool.after";
+  timeout_seconds: number;
+  failure_policy: "warn" | "block";
+  executable: string;
+  argument_count: number;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface ExtensionSettings {
+  active_skill_ids: string[];
+  enabled_mcp_server_ids: string[];
+  enabled_hook_ids: string[];
+}
+
+export interface ExtensionResponse {
+  run_id: string;
+  editable: boolean;
+  catalog: {
+    skills: SkillManifest[];
+    mcp_servers: MCPServerManifest[];
+    hooks: HookManifest[];
+    diagnostics: string[];
+  };
+  settings: ExtensionSettings;
+  discovered_tools: Array<{
+    server_id: string;
+    tools: string[];
+    tool_count: number;
+  }>;
+  evidence: TraceEvent[];
+}
+
 export interface TraceEvent {
   time: string;
   run_id: string;
@@ -380,6 +443,12 @@ export const daemonApi = {
     method: "PUT",
     body: JSON.stringify({ sandbox_profile: sandboxProfile, tool_overrides: toolOverrides }),
   }),
+  getExtensions: (runId: string) => request<ExtensionResponse>(`/runs/${runId}/extensions`),
+  updateExtensions: (runId: string, settings: ExtensionSettings) =>
+    request<ExtensionResponse>(`/runs/${runId}/extensions`, {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
   createMemory: (runId: string, input: MemoryInput) =>
     request<{ run_id: string; entry: MemoryEntry }>(`/runs/${runId}/memory`, {
       method: "POST",

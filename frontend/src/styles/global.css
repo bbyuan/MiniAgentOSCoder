@@ -2415,6 +2415,277 @@ textarea:disabled {
 .executionSummary strong { color: var(--text); }
 .executionSummary code { color: var(--text-secondary); font-size: 8px; }
 
+.extensionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.extensionHeading > div:first-child {
+  min-width: 0;
+}
+
+.extensionHeading h3 {
+  margin: 0;
+}
+
+.extensionHeading span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.extensionDiagnostics {
+  margin: 0 0 8px;
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--border));
+  border-radius: 6px;
+  color: var(--warning);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.extensionGroup,
+.extensionEvidence {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.extensionGroupTitle {
+  min-height: 22px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.extensionGroupTitle strong {
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.extensionGroupTitle > span {
+  min-width: 18px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 8px;
+  text-align: right;
+}
+
+.extensionRows {
+  margin-top: 4px;
+}
+
+.extensionRow {
+  min-height: 56px;
+  padding: 7px 2px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.extensionRow:last-child {
+  border-bottom: 0;
+}
+
+.extensionRow:hover {
+  background: var(--surface);
+}
+
+.extensionRow.invalid {
+  opacity: 0.55;
+}
+
+.extensionRow input {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  opacity: 0;
+}
+
+.extensionToggle {
+  width: 28px;
+  height: 16px;
+  position: relative;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.extensionToggle::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.extensionRow input:checked + .extensionToggle {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.extensionRow input:checked + .extensionToggle::after {
+  background: white;
+  transform: translateX(12px);
+}
+
+.extensionRow input:focus-visible + .extensionToggle {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.extensionRow input:disabled + .extensionToggle {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.extensionMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.extensionMain > strong,
+.extensionMain > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extensionMain > strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 620;
+}
+
+.extensionMain > small {
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.extensionMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.extensionMeta code,
+.extensionMeta em,
+.extensionMeta b {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.extensionMeta code {
+  overflow: hidden;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  text-overflow: ellipsis;
+}
+
+.extensionMeta em {
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+}
+
+.extensionMeta b {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.extensionGroup .emptyText,
+.extensionEvidence .emptyText {
+  padding: 7px 0 2px 22px;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.extensionEvidenceList {
+  margin-top: 4px;
+}
+
+.extensionEvidenceList > div {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--success);
+}
+
+.extensionEvidenceList > div:last-child {
+  border-bottom: 0;
+}
+
+.extensionEvidenceList > div > span {
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.extensionEvidenceList strong,
+.extensionEvidenceList code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extensionEvidenceList strong {
+  color: var(--text-secondary);
+  font-size: 8px;
+  font-weight: 550;
+}
+
+.extensionEvidenceList code {
+  color: var(--text-tertiary);
+  font-size: 7px;
+}
+
+.extensionSave {
+  min-height: 34px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--canvas);
+  font-size: 9px;
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.extensionSave:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .traceList {
   display: flex;
   flex-direction: column;

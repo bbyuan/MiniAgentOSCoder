@@ -10,6 +10,7 @@ import {
   FileText,
   History,
   Layers3,
+  PlugZap,
   RotateCcw,
   ShieldAlert,
   Sparkles,
@@ -37,6 +38,9 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
   if (event.startsWith("context.")) return { icon: Layers3, tone: "tool" };
   if (event.startsWith("policy.") || event.startsWith("governance.")) return { icon: ShieldAlert, tone: "approval" };
   if (event.startsWith("sandbox.")) return { icon: Box, tone: "tool" };
+  if (event.startsWith("skill.") || event.startsWith("mcp.") || event.startsWith("hook.") || event.startsWith("extension.")) {
+    return { icon: PlugZap, tone: "model" };
+  }
   if (event === "report.generated") return { icon: FileText, tone: "success" };
   if (event === "run.finished") return { icon: CheckCircle2, tone: "success" };
   if (event === "run.cancelled") return { icon: Ban, tone: "muted" };

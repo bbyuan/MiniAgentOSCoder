@@ -6,6 +6,8 @@ import {
   type ApprovalRequest,
   type ContextPack,
   type ContextCompactionResponse,
+  type ExtensionResponse,
+  type ExtensionSettings,
   type GovernanceResponse,
   type MemoryInput,
   type MemoryResponse,
@@ -58,6 +60,8 @@ export function Workbench() {
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [governance, setGovernance] = useState<GovernanceResponse>();
   const [governanceBusy, setGovernanceBusy] = useState(false);
+  const [extensions, setExtensions] = useState<ExtensionResponse>();
+  const [extensionsBusy, setExtensionsBusy] = useState(false);
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
@@ -120,6 +124,7 @@ export function Workbench() {
     setReport(undefined);
     setMemory(undefined);
     setGovernance(undefined);
+    setExtensions(undefined);
     setRollbackBusy(undefined);
     streamCleanup.current?.();
     streamCleanup.current = null;
@@ -137,6 +142,7 @@ export function Workbench() {
         reportResponse,
         memoryResponse,
         governanceResponse,
+        extensionResponse,
       ] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
@@ -145,6 +151,7 @@ export function Workbench() {
         daemonApi.getReport(run.run_id),
         daemonApi.getMemory(run.run_id),
         daemonApi.getGovernance(run.run_id),
+        daemonApi.getExtensions(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
@@ -155,6 +162,7 @@ export function Workbench() {
       setReport(reportResponse);
       setMemory(memoryResponse);
       setGovernance(governanceResponse);
+      setExtensions(extensionResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -222,6 +230,11 @@ export function Workbench() {
         if (["policy.evaluated", "sandbox.started", "sandbox.finished", "governance.updated"].includes(event.event)) {
           daemonApi.getGovernance(activeRunId).then(setGovernance).catch(() => undefined);
         }
+        if (["extension.updated", "skill.activated"].includes(event.event)
+          || event.event.startsWith("mcp.")
+          || event.event.startsWith("hook.")) {
+          daemonApi.getExtensions(activeRunId).then(setExtensions).catch(() => undefined);
+        }
         const eventBudget = Object.fromEntries(
           Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
         );
@@ -250,6 +263,7 @@ export function Workbench() {
             daemonApi.getContext(activeRunId),
             daemonApi.getMemory(activeRunId),
             daemonApi.getGovernance(activeRunId),
+            daemonApi.getExtensions(activeRunId),
           ]).then(([
             summary,
             latestArtifacts,
@@ -258,6 +272,7 @@ export function Workbench() {
             latestContext,
             latestMemory,
             latestGovernance,
+            latestExtensions,
           ]) => {
             setRunStatus(summary.status);
             setFinalMessage(summary.final_message || "");
@@ -268,6 +283,7 @@ export function Workbench() {
             setContextPack(latestContext);
             setMemory(latestMemory);
             setGovernance(latestGovernance);
+            setExtensions(latestExtensions);
           }).catch(() => undefined);
         }
       },
@@ -281,13 +297,15 @@ export function Workbench() {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
       if (cancelled.status === "cancelled") {
-        const [latestReport, latestGovernance, latestTrace] = await Promise.all([
+        const [latestReport, latestGovernance, latestExtensions, latestTrace] = await Promise.all([
           daemonApi.getReport(runId),
           daemonApi.getGovernance(runId),
+          daemonApi.getExtensions(runId),
           daemonApi.getTrace(runId),
         ]);
         setReport(latestReport);
         setGovernance(latestGovernance);
+        setExtensions(latestExtensions);
         setTraceEvents(latestTrace.events);
       }
     } catch (caught) {
@@ -441,6 +459,23 @@ export function Workbench() {
     }
   }
 
+  async function saveExtensions(settings: ExtensionSettings) {
+    if (!runId) return;
+    setExtensionsBusy(true);
+    setError(null);
+    try {
+      const latestExtensions = await daemonApi.updateExtensions(runId, settings);
+      const latestTrace = await daemonApi.getTrace(runId);
+      setExtensions(latestExtensions);
+      setTraceEvents(latestTrace.events);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      throw caught;
+    } finally {
+      setExtensionsBusy(false);
+    }
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -498,6 +533,8 @@ export function Workbench() {
           memoryBusy={memoryBusy}
           governance={governance}
           governanceBusy={governanceBusy}
+          extensions={extensions}
+          extensionsBusy={extensionsBusy}
           diff={displayDiff}
           tests={displayTests}
           trace={traceEvents}
@@ -516,6 +553,7 @@ export function Workbench() {
           onUpdateMemory={updateMemory}
           onDeleteMemory={deleteMemory}
           onSaveGovernance={saveGovernance}
+          onSaveExtensions={saveExtensions}
         />
       </div>
     </main>

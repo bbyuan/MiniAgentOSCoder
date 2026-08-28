@@ -7,7 +7,7 @@
 - [x] 2.3 实现 stdio MCP Client、ToolDescriptor 转换和 Gateway 注册
 - [x] 2.4 实现 Sandbox Hook Pipeline 和 Run/Tool 生命周期接入
 - [x] 2.5 实现 Extension API、历史重建与后端测试
-- [ ] 3.1 增加前端 Extension 类型、API 与实时刷新
-- [ ] 3.2 实现 Skills、MCP、Hooks 与 Evidence 工作台
+- [x] 3.1 增加前端 Extension 类型、API 与实时刷新
+- [x] 3.2 实现 Skills、MCP、Hooks 与 Evidence 工作台
 - [ ] 4.1 运行后端测试、前端构建和完整 P0 验证
 - [ ] 4.2 更新长期规格、README，分阶段提交并推送 main
