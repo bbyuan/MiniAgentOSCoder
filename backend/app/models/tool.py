@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Callable
 
 from app.models.base import Serializable
 
@@ -30,3 +30,14 @@ class ToolDescriptor(Serializable):
     timeout_seconds: int = 30
     metadata: dict[str, Any] = field(default_factory=dict)
 
+
+@dataclass(slots=True)
+class ToolResult(Serializable):
+    ok: bool
+    tool: str
+    output: str = ""
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+ToolHandler = Callable[[dict[str, Any]], ToolResult]

@@ -1,0 +1,41 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+class PatchPipelineError(ValueError):
+    pass
+
+
+@dataclass(slots=True)
+class PatchSummary:
+    files: list[str] = field(default_factory=list)
+    additions: int = 0
+    deletions: int = 0
+
+
+class PatchPipeline:
+    def __init__(self, workspace_root: str | Path) -> None:
+        self.workspace_root = Path(workspace_root).resolve()
+
+    def summarize(self, unified_diff: str) -> PatchSummary:
+        if not unified_diff.strip():
+            raise PatchPipelineError("Patch must not be empty")
+
+        summary = PatchSummary()
+        for line in unified_diff.splitlines():
+            if line.startswith("+++ b/"):
+                summary.files.append(line.removeprefix("+++ b/"))
+            elif line.startswith("+") and not line.startswith("+++"):
+                summary.additions += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                summary.deletions += 1
+
+        if not summary.files:
+            raise PatchPipelineError("Patch does not include target files")
+        return summary
+
+    def dry_run(self, unified_diff: str) -> PatchSummary:
+        return self.summarize(unified_diff)
+

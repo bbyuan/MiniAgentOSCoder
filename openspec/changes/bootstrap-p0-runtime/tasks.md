@@ -31,13 +31,13 @@
 
 ## 4. Tool Gateway
 
-- [ ] 4.1 Implement tool registry.
-- [ ] 4.2 Implement guarded tool call flow.
-- [ ] 4.3 Implement read file tool.
-- [ ] 4.4 Implement search code tool.
-- [ ] 4.5 Implement run test command tool.
-- [ ] 4.6 Implement Patch Pipeline interfaces.
-- [ ] 4.7 Add path, command, budget, and secret guard tests.
+- [x] 4.1 Implement tool registry.
+- [x] 4.2 Implement guarded tool call flow.
+- [x] 4.3 Implement read file tool.
+- [x] 4.4 Implement search code tool.
+- [x] 4.5 Implement run test command tool.
+- [x] 4.6 Implement Patch Pipeline interfaces.
+- [x] 4.7 Add path, command, budget, and secret guard tests.
 
 ## 5. Context
 
