@@ -67,17 +67,63 @@ export interface ContextPack {
   omitted_items: string[];
   explanation?: Array<{
     id: string;
+    type: string;
     source: string;
     reason: string;
     tokens: number;
     priority: number;
     state: string;
+    summary: string;
   }>;
   budget_report: {
     max_tokens: number;
     used_tokens: number;
     remaining_tokens: number;
   };
+  composition: Record<string, number>;
+  threshold_state: "normal" | "warning" | "high" | "critical";
+  compaction_count: number;
+}
+
+export interface ContextCompactionResponse {
+  run_id: string;
+  status: "skipped" | "compacted" | "confirmation_required";
+  before_tokens: number;
+  after_tokens: number;
+  target_tokens: number;
+  compacted_items: string[];
+  omitted_items: string[];
+  threshold_state: ContextPack["threshold_state"];
+  confirmation_required: boolean;
+  reason: string;
+}
+
+export type MemoryScope = "short_term" | "project" | "long_term";
+
+export interface MemoryEntry {
+  memory_id: string;
+  scope: MemoryScope;
+  kind: string;
+  content: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  run_id?: string;
+  tags: string[];
+}
+
+export interface MemoryResponse {
+  run_id: string;
+  entries: Record<MemoryScope, MemoryEntry[]>;
+  counts: Record<MemoryScope, number>;
+}
+
+export interface MemoryInput {
+  scope: Exclude<MemoryScope, "short_term">;
+  kind: string;
+  content: string;
+  tags: string[];
+  confirmed: boolean;
 }
 
 export interface TraceEvent {
@@ -105,11 +151,13 @@ export interface RunArtifacts {
   plan: PlanStep[];
   context_explanation: Array<{
     id: string;
+    type: string;
     source: string;
     reason: string;
     tokens: number;
     priority: number;
     state: string;
+    summary: string;
   }>;
   diff_summary: {
     status: string;
@@ -243,6 +291,26 @@ export const daemonApi = {
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
+  compactContext: (runId: string, targetRatio: number, confirmed = false) =>
+    request<ContextCompactionResponse>(`/runs/${runId}/context/compact`, {
+      method: "POST",
+      body: JSON.stringify({ force: true, target_ratio: targetRatio, confirmed }),
+    }),
+  getMemory: (runId: string) => request<MemoryResponse>(`/runs/${runId}/memory`),
+  createMemory: (runId: string, input: MemoryInput) =>
+    request<{ run_id: string; entry: MemoryEntry }>(`/runs/${runId}/memory`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateMemory: (runId: string, memoryId: string, input: Omit<MemoryInput, "scope">) =>
+    request<{ run_id: string; entry: MemoryEntry }>(`/runs/${runId}/memory/${memoryId}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  deleteMemory: (runId: string, memoryId: string) =>
+    request<{ run_id: string; deleted: string; scope: MemoryScope }>(`/runs/${runId}/memory/${memoryId}`, {
+      method: "DELETE",
+    }),
   getTrace: (runId: string) => request<TraceResponse>(`/runs/${runId}/trace`),
   getApproval: (runId: string) =>
     request<{ approval: ApprovalRequest | null }>(`/runs/${runId}/approval`),

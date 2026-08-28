@@ -1,6 +1,15 @@
 import { useState } from "react";
-import { FileCode2, FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
-import type { ApprovalRequest, RecoveryResponse, RunReportResponse, TraceEvent } from "../api/client";
+import { FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
+import type {
+  ApprovalRequest,
+  ContextCompactionResponse,
+  ContextPack,
+  MemoryInput,
+  MemoryResponse,
+  RecoveryResponse,
+  RunReportResponse,
+  TraceEvent,
+} from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 import { PlanPanel, type PlanItem } from "./PlanPanel";
@@ -8,8 +17,10 @@ import { ApprovalPanel } from "./ApprovalPanel";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { RunReportPanel } from "./RunReportPanel";
 import { TraceReplayPanel } from "./TraceReplayPanel";
+import { ContextPanel } from "./ContextPanel";
+import { MemoryPanel } from "./MemoryPanel";
 
-type InspectorTab = "overview" | "context" | "recovery" | "report" | "trace";
+type InspectorTab = "overview" | "context" | "memory" | "recovery" | "report" | "trace";
 
 interface RuntimePanelsProps {
   plan: PlanItem[];
@@ -17,7 +28,10 @@ interface RuntimePanelsProps {
     effects: string[];
     policies: string[];
   };
-  context: Array<{ path: string; reason: string; tokens: number }>;
+  context?: ContextPack;
+  contextBusy: boolean;
+  memory?: MemoryResponse;
+  memoryBusy: boolean;
   diff: {
     files: number;
     insertions: number;
@@ -41,12 +55,19 @@ interface RuntimePanelsProps {
   onApprove: () => void;
   onDeny: (reason: string) => void;
   onRollback: (checkpointId: string) => void;
+  onCompactContext: (targetRatio: number, confirmed: boolean) => Promise<ContextCompactionResponse>;
+  onCreateMemory: (input: MemoryInput) => Promise<void>;
+  onUpdateMemory: (memoryId: string, input: Omit<MemoryInput, "scope">) => Promise<void>;
+  onDeleteMemory: (memoryId: string) => Promise<void>;
 }
 
 export function RuntimePanels({
   plan,
   contract,
   context,
+  contextBusy,
+  memory,
+  memoryBusy,
   diff,
   tests,
   trace,
@@ -60,12 +81,17 @@ export function RuntimePanels({
   onApprove,
   onDeny,
   onRollback,
+  onCompactContext,
+  onCreateMemory,
+  onUpdateMemory,
+  onDeleteMemory,
 }: RuntimePanelsProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
   const { locale, t } = usePreferences();
   const tabs: Array<{ id: InspectorTab; label: string }> = [
     { id: "overview", label: t("inspector.overview") },
     { id: "context", label: t("inspector.context") },
+    { id: "memory", label: t("inspector.memory") },
     { id: "recovery", label: t("inspector.recovery") },
     { id: "report", label: t("inspector.report") },
     { id: "trace", label: t("inspector.trace") },
@@ -143,23 +169,17 @@ export function RuntimePanels({
         ) : null}
 
         {activeTab === "context" ? (
-          <section className="inspectorSection contextSection">
-            <div className="sectionHeader">
-              <h3>{t("context.title")}</h3>
-              <FileCode2 size={15} />
-            </div>
-            {context.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : (
-              <div className="contextList">
-                {context.map((item) => (
-                  <article key={`${item.path}-${item.reason}`}>
-                    <strong title={item.path}>{item.path}</strong>
-                    <span>{translateKnownText(locale, item.reason)}</span>
-                    <small>{t("context.tokens", { count: item.tokens })}</small>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+          <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} />
+        ) : null}
+
+        {activeTab === "memory" ? (
+          <MemoryPanel
+            memory={memory}
+            busy={memoryBusy}
+            onCreate={onCreateMemory}
+            onUpdate={onUpdateMemory}
+            onDelete={onDeleteMemory}
+          />
         ) : null}
 
         {activeTab === "recovery" ? (

@@ -5,6 +5,9 @@ import {
   type AgentContract,
   type ApprovalRequest,
   type ContextPack,
+  type ContextCompactionResponse,
+  type MemoryInput,
+  type MemoryResponse,
   type ModelProviderStatus,
   type RecoveryResponse,
   type RunArtifacts,
@@ -47,6 +50,9 @@ export function Workbench() {
   const [runStatus, setRunStatus] = useState(mockRun.status);
   const [contract, setContract] = useState<AgentContract | undefined>();
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
+  const [contextBusy, setContextBusy] = useState(false);
+  const [memory, setMemory] = useState<MemoryResponse>();
+  const [memoryBusy, setMemoryBusy] = useState(false);
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
@@ -74,23 +80,6 @@ export function Workbench() {
       policies: Object.entries(contract.policies).map(([key, value]) => `${key}: ${value}`),
     };
   }, [contract]);
-
-  const displayContext = useMemo(() => {
-    if (!contextPack) return mockRun.context;
-    const explanation = artifacts?.context_explanation ?? contextPack.explanation ?? [];
-    if (explanation.length > 0) {
-      return explanation.map((item) => ({
-        path: item.source,
-        reason: item.reason,
-        tokens: item.tokens,
-      }));
-    }
-    return [{
-      path: "required",
-      reason: contextPack.required_items.join(", ") || "none",
-      tokens: contextPack.budget_report.used_tokens,
-    }];
-  }, [artifacts, contextPack]);
 
   const displayPlan = artifacts?.plan ?? mockRun.plan;
   const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
@@ -123,6 +112,7 @@ export function Workbench() {
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
+    setMemory(undefined);
     setRollbackBusy(undefined);
     streamCleanup.current?.();
     streamCleanup.current = null;
@@ -132,12 +122,13 @@ export function Workbench() {
         daemonApi.createRun({ project_id: project.project_id, task, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
-      const [contextResponse, traceResponse, artifactResponse, recoveryResponse, reportResponse] = await Promise.all([
+      const [contextResponse, traceResponse, artifactResponse, recoveryResponse, reportResponse, memoryResponse] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
         daemonApi.getArtifacts(run.run_id),
         daemonApi.getCheckpoints(run.run_id),
         daemonApi.getReport(run.run_id),
+        daemonApi.getMemory(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
@@ -146,6 +137,7 @@ export function Workbench() {
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
       setReport(reportResponse);
+      setMemory(memoryResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -175,6 +167,12 @@ export function Workbench() {
           if (event.event === "report.generated") {
             daemonApi.getReport(run.run_id).then(setReport).catch(() => undefined);
           }
+          if (event.event.startsWith("context.")) {
+            daemonApi.getContext(run.run_id).then(setContextPack).catch(() => undefined);
+          }
+          if (event.event.startsWith("memory.")) {
+            daemonApi.getMemory(run.run_id).then(setMemory).catch(() => undefined);
+          }
           const eventBudget = Object.fromEntries(
             Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
           );
@@ -200,13 +198,17 @@ export function Workbench() {
               daemonApi.getArtifacts(run.run_id),
               daemonApi.getCheckpoints(run.run_id),
               daemonApi.getReport(run.run_id),
-            ]).then(([summary, latestArtifacts, latestRecovery, latestReport]) => {
+              daemonApi.getContext(run.run_id),
+              daemonApi.getMemory(run.run_id),
+            ]).then(([summary, latestArtifacts, latestRecovery, latestReport, latestContext, latestMemory]) => {
               setRunStatus(summary.status);
               setFinalMessage(summary.final_message || "");
               setRunBudget(summary.budget || {});
               setArtifacts(latestArtifacts);
               setRecovery(latestRecovery);
               setReport(latestReport);
+              setContextPack(latestContext);
+              setMemory(latestMemory);
             }).catch(() => undefined);
           }
         },
@@ -282,6 +284,78 @@ export function Workbench() {
     }
   }
 
+  async function compactContext(targetRatio: number, confirmed: boolean): Promise<ContextCompactionResponse> {
+    if (!runId) throw new Error(t("context.noRun"));
+    setContextBusy(true);
+    setError(null);
+    try {
+      const result = await daemonApi.compactContext(runId, targetRatio, confirmed);
+      const [latestContext, latestRecovery] = await Promise.all([
+        daemonApi.getContext(runId),
+        daemonApi.getCheckpoints(runId),
+      ]);
+      setContextPack(latestContext);
+      setRecovery(latestRecovery);
+      return result;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.compactContext"));
+      throw caught;
+    } finally {
+      setContextBusy(false);
+    }
+  }
+
+  async function refreshMemory() {
+    if (!runId) return;
+    const latest = await daemonApi.getMemory(runId);
+    setMemory(latest);
+  }
+
+  async function createMemory(input: MemoryInput) {
+    if (!runId) return;
+    setMemoryBusy(true);
+    setError(null);
+    try {
+      await daemonApi.createMemory(runId, input);
+      await refreshMemory();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.memoryWrite"));
+      throw caught;
+    } finally {
+      setMemoryBusy(false);
+    }
+  }
+
+  async function updateMemory(memoryId: string, input: Omit<MemoryInput, "scope">) {
+    if (!runId) return;
+    setMemoryBusy(true);
+    setError(null);
+    try {
+      await daemonApi.updateMemory(runId, memoryId, input);
+      await refreshMemory();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.memoryWrite"));
+      throw caught;
+    } finally {
+      setMemoryBusy(false);
+    }
+  }
+
+  async function deleteMemory(memoryId: string) {
+    if (!runId) return;
+    setMemoryBusy(true);
+    setError(null);
+    try {
+      await daemonApi.deleteMemory(runId, memoryId);
+      await refreshMemory();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.memoryDelete"));
+      throw caught;
+    } finally {
+      setMemoryBusy(false);
+    }
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -332,7 +406,10 @@ export function Workbench() {
         <RuntimePanels
           plan={displayPlan}
           contract={displayContract}
-          context={displayContext}
+          context={contextPack}
+          contextBusy={contextBusy}
+          memory={memory}
+          memoryBusy={memoryBusy}
           diff={displayDiff}
           tests={displayTests}
           trace={traceEvents}
@@ -346,6 +423,10 @@ export function Workbench() {
           onApprove={approveAction}
           onDeny={denyAction}
           onRollback={rollbackToCheckpoint}
+          onCompactContext={compactContext}
+          onCreateMemory={createMemory}
+          onUpdateMemory={updateMemory}
+          onDeleteMemory={deleteMemory}
         />
       </div>
     </main>

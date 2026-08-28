@@ -1,12 +1,14 @@
 import {
   Activity,
   Ban,
+  BrainCircuit,
   CheckCircle2,
   CircleAlert,
   CornerDownRight,
   FileDiff,
   FileText,
   History,
+  Layers3,
   RotateCcw,
   ShieldAlert,
   Sparkles,
@@ -30,6 +32,8 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
   if (event.startsWith("patch.")) return { icon: FileDiff, tone: "patch" };
   if (event.startsWith("repair.")) return { icon: History, tone: "approval" };
   if (event.startsWith("rollback.")) return { icon: RotateCcw, tone: "patch" };
+  if (event.startsWith("memory.")) return { icon: BrainCircuit, tone: "model" };
+  if (event.startsWith("context.")) return { icon: Layers3, tone: "tool" };
   if (event === "report.generated") return { icon: FileText, tone: "success" };
   if (event === "run.finished") return { icon: CheckCircle2, tone: "success" };
   if (event === "run.cancelled") return { icon: Ban, tone: "muted" };
