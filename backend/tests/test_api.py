@@ -328,6 +328,7 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
     assert initial.status_code == 200
     assert initial.json()["editable"] is True
     assert initial.json()["settings"]["active_skill_ids"] == ["bugfix", "test-repair"]
+    assert all("command" not in server for server in initial.json()["catalog"]["mcp_servers"])
     assert updated.json()["settings"]["active_skill_ids"] == ["bugfix"]
     assert invalid.status_code == 422
 

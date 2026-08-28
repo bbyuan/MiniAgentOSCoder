@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -44,7 +46,7 @@ def get_extensions(run_id: str) -> dict[str, object]:
     return {
         "run_id": run_id,
         "editable": run.status == RunPhase.PLANNING and not store.worker.is_active(run_id),
-        "catalog": catalog.to_dict(),
+        "catalog": _public_catalog(catalog),
         "settings": settings.to_dict(),
         "discovered_tools": discovered_tools,
         "evidence": evidence,
@@ -81,3 +83,22 @@ def update_extensions(run_id: str, request: UpdateExtensionsRequest) -> dict[str
 def _project_for_run(run_id: str):
     project_id = store.run_projects.get(run_id)
     return store.projects.get(project_id) if project_id is not None else None
+
+
+def _public_catalog(catalog) -> dict[str, object]:
+    payload = catalog.to_dict()
+    for section in ("mcp_servers", "hooks"):
+        entries = payload.get(section, [])
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            command = entry.pop("command", [])
+            if isinstance(command, list) and command:
+                entry["executable"] = Path(str(command[0])).name
+                entry["argument_count"] = max(0, len(command) - 1)
+            else:
+                entry["executable"] = ""
+                entry["argument_count"] = 0
+    return payload
