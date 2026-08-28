@@ -9,5 +9,5 @@
 - [x] 2.5 实现 Extension API、历史重建与后端测试
 - [x] 3.1 增加前端 Extension 类型、API 与实时刷新
 - [x] 3.2 实现 Skills、MCP、Hooks 与 Evidence 工作台
-- [ ] 4.1 运行后端测试、前端构建和完整 P0 验证
-- [ ] 4.2 更新长期规格、README，分阶段提交并推送 main
+- [x] 4.1 运行后端测试、前端构建和完整 P0 验证
+- [x] 4.2 更新长期规格、README，分阶段提交并推送 main

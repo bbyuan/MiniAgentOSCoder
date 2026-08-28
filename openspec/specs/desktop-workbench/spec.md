@@ -167,3 +167,21 @@ The workbench SHALL separate run preparation from launch and expose sandbox prof
 - WHEN the user opens Governance
 - THEN the workbench SHALL show effective policies, decision outcomes and reasons, timings, backend guarantees, limitations, and sandbox execution count
 - AND governance controls SHALL be read-only after launch
+
+### DW-015 Extension Workbench
+
+The workbench SHALL provide one Run-scoped surface for Skills, MCP Servers, trusted Hooks, and their execution evidence.
+
+#### Scenario: Configure extensions before launch
+
+- GIVEN a prepared Run has a validated Extension Catalog
+- WHEN the user enables compatible Skills, MCP Servers, or Hooks and saves
+- THEN the selected ids SHALL be persisted for that Run
+- AND invalid entries SHALL remain disabled with diagnostics
+
+#### Scenario: Follow extension activity
+
+- GIVEN the Worker activates or executes an extension
+- WHEN the SSE Trace receives Skill, MCP, or Hook events
+- THEN the Workbench SHALL refresh discovery and evidence
+- AND controls SHALL become read-only after launch

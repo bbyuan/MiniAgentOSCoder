@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, and portable process sandboxing. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, and trusted lifecycle Hooks. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -94,6 +94,34 @@ Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST
 The Context view shows prompt budget, token composition, selection state, and audited compaction. The Memory view separates read-only Run memory, editable project memory, and explicitly confirmed long-term memory. Persistent entries live under the opened workspace's `.agent/memory/`; secret-like content and path escapes are rejected by the Daemon.
 
 The Governance view is both a preflight control surface and an evidence viewer. It shows the effective policy for every registered tool, each ordered Guard decision and reason, and sandbox execution records. The current `portable-process` backend guarantees argv-based execution without a shell, workspace confinement for process cwd, sanitized environment variables, private runtime directories, timeout/process-group termination, and bounded returned output. It does not claim kernel network isolation, syscall filtering, or read-only mounts; those capabilities require a future container or OS-native backend.
+
+The Extensions view loads `.agent/skills.yaml`, `.agent/mcp.yaml`, and `.agent/hooks.yaml`. Compatible Skills are recommended from the selected Run mode and only activated `SKILL.md` files enter Planner context. Enabled stdio MCP Servers complete `initialize` and `tools/list`; discovered tools receive names such as `mcp__github__search_issues` and still pass Tool Gateway approval. Enabled Hooks run at `run.before`, `run.after`, `tool.before`, or `tool.after` through the same Sandbox backend. MCP and Hook declarations use argv arrays, never shell strings, and their command arguments and environment values are withheld from the API.
+
+Minimal project declarations:
+
+```yaml
+# .agent/mcp.yaml
+servers:
+  - id: project-tools
+    name: Project Tools
+    transport: stdio
+    command: [python3, scripts/project_mcp.py]
+    timeout_seconds: 15
+    env_allow: [PROJECT_TOOLS_TOKEN]
+```
+
+```yaml
+# .agent/hooks.yaml
+hooks:
+  - id: preflight
+    name: Project preflight
+    event: run.before
+    command: [python3, scripts/preflight.py]
+    timeout_seconds: 10
+    failure_policy: block
+```
+
+Declarations are inert until selected on a prepared Run. MiniAgentOS does not download servers or scripts, and the portable Sandbox limitations still apply.
 
 P0 demo:
 

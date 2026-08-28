@@ -52,6 +52,7 @@ The first release SHALL support a minimal stdio MCP Adapter that can list MCP to
 - WHEN the MCP Adapter lists its tools
 - THEN each tool SHALL be converted into a `ToolDescriptor`
 - AND registered into Tool Gateway with effect and approval policy
+- AND `tools/call` SHALL occur only after the normal Guard and approval chain
 
 ### TG-005 Patch Preflight And One-Time Approval
 
