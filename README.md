@@ -96,6 +96,12 @@ cd backend
 
 The demo copies `examples/python-bugfix` into a temporary workspace, scans it, builds a context pack, applies a patch through Patch Pipeline, runs tests before and after the patch, and writes artifacts under `runs/{run_id}/`.
 
+One-command verification after dependencies are installed:
+
+```text
+make verify
+```
+
 ## How To Work In This Repo
 
 1. Read `AGENTS.md`.
