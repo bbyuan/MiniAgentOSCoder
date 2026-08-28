@@ -362,6 +362,7 @@ def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: P
     assert extensions["settings"]["active_skill_ids"] == ["code-review"]
     assert any(event["event"] == "skill.activated" for event in extensions["evidence"])
     assert model_request["payload"]["request"]["metadata"]["active_skill_ids"] == ["code-review"]
+    assert "Prioritize correctness" not in json.dumps(model_request)
     assert locked.status_code == 409
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from hashlib import sha256
 
 from app.models import ActiveSkill, ActionIR, ActionObservation, AgentContract, ContextPack, ToolDescriptor
 from app.models.base import Serializable
@@ -124,7 +125,7 @@ def plan_next_action(
         observations=observations,
         skills=skills,
     )
-    tracer.event(run_id, "model.requested", {"request": request.to_dict()}, role="Planner")
+    tracer.event(run_id, "model.requested", {"request": _trace_request(request)}, role="Planner")
 
     try:
         response = model_client.complete(request)
@@ -169,3 +170,18 @@ def _render_observation(observation: ActionObservation, output_limit: int = 4000
         "metadata": observation.metadata,
     }
     return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def _trace_request(request: ModelRequest) -> dict[str, object]:
+    return {
+        "model": request.model,
+        "messages": [
+            {
+                "role": message.role,
+                "characters": len(message.content),
+                "digest": sha256(message.content.encode("utf-8")).hexdigest(),
+            }
+            for message in request.messages
+        ],
+        "metadata": request.metadata,
+    }
