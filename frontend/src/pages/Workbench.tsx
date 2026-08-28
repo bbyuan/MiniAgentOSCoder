@@ -30,9 +30,9 @@ export function Workbench() {
   const { locale, t } = usePreferences();
   const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/deepseek-bugfix");
   const [task, setTask] = useState(
-    "Fix pricing.apply_discount so percentage calculations and validation satisfy all tests. Keep the change focused on pricing.py.",
+    "Inspect pricing.py and its tests, run pytest, identify the root cause, and finish with a concise repair recommendation. Do not modify files.",
   );
-  const [mode, setMode] = useState<RunMode>("Bugfix");
+  const [mode, setMode] = useState<RunMode>("Review");
   const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
