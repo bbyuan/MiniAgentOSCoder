@@ -41,11 +41,11 @@
 
 ## 5. Context
 
-- [ ] 5.1 Implement project scan.
-- [ ] 5.2 Generate `.agent/project-profile.json`.
-- [ ] 5.3 Implement lightweight workspace index.
-- [ ] 5.4 Implement Context Pack Builder skeleton.
-- [ ] 5.5 Add context selection explanation output.
+- [x] 5.1 Implement project scan.
+- [x] 5.2 Generate `.agent/project-profile.json`.
+- [x] 5.3 Implement lightweight workspace index.
+- [x] 5.4 Implement Context Pack Builder skeleton.
+- [x] 5.5 Add context selection explanation output.
 
 ## 6. Workbench
 
