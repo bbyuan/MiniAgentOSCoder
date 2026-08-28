@@ -42,6 +42,15 @@ def build_action_request(
             context_lines.append(
                 f"- budget: {budget.used_tokens}/{budget.max_tokens} tokens used"
             )
+        included = set(context_pack.selected_items + context_pack.compressed_items)
+        for item in context_pack.items:
+            if item.id not in included:
+                continue
+            state = "compressed" if item.id in context_pack.compressed_items else "selected"
+            content = item.content if len(item.content) <= 4000 else f"{item.content[:4000]}\n...[truncated]"
+            context_lines.append(
+                f"\n[{state}] {item.id} type={item.type} source={item.source} reason={item.reason}\n{content}"
+            )
         context_summary = "\n".join(context_lines)
 
     observation_summary = "No actions have been executed yet."

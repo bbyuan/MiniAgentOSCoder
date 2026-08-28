@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from app.models import AgentContract, ApprovalRequest, ContextPack, RunArtifacts, RunLoopResult, RunState
@@ -26,6 +27,7 @@ class RuntimeStore:
     artifacts: dict[str, RunArtifacts] = field(default_factory=dict)
     run_results: dict[str, RunLoopResult] = field(default_factory=dict)
     run_projects: dict[str, str] = field(default_factory=dict)
+    context_lock: RLock = field(default_factory=RLock)
     worker: RunWorker = field(default_factory=RunWorker)
 
 

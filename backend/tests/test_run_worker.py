@@ -60,7 +60,7 @@ def test_run_worker_executes_prepared_run_and_updates_state(tmp_path: Path) -> N
     assert worker.is_active(job.run.run_id) is False
     events = [event["event"] for event in job.tracer.read_events(job.run.run_id)]
     assert events[0] == "run.transitioned"
-    assert events[-3:] == ["run.finished", "report.generated", "run.transitioned"]
+    assert events[-4:] == ["run.finished", "memory.written", "report.generated", "run.transitioned"]
     assert (tmp_path / "runs" / job.run.run_id / "report.md").exists()
 
 

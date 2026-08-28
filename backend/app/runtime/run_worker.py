@@ -7,6 +7,14 @@ import re
 from threading import Event, Lock, Thread
 from uuid import uuid4
 
+from app.context import (
+    MemoryStore,
+    MemoryStoreError,
+    add_observation_item,
+    compact_context_pack,
+    consolidate_run_memory,
+    explain_context_items,
+)
 from app.guards import redact_secrets
 from app.models import (
     ActionIR,
@@ -138,6 +146,7 @@ class RunWorker:
                 )
 
             self._record_result_data(job.run, result)
+            self._consolidate_memory(job, result)
             self._write_final_report(job, result)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
             self._set_result_status(job.run, result.status)
@@ -309,6 +318,7 @@ class RunWorker:
             status=job.run.status,
             run_state=job.run.to_dict(),
             context_summary=", ".join(job.context_pack.selected_items),
+            memory_snapshot={"refs": list(job.run.memory_refs)},
             changed_files=list(job.run.changed_files),
             trace_offset=len(job.tracer.read_events(job.run.run_id)),
         )
@@ -382,6 +392,53 @@ class RunWorker:
                     {"attempt": job.run.repair_attempts},
                 )
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+
+        self._update_context_from_result(job, action, result)
+
+    @staticmethod
+    def _update_context_from_result(job: RunJob, action: ActionIR, result: ToolResult) -> None:
+        content = redact_secrets(result.output or result.error or "No tool output")
+        item = add_observation_item(
+            job.context_pack,
+            step=job.run.current_step,
+            action_type=action.type,
+            content=content,
+            ok=result.ok,
+        )
+        compaction = compact_context_pack(job.context_pack)
+        if job.artifacts is not None:
+            job.artifacts.context_explanation = explain_context_items(job.context_pack.items, job.context_pack)
+        job.tracer.event(
+            job.run.run_id,
+            "context.observation_added",
+            {"item_id": item.id, "type": item.type, "tokens": item.tokens, "ok": result.ok},
+        )
+        if compaction.status == "compacted":
+            job.tracer.event(job.run.run_id, "context.compacted", {**compaction.to_dict(), "trigger": "automatic"})
+        elif compaction.confirmation_required:
+            job.tracer.event(
+                job.run.run_id,
+                "context.compaction_required",
+                {**compaction.to_dict(), "trigger": "automatic"},
+            )
+
+    @staticmethod
+    def _consolidate_memory(job: RunJob, result: RunLoopResult) -> None:
+        try:
+            entry = consolidate_run_memory(MemoryStore(job.workspace), job.run, result, job.artifacts)
+            if entry.memory_id not in job.run.memory_refs:
+                job.run.memory_refs.append(entry.memory_id)
+            job.tracer.event(
+                job.run.run_id,
+                "memory.written",
+                {"memory_id": entry.memory_id, "scope": entry.scope.value, "kind": entry.kind, "automatic": True},
+            )
+        except (MemoryStoreError, OSError) as exc:
+            job.tracer.event(
+                job.run.run_id,
+                "memory.failed",
+                {"scope": "project", "error": redact_secrets(str(exc))},
+            )
 
     @staticmethod
     def _write_final_report(job: RunJob, result: RunLoopResult) -> None:

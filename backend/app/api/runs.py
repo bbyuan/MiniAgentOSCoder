@@ -7,8 +7,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.api.store import store
+from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory
 from app.guards import redact_secrets
-from app.models import RunLoopResult, RunPhase
+from app.models import MemoryScope, RunLoopResult, RunPhase
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
@@ -42,13 +43,26 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     run = create_runtime_run(request.task, project.path, config_path, runs_dir=project.path / "runs")
     contract = compile_agent_contract(config_path, task_mode=request.mode, project_profile=project.profile)
     run.mode = request.mode
-    trace_events = TraceWriter(project.path / "runs").read_events(run.run_id)
-    artifacts, context_pack = build_run_artifacts(run, project.profile, trace_events)
+    tracer = TraceWriter(project.path / "runs")
+    trace_events = tracer.read_events(run.run_id)
+    try:
+        memory_store = MemoryStore(project.path)
+        memories = memory_store.list(MemoryScope.PROJECT) + memory_store.list(MemoryScope.LONG_TERM)
+    except MemoryStoreError as exc:
+        memories = []
+        tracer.event(run.run_id, "memory.load_failed", {"error": redact_secrets(str(exc))})
+    run.memory_refs = [memory.memory_id for memory in memories]
+    artifacts, context_pack = build_run_artifacts(run, project.profile, trace_events, memories)
     store.runs[run.run_id] = run
     store.contracts[run.run_id] = contract
     store.contexts[run.run_id] = context_pack
     store.artifacts[run.run_id] = artifacts
     store.run_projects[run.run_id] = project.project_id
+    tracer.event(
+        run.run_id,
+        "memory.loaded",
+        {"count": len(memories), "memory_ids": [memory.memory_id for memory in memories]},
+    )
 
     return {
         "run_id": run.run_id,
@@ -88,6 +102,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "last_checkpoint_id": run.last_checkpoint_id,
         "rolled_back_to": run.rolled_back_to,
         "applied_patches": run.applied_patches,
+        "memory_refs": run.memory_refs,
     }
 
 
@@ -267,6 +282,7 @@ def cancel_run(run_id: str) -> dict[str, object]:
             status=RunPhase.CANCELLED,
             termination_reason="cancelled_before_start",
         )
+        _consolidate_terminal_memory(run_id, tracer)
         if tracer is not None:
             tracer.event(
                 run_id,
@@ -324,3 +340,22 @@ def _regenerate_report(run_id: str, tracer: TraceWriter) -> None:
         )
     except (OSError, ValueError) as exc:
         tracer.event(run_id, "report.failed", {"error": redact_secrets(str(exc))})
+
+
+def _consolidate_terminal_memory(run_id: str, tracer: TraceWriter) -> None:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    result = store.run_results.get(run_id)
+    if run is None or project is None or result is None:
+        return
+    try:
+        entry = consolidate_run_memory(MemoryStore(project.path), run, result, store.artifacts.get(run_id))
+        if entry.memory_id not in run.memory_refs:
+            run.memory_refs.append(entry.memory_id)
+        tracer.event(
+            run_id,
+            "memory.written",
+            {"memory_id": entry.memory_id, "scope": entry.scope.value, "kind": entry.kind, "automatic": True},
+        )
+    except (MemoryStoreError, OSError) as exc:
+        tracer.event(run_id, "memory.failed", {"scope": "project", "error": redact_secrets(str(exc))})

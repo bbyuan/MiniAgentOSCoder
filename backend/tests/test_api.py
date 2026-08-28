@@ -107,6 +107,88 @@ def test_get_run_returns_plan(tmp_path: Path) -> None:
     assert response.json()["plan"][0]["id"] == "scan"
 
 
+def test_memory_api_manages_scopes_and_requires_long_term_confirmation(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "remember conventions", "mode": "Bugfix"},
+    ).json()
+    memory_url = f"/runs/{run['run_id']}/memory"
+
+    initial = client.get(memory_url)
+    rejected = client.post(
+        memory_url,
+        json={"scope": "long_term", "kind": "preference", "content": "Prefer concise reports"},
+    )
+    created = client.post(
+        memory_url,
+        json={
+            "scope": "long_term",
+            "kind": "preference",
+            "content": "Prefer concise reports",
+            "confirmed": True,
+        },
+    )
+    memory_id = created.json()["entry"]["memory_id"]
+    updated = client.put(
+        f"{memory_url}/{memory_id}",
+        json={
+            "kind": "preference",
+            "content": "Prefer concise bilingual reports",
+            "tags": ["report"],
+            "confirmed": True,
+        },
+    )
+    deleted = client.delete(f"{memory_url}/{memory_id}")
+
+    assert initial.status_code == 200
+    assert initial.json()["counts"]["short_term"] == 5
+    assert rejected.status_code == 409
+    assert created.status_code == 201
+    assert updated.json()["entry"]["tags"] == ["report"]
+    assert deleted.json()["deleted"] == memory_id
+
+
+def test_memory_api_rejects_secret_content(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "do not leak", "mode": "Bugfix"},
+    ).json()
+
+    response = client.post(
+        f"/runs/{run['run_id']}/memory",
+        json={"scope": "project", "kind": "note", "content": "api_key=never-store-me"},
+    )
+
+    assert response.status_code == 422
+    assert "never-store-me" not in response.text
+
+
+def test_project_memory_is_injected_into_the_next_run_context(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    first = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "record convention", "mode": "Bugfix"},
+    ).json()
+    created = client.post(
+        f"/runs/{first['run_id']}/memory",
+        json={"scope": "project", "kind": "command", "content": "Run parser tests first"},
+    ).json()["entry"]
+
+    second = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "fix parser", "mode": "Bugfix"},
+    ).json()
+    context = client.get(f"/runs/{second['run_id']}/context").json()
+
+    assert created["memory_id"] in context["selected_items"]
+    assert any(item["id"] == created["memory_id"] for item in context["explanation"])
+
+
 def test_cancel_run(tmp_path: Path) -> None:
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
@@ -218,6 +300,10 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
     assert summary["status"] == "completed"
     assert summary["termination_reason"] == "finish"
     assert summary["final_message"] == "API run complete"
+    memory = client.get(f"/runs/{run['run_id']}/memory").json()
+    report = client.get(f"/runs/{run['run_id']}/report").json()["content"]
+    assert memory["counts"]["project"] == 1
+    assert "Memory references: `mem-run-" in report
     assert summary["budget"]["model_calls"] == 1
     assert trace["events"][-1]["payload"]["status"] == "completed"
     report = client.get(f"/runs/{run['run_id']}/report").json()
@@ -360,12 +446,12 @@ def test_terminal_run_sse_stream_supports_event_cursor(tmp_path: Path, monkeypat
 
     response = client.get(
         f"/runs/{run['run_id']}/events/stream",
-        params={"after": len(trace_events) - 3},
+        params={"after": len(trace_events) - 4},
     )
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
-    assert response.text.count("event: trace") == 3
+    assert response.text.count("event: trace") == 4
     assert "run.finished" in response.text
     assert "report.generated" in response.text
     assert "run.transitioned" in response.text

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.context.pack_builder import ContextCandidate, build_context_pack, explain_context_items
-from app.models import ContextPack, DiffSummary, PlanStep, RunArtifacts, RunState, TestSummary, TraceEvent
+from app.models import ContextPack, DiffSummary, MemoryEntry, PlanStep, RunArtifacts, RunState, TestSummary, TraceEvent
 
 
 def build_initial_plan(mode: str, project_profile: dict[str, object]) -> list[PlanStep]:
@@ -18,7 +18,12 @@ def build_initial_plan(mode: str, project_profile: dict[str, object]) -> list[Pl
     ]
 
 
-def build_initial_context(run: RunState, project_profile: dict[str, object]) -> tuple[ContextPack, list[dict[str, object]]]:
+def build_initial_context(
+    run: RunState,
+    project_profile: dict[str, object],
+    plan: list[PlanStep] | None = None,
+    memories: list[MemoryEntry] | None = None,
+) -> tuple[ContextPack, list[dict[str, object]]]:
     required = [
         ContextCandidate(
             id="user_task",
@@ -37,7 +42,28 @@ def build_initial_context(run: RunState, project_profile: dict[str, object]) -> 
             priority=0.9,
         ),
     ]
-    pack, items = build_context_pack(run.run_id, required, [], max_tokens=32000)
+    candidates = [
+        ContextCandidate(
+            id="current_plan",
+            type="current_plan",
+            source="runtime",
+            reason="current execution plan",
+            content="\n".join(f"{step.id}: {step.title} [{step.state}] - {step.detail}" for step in plan or []),
+            priority=0.99,
+        )
+    ]
+    candidates.extend(
+        ContextCandidate(
+            id=memory.memory_id,
+            type=f"memory_{memory.scope.value}",
+            source=memory.source,
+            reason=f"available {memory.scope.value} memory",
+            content=memory.content,
+            priority=0.7 if memory.scope.value == "long_term" else 0.65,
+        )
+        for memory in memories or []
+    )
+    pack, items = build_context_pack(run.run_id, required, candidates, max_tokens=32000)
     return pack, explain_context_items(items, pack)
 
 
@@ -45,15 +71,17 @@ def build_run_artifacts(
     run: RunState,
     project_profile: dict[str, object],
     trace_events: list[TraceEvent] | list[dict[str, object]],
+    memories: list[MemoryEntry] | None = None,
 ) -> tuple[RunArtifacts, ContextPack]:
-    context_pack, context_explanation = build_initial_context(run, project_profile)
+    plan = build_initial_plan(run.mode, project_profile)
+    context_pack, context_explanation = build_initial_context(run, project_profile, plan, memories)
     trace_summary = [
         str(event.event if isinstance(event, TraceEvent) else event.get("event", "unknown"))
         for event in trace_events
     ]
     artifacts = RunArtifacts(
         run_id=run.run_id,
-        plan=build_initial_plan(run.mode, project_profile),
+        plan=plan,
         context_explanation=context_explanation,
         diff_summary=DiffSummary(),
         test_summary=TestSummary(command=_first_test_command(project_profile)),
@@ -67,4 +95,3 @@ def _first_test_command(project_profile: dict[str, object]) -> str:
     if isinstance(commands, list) and commands:
         return str(commands[0])
     return "Not selected"
-

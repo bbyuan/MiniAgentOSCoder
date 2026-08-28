@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from app.models import AgentContract, ContextItem, ContextPack, ContextPackBudget
+from app.runtime.planner import build_action_request
 from app.context import (
     ContextCandidate,
     build_context_pack,
@@ -9,6 +11,7 @@ from app.context import (
     write_project_profile,
 )
 from app.context.pack_builder import explain_context_items
+from app.context.compactor import compact_context_pack
 
 
 def test_scan_workspace_detects_python_project(tmp_path: Path) -> None:
@@ -81,3 +84,56 @@ def test_context_pack_selects_required_and_prioritized_items() -> None:
     assert "long-log" in pack.compressed_items
     assert any(item["id"] == "task" and item["state"] == "selected" for item in explanation)
     assert any(item["id"] == "long-log" and item["state"] == "compressed" for item in explanation)
+
+
+def test_compaction_preserves_protected_context_and_compresses_history() -> None:
+    required = [
+        ContextCandidate("task", "user_task", "user", "original task", "fix bug", 1.0),
+    ]
+    candidates = [
+        ContextCandidate("history", "tool_history", "pytest", "old test output", "x" * 280, 0.2),
+    ]
+    pack, _ = build_context_pack("run-compact", required, candidates, max_tokens=100)
+
+    result = compact_context_pack(pack)
+
+    assert result.status == "compacted"
+    assert result.after_tokens < result.before_tokens
+    assert "task" in pack.selected_items
+    assert "history" in pack.compressed_items
+    assert pack.compaction_count == 1
+
+
+def test_critical_compaction_requires_confirmation() -> None:
+    required = [ContextCandidate("task", "user_task", "user", "task", "fix", 1.0)]
+    candidates = [
+        ContextCandidate("history", "tool_history", "tool", "large history", "x" * 380, 0.2),
+    ]
+    pack, _ = build_context_pack("run-critical", required, candidates, max_tokens=100)
+
+    pending = compact_context_pack(pack)
+    compacted = compact_context_pack(pack, confirmed=True)
+
+    assert pending.status == "confirmation_required"
+    assert pending.confirmation_required is True
+    assert compacted.status == "compacted"
+
+
+def test_planner_receives_selected_and_compressed_context_content() -> None:
+    pack = ContextPack(
+        run_id="run-planner-context",
+        items=[
+            ContextItem("task", "user_task", "user", "task", 2, 1.0, "Fix the parser"),
+            ContextItem("memory", "memory_project", "user", "project convention", 4, 0.7, "Run parser tests first"),
+        ],
+        selected_items=["task"],
+        compressed_items=["memory"],
+        budget_report=ContextPackBudget(100, 6, 94),
+    )
+
+    request = build_action_request("Fix the parser", AgentContract("agent"), [], context_pack=pack)
+    prompt = request.messages[1].content
+
+    assert "Fix the parser" in prompt
+    assert "Run parser tests first" in prompt
+    assert "[compressed] memory" in prompt

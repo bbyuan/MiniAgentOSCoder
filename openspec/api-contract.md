@@ -197,11 +197,49 @@ Return an ordered, immutable Trace snapshot without executing models or tools. T
 
 ### `GET /runs/{run_id}/context`
 
-Return the latest `ContextPack` with required, selected, compressed, omitted, and budget sections.
+Return the latest `ContextPack` with required, selected, compressed, omitted, budget, composition, threshold state, compaction count, and per-item explanation sections. Full raw tool output remains internal; the response includes a bounded item summary.
 
 ### `POST /runs/{run_id}/context/compact`
 
 Request manual context compaction.
+
+```json
+{
+  "force": true,
+  "target_ratio": 0.55,
+  "confirmed": false
+}
+```
+
+At 95% usage the endpoint returns `status=confirmation_required` until the client repeats the request with `confirmed=true`. Effective compaction returns before/after token counts and creates a Checkpoint and Trace event.
+
+## Memory APIs
+
+### `GET /runs/{run_id}/memory`
+
+Return read-only short-term Run memory plus editable project and long-term entries, grouped by scope with counts.
+
+### `POST /runs/{run_id}/memory`
+
+Create project or long-term memory. `long_term` requires `confirmed=true`; short-term memory is synthesized and cannot be written. Content that resembles a secret is rejected.
+
+```json
+{
+  "scope": "long_term",
+  "kind": "preference",
+  "content": "Prefer focused validation before broad test suites",
+  "tags": ["workflow"],
+  "confirmed": true
+}
+```
+
+### `PUT /runs/{run_id}/memory/{memory_id}`
+
+Update kind, content, and tags. Updating long-term memory again requires explicit confirmation.
+
+### `DELETE /runs/{run_id}/memory/{memory_id}`
+
+Delete a persisted project or long-term memory entry. Short-term memory remains read-only.
 
 ## Model APIs
 
