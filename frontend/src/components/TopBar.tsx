@@ -1,4 +1,4 @@
-import { Bot, CodeXml, Moon, Sun } from "lucide-react";
+import { Bot, CodeXml, History, Moon, Sun } from "lucide-react";
 import { translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -7,9 +7,10 @@ interface TopBarProps {
   status: string;
   model: string;
   modelConfigured: boolean | undefined;
+  onOpenHistory: () => void;
 }
 
-export function TopBar({ project, status, model, modelConfigured }: TopBarProps) {
+export function TopBar({ project, status, model, modelConfigured, onOpenHistory }: TopBarProps) {
   const { locale, setLocale, theme, toggleTheme, t } = usePreferences();
   const themeLabel = theme === "light" ? t("top.themeDark") : t("top.themeLight");
 
@@ -27,6 +28,15 @@ export function TopBar({ project, status, model, modelConfigured }: TopBarProps)
         </div>
 
         <div className="topbarControls">
+          <button
+            type="button"
+            className="iconButton"
+            aria-label={t("history.open")}
+            title={t("history.open")}
+            onClick={onOpenHistory}
+          >
+            <History size={17} />
+          </button>
           <div
             className={`statusChip modelChip ${modelConfigured === false ? "warning" : ""}`}
             title={t("top.modelStatus")}

@@ -22,6 +22,7 @@ import {
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { MetricStrip } from "../components/MetricStrip";
+import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { TaskComposer } from "../components/TaskComposer";
 import { TopBar } from "../components/TopBar";
@@ -72,6 +73,7 @@ export function Workbench() {
   const [recovery, setRecovery] = useState<RecoveryResponse>();
   const [rollbackBusy, setRollbackBusy] = useState<string>();
   const [report, setReport] = useState<RunReportResponse>();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -483,6 +485,7 @@ export function Workbench() {
         status={displayStatus}
         model={modelStatus?.configured ? modelStatus.model : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
         modelConfigured={modelStatus?.configured}
+        onOpenHistory={() => setHistoryOpen(true)}
       />
 
       <div className="workbenchLayout">
@@ -556,6 +559,7 @@ export function Workbench() {
           onSaveExtensions={saveExtensions}
         />
       </div>
+      <RunCenter open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </main>
   );
 }

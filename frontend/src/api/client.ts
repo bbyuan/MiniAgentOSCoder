@@ -383,6 +383,73 @@ export interface RunReportResponse {
   files: string[];
 }
 
+export interface HistoryProject {
+  project_id: string;
+  path: string;
+  profile: Record<string, unknown>;
+  created_at: string;
+  last_opened_at: string;
+  run_count: number;
+  latest_status?: string;
+  latest_run_at?: string;
+}
+
+export interface HistoryRun {
+  run_id: string;
+  project_id: string;
+  project_path: string;
+  task: string;
+  mode: string;
+  status: string;
+  phase: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  termination_reason: string;
+  final_message: string;
+  budget: Record<string, number>;
+  changed_files: string[];
+  applied_patches: number;
+  repair_attempts: number;
+  steps: number;
+  model_calls: number;
+  tool_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  test_status: string;
+  report_path: string;
+  trace_path: string;
+  patch_path: string;
+  archived: boolean;
+  duration_ms?: number;
+}
+
+export interface HistoryRunDetail {
+  run: HistoryRun & { project_profile: Record<string, unknown> };
+  artifacts: {
+    report: { available: boolean; path: string; truncated: boolean };
+    trace: { available: boolean; path: string; event_count: number };
+    patch: { available: boolean; path: string };
+  };
+  report: { available: boolean; content: string; truncated: boolean };
+  trace: { available: boolean; event_count: number; recent_events: TraceEvent[] };
+}
+
+export interface HistoryComparison {
+  runs: Array<Pick<HistoryRun, "run_id" | "task" | "mode" | "status" | "test_status" | "duration_ms" | "changed_files">>;
+  metrics: Array<{ key: string; left: number; right: number; delta: number }>;
+}
+
+export interface HistoryRunFilters {
+  project_id?: string;
+  status?: string;
+  query?: string;
+  include_archived?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -485,6 +552,27 @@ export const daemonApi = {
   replayRun: (runId: string) => request<ReplayResponse>(`/runs/${runId}/replay`, { method: "POST" }),
   getModelStatus: (projectId?: string) =>
     request<ModelProviderStatus>(`/models/status${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
+  getHistoryProjects: () =>
+    request<{ projects: HistoryProject[]; total: number }>("/history/projects"),
+  getHistoryRuns: (filters: HistoryRunFilters = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    });
+    const suffix = query.size ? `?${query.toString()}` : "";
+    return request<{ runs: HistoryRun[]; total: number; limit: number; offset: number }>(`/history/runs${suffix}`);
+  },
+  getHistoryRun: (runId: string) => request<HistoryRunDetail>(`/history/runs/${runId}`),
+  compareHistoryRuns: (runIds: [string, string]) =>
+    request<HistoryComparison>("/history/compare", {
+      method: "POST",
+      body: JSON.stringify({ run_ids: runIds }),
+    }),
+  archiveHistoryRun: (runId: string, archived: boolean) =>
+    request<{ run_id: string; archived: boolean }>(`/history/runs/${runId}/archive`, {
+      method: "PUT",
+      body: JSON.stringify({ archived }),
+    }),
   streamRunEvents: (
     runId: string,
     after: number,

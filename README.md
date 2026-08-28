@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, and trusted lifecycle Hooks. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, and a persistent SQLite Run Center. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -71,6 +71,8 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:5173/` and prepare a run. Before launch, the Governance view lets you choose the sandbox profile and tighten any tool to approval-required or denied. Launching locks those settings, starts the local Run Worker, and incrementally renders model, policy, sandbox, tool, budget, and terminal events from the SSE Trace stream.
+
+Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
 
 ## Model Provider Configuration
 

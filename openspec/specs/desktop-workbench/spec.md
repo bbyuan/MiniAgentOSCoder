@@ -185,3 +185,21 @@ The workbench SHALL provide one Run-scoped surface for Skills, MCP Servers, trus
 - WHEN the SSE Trace receives Skill, MCP, or Hook events
 - THEN the Workbench SHALL refresh discovery and evidence
 - AND controls SHALL become read-only after launch
+
+### DW-016 Persistent Run Center
+
+The workbench SHALL provide a localized, theme-aware Run Center for searching persisted runs, inspecting workspace evidence, reversible archival, and aligned comparison of two executions.
+
+#### Scenario: Inspect a historical run
+
+- GIVEN a Run exists in the local catalog
+- WHEN the user opens Run Center and selects it
+- THEN the workbench SHALL show its status, result, budget, tests, changed files, report, and recent Trace evidence
+- AND missing evidence SHALL be distinguished from an empty result
+
+#### Scenario: Compare two runs
+
+- GIVEN the user selects exactly two Runs
+- WHEN comparison is requested
+- THEN the workbench SHALL align execution metrics and show candidate-minus-baseline deltas
+- AND the comparison SHALL not execute a model or tool

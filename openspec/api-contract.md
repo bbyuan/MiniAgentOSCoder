@@ -309,3 +309,39 @@ Response:
 ```
 
 The response reports only whether the named environment variable exists. It never returns the API key or raw credential-bearing URLs.
+
+## History APIs
+
+### `GET /history/projects`
+
+Return stable local Project identities ordered by most recent open time, including Run count and latest Run status. Reopening the same canonical path updates one Project record.
+
+### `GET /history/runs`
+
+Return compact Run summaries ordered by latest update. Optional `project_id`, `status`, `query`, and `include_archived` filters can be combined with bounded `limit` and `offset` pagination.
+
+### `GET /history/runs/{run_id}`
+
+Return the persisted summary plus report content, artifact availability, Trace event count, and the twelve most recent valid Trace events. Before reading a file, the Daemon verifies its persisted path remains under the matching workspace `runs/{run_id}/` directory. Missing evidence is represented by `available=false`.
+
+### `POST /history/compare`
+
+Compare exactly two distinct Run ids:
+
+```json
+{
+  "run_ids": ["run-baseline", "run-candidate"]
+}
+```
+
+The response aligns steps, model/tool calls, input/output/total tokens, applied patches, and repair attempts, with `delta = candidate - baseline`. It also returns status, test status, duration, and changed files for both Runs.
+
+### `PUT /history/runs/{run_id}/archive`
+
+Set the reversible catalog-only archive state without deleting report, Trace, patch, checkpoint, or snapshot evidence.
+
+```json
+{
+  "archived": true
+}
+```
