@@ -54,3 +54,43 @@ The runtime SHALL create checkpoints before patch application, before approval w
 - GIVEN a patch has passed dry-run and user approval
 - WHEN the runtime is about to apply the patch
 - THEN it SHALL create a checkpoint containing run state, context summary, changed files, and trace offset
+
+### AR-006 Model Planner Boundary
+
+The runtime SHALL obtain agent decisions through a provider-neutral model client and parse each response into exactly one Action IR before execution.
+
+#### Scenario: Reject malformed model output
+
+- GIVEN the model returns free-form text or malformed JSON
+- WHEN the planner parses the response
+- THEN the runtime SHALL reject the response
+- AND no tool SHALL execute
+
+### AR-007 Guarded Action Execution
+
+The runtime SHALL execute parsed effectful actions only through the Tool Gateway.
+
+#### Scenario: Execute an allowed action
+
+- GIVEN an action targets a registered tool whose effect is allowed
+- WHEN the action executor runs the action
+- THEN the tool SHALL execute through the gateway
+- AND the runtime SHALL append action and tool trace events
+
+### AR-008 Bounded Autonomous Run Loop
+
+The runtime SHALL repeatedly plan one Action IR, execute it through the guarded runtime, and feed typed observations into the next model request until explicit completion or budget exhaustion.
+
+#### Scenario: Complete a multi-step run
+
+- GIVEN the model requests a tool and then returns `finish`
+- WHEN the autonomous loop executes
+- THEN the tool observation SHALL be included in the next planning request
+- AND the run SHALL complete with a final message
+
+#### Scenario: Stop at a contract budget
+
+- GIVEN a run reaches a step, model-call, token, tool-call, or wall-time limit
+- WHEN the loop attempts to continue
+- THEN the runtime SHALL stop before the next prohibited effect
+- AND append a machine-readable budget event

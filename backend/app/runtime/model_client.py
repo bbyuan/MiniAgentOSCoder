@@ -38,15 +38,35 @@ class StaticModelClient:
     model: str = "static"
 
     def complete(self, request: ModelRequest) -> ModelResponse:
-        prompt_tokens = sum(len(message.content.split()) for message in request.messages)
-        completion_tokens = len(self.response_content.split())
-        return ModelResponse(
-            content=self.response_content,
-            model=self.model,
-            usage={
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            },
-            metadata={"request_model": request.model},
-        )
+        return _static_response(request, self.response_content, self.model)
+
+
+@dataclass(slots=True)
+class QueuedStaticModelClient:
+    response_contents: list[str]
+    model: str = "static"
+    requests: list[ModelRequest] = field(default_factory=list, init=False)
+    _next_response: int = field(default=0, init=False)
+
+    def complete(self, request: ModelRequest) -> ModelResponse:
+        if self._next_response >= len(self.response_contents):
+            raise RuntimeError("Queued model responses exhausted")
+        self.requests.append(request)
+        response_content = self.response_contents[self._next_response]
+        self._next_response += 1
+        return _static_response(request, response_content, self.model)
+
+
+def _static_response(request: ModelRequest, content: str, model: str) -> ModelResponse:
+    prompt_tokens = sum(len(message.content.split()) for message in request.messages)
+    completion_tokens = len(content.split())
+    return ModelResponse(
+        content=content,
+        model=model,
+        usage={
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+        metadata={"request_model": request.model},
+    )

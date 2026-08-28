@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from app.models.action import ActionObservation
 from app.models.base import Serializable
 
 
@@ -73,3 +74,15 @@ class RunStatus(Serializable):
     can_replay: bool = False
     last_checkpoint_id: str | None = None
 
+
+@dataclass(slots=True)
+class RunLoopResult(Serializable):
+    run_id: str
+    status: RunPhase
+    termination_reason: str
+    steps: int = 0
+    model_calls: int = 0
+    tool_calls: int = 0
+    token_usage: dict[str, int] = field(default_factory=dict)
+    observations: list[ActionObservation] = field(default_factory=list)
+    final_message: str = ""

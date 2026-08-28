@@ -3,11 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
-from app.models import AgentContract, ContextPack, RunPhase, RunState
+from app.models import AgentContract, ContextPack, RunLoopResult, RunPhase, RunState
 from app.runtime.action_executor import ActionExecution, ActionExecutor
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
+from app.runtime.run_loop import AgentRunLoop
 from app.runtime.state_machine import transition_run
 from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
@@ -49,3 +50,21 @@ def execute_next_model_action(
         context_pack=context_pack,
     )
     return ActionExecutor(gateway=gateway, tracer=tracer, run_id=run_id).execute(decision.action)
+
+
+def execute_agent_run(
+    *,
+    run_id: str,
+    task: str,
+    contract: AgentContract,
+    gateway: ToolGateway,
+    model_client: ModelClient,
+    tracer: TraceWriter,
+    context_pack: ContextPack | None = None,
+) -> RunLoopResult:
+    return AgentRunLoop(
+        run_id=run_id,
+        gateway=gateway,
+        model_client=model_client,
+        tracer=tracer,
+    ).run(task=task, contract=contract, context_pack=context_pack)

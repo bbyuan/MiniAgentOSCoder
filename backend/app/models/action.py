@@ -14,3 +14,12 @@ class ActionIR(Serializable):
     role: str = "Orchestrator"
     action_id: str | None = None
 
+
+@dataclass(slots=True)
+class ActionObservation(Serializable):
+    step: int
+    action_type: str
+    ok: bool
+    output: str = ""
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
