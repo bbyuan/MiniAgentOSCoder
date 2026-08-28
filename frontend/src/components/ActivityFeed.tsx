@@ -5,6 +5,8 @@ import {
   CircleAlert,
   CornerDownRight,
   FileDiff,
+  History,
+  RotateCcw,
   ShieldAlert,
   Sparkles,
   Wrench,
@@ -25,6 +27,8 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
   if (event.startsWith("action.")) return { icon: CornerDownRight, tone: "action" };
   if (event.startsWith("approval.")) return { icon: ShieldAlert, tone: "approval" };
   if (event.startsWith("patch.")) return { icon: FileDiff, tone: "patch" };
+  if (event.startsWith("repair.")) return { icon: History, tone: "approval" };
+  if (event.startsWith("rollback.")) return { icon: RotateCcw, tone: "patch" };
   if (event === "run.finished") return { icon: CheckCircle2, tone: "success" };
   if (event === "run.cancelled") return { icon: Ban, tone: "muted" };
   if (event.includes("failed") || event.includes("exceeded")) return { icon: CircleAlert, tone: "danger" };

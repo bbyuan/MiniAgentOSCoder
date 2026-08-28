@@ -6,6 +6,7 @@ import {
   type ApprovalRequest,
   type ContextPack,
   type ModelProviderStatus,
+  type RecoveryResponse,
   type RunArtifacts,
   type RunMode,
   type TraceEvent,
@@ -52,6 +53,8 @@ export function Workbench() {
   const [runBudget, setRunBudget] = useState<Record<string, number>>({});
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
+  const [recovery, setRecovery] = useState<RecoveryResponse>();
+  const [rollbackBusy, setRollbackBusy] = useState<string>();
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -117,6 +120,8 @@ export function Workbench() {
     setFinalMessage("");
     setRunBudget({});
     setApproval(null);
+    setRecovery(undefined);
+    setRollbackBusy(undefined);
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
@@ -125,16 +130,18 @@ export function Workbench() {
         daemonApi.createRun({ project_id: project.project_id, task, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
-      const [contextResponse, traceResponse, artifactResponse] = await Promise.all([
+      const [contextResponse, traceResponse, artifactResponse, recoveryResponse] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
         daemonApi.getArtifacts(run.run_id),
+        daemonApi.getCheckpoints(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
       setContract(run.contract);
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
+      setRecovery(recoveryResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -157,6 +164,9 @@ export function Workbench() {
             setRunStatus("waiting_approval");
           } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
             setApproval(null);
+          }
+          if (["checkpoint.saved", "patch.snapshot.created", "repair.started", "repair.completed"].includes(event.event)) {
+            daemonApi.getCheckpoints(run.run_id).then(setRecovery).catch(() => undefined);
           }
           const eventBudget = Object.fromEntries(
             Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
@@ -182,11 +192,17 @@ export function Workbench() {
           ) {
             streamCleanup.current?.();
             streamCleanup.current = null;
-            daemonApi.getRun(run.run_id).then((summary) => {
+            Promise.all([
+              daemonApi.getRun(run.run_id),
+              daemonApi.getArtifacts(run.run_id),
+              daemonApi.getCheckpoints(run.run_id),
+            ]).then(([summary, latestArtifacts, latestRecovery]) => {
               setRunStatus(summary.status);
               setFinalMessage(summary.final_message || "");
               setRunBudget(summary.budget || {});
-            });
+              setArtifacts(latestArtifacts);
+              setRecovery(latestRecovery);
+            }).catch(() => undefined);
           }
         },
         () => setError(t("error.streamDisconnected")),
@@ -235,6 +251,27 @@ export function Workbench() {
       setError(caught instanceof Error ? caught.message : t("error.denyAction"));
     } finally {
       setApprovalBusy(false);
+    }
+  }
+
+  async function rollbackToCheckpoint(checkpointId: string) {
+    if (!runId) return;
+    setRollbackBusy(checkpointId);
+    setError(null);
+    try {
+      await daemonApi.rollbackRun(runId, checkpointId);
+      const [latestRecovery, latestArtifacts, latestTrace] = await Promise.all([
+        daemonApi.getCheckpoints(runId),
+        daemonApi.getArtifacts(runId),
+        daemonApi.getTrace(runId),
+      ]);
+      setRecovery(latestRecovery);
+      setArtifacts(latestArtifacts);
+      setTraceEvents(latestTrace.events);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.rollback"));
+    } finally {
+      setRollbackBusy(undefined);
     }
   }
 
@@ -295,8 +332,11 @@ export function Workbench() {
           runId={runId}
           approval={approval}
           approvalBusy={approvalBusy}
+          recovery={recovery}
+          rollbackBusy={rollbackBusy}
           onApprove={approveAction}
           onDeny={denyAction}
+          onRollback={rollbackToCheckpoint}
         />
       </div>
     </main>

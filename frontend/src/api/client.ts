@@ -46,6 +46,10 @@ export interface RunSummary {
   last_observation?: Record<string, unknown>;
   termination_reason?: string;
   final_message?: string;
+  repair_attempts?: number;
+  repair_status?: string;
+  last_checkpoint_id?: string;
+  rolled_back_to?: string;
 }
 
 export interface PlanStep {
@@ -149,6 +153,34 @@ export interface ApprovalRequest {
   options: string[];
 }
 
+export interface RecoveryPoint {
+  checkpoint_id: string;
+  run_id: string;
+  step: number;
+  status: string;
+  trace_offset: number;
+  files: string[];
+  snapshot_available: boolean;
+  can_rollback: boolean;
+}
+
+export interface RecoveryResponse {
+  run_id: string;
+  repair_attempts: number;
+  repair_status: string;
+  rolled_back_to?: string;
+  checkpoints: RecoveryPoint[];
+}
+
+export interface RollbackResponse {
+  run_id: string;
+  checkpoint_id: string;
+  status: string;
+  files: string[];
+  restored: number;
+  removed: number;
+}
+
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -196,6 +228,12 @@ export const daemonApi = {
   getTrace: (runId: string) => request<TraceResponse>(`/runs/${runId}/trace`),
   getApproval: (runId: string) =>
     request<{ approval: ApprovalRequest | null }>(`/runs/${runId}/approval`),
+  getCheckpoints: (runId: string) => request<RecoveryResponse>(`/runs/${runId}/checkpoints`),
+  rollbackRun: (runId: string, checkpointId: string) =>
+    request<RollbackResponse>(`/runs/${runId}/rollback`, {
+      method: "POST",
+      body: JSON.stringify({ checkpoint_id: checkpointId }),
+    }),
   approveAction: (runId: string, approvalId: string) =>
     request<{ status: string }>(`/runs/${runId}/approve`, {
       method: "POST",

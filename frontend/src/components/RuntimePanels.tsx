@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { FileCode2, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
-import type { ApprovalRequest } from "../api/client";
+import type { ApprovalRequest, RecoveryResponse } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 import { PlanPanel, type PlanItem } from "./PlanPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
+import { RecoveryPanel } from "./RecoveryPanel";
 
-type InspectorTab = "overview" | "context" | "trace";
+type InspectorTab = "overview" | "context" | "recovery" | "trace";
 
 interface RuntimePanelsProps {
   plan: PlanItem[];
@@ -31,8 +32,11 @@ interface RuntimePanelsProps {
   runId?: string;
   approval: ApprovalRequest | null;
   approvalBusy: boolean;
+  recovery?: RecoveryResponse;
+  rollbackBusy?: string;
   onApprove: () => void;
   onDeny: (reason: string) => void;
+  onRollback: (checkpointId: string) => void;
 }
 
 export function RuntimePanels({
@@ -45,14 +49,18 @@ export function RuntimePanels({
   runId,
   approval,
   approvalBusy,
+  recovery,
+  rollbackBusy,
   onApprove,
   onDeny,
+  onRollback,
 }: RuntimePanelsProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
   const { locale, t } = usePreferences();
   const tabs: Array<{ id: InspectorTab; label: string }> = [
     { id: "overview", label: t("inspector.overview") },
     { id: "context", label: t("inspector.context") },
+    { id: "recovery", label: t("inspector.recovery") },
     { id: "trace", label: t("inspector.trace") },
   ];
 
@@ -145,6 +153,14 @@ export function RuntimePanels({
               </div>
             )}
           </section>
+        ) : null}
+
+        {activeTab === "recovery" ? (
+          <RecoveryPanel
+            recovery={recovery}
+            busyCheckpoint={rollbackBusy}
+            onRollback={onRollback}
+          />
         ) : null}
 
         {activeTab === "trace" ? (

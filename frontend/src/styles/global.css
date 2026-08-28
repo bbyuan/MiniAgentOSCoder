@@ -760,7 +760,7 @@ textarea:disabled {
 .inspectorTabs {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--border);
 }
 
@@ -1171,8 +1171,219 @@ textarea:disabled {
 }
 
 .contextSection,
+.recoverySection,
 .traceSection {
   min-height: 100%;
+}
+
+.recoverySection > .sectionHeader > div span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.recoveryMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-block: 1px solid var(--border);
+}
+
+.recoveryMetrics > div {
+  min-width: 0;
+  min-height: 66px;
+  padding: 11px 8px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-content: center;
+  column-gap: 6px;
+}
+
+.recoveryMetrics > div:first-child {
+  padding-left: 0;
+  border-right: 1px solid var(--border);
+}
+
+.recoveryMetrics svg {
+  grid-row: 1 / 3;
+  align-self: center;
+  color: var(--text-tertiary);
+}
+
+.recoveryMetrics span,
+.recoveryMetrics strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recoveryMetrics span {
+  color: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.recoveryMetrics strong {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.rollbackNotice {
+  min-height: 38px;
+  margin-top: 12px;
+  padding: 0 9px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 7px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 9px;
+}
+
+.rollbackNotice code {
+  max-width: 132px;
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recoveryList {
+  margin-top: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recoveryList article {
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.recoveryList article.restorable {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.recoveryPointHeader,
+.recoveryPointMeta,
+.recoveryFiles,
+.recoveryActions {
+  display: flex;
+  align-items: center;
+}
+
+.recoveryPointHeader {
+  min-height: 30px;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recoveryPointHeader > div {
+  min-width: 0;
+}
+
+.recoveryPointHeader strong,
+.recoveryPointHeader code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recoveryPointHeader strong {
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.recoveryPointHeader code {
+  max-width: 230px;
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.recoveryPointHeader > span {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.recoveryPointMeta {
+  margin-top: 9px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.recoveryPointMeta span {
+  padding-right: 6px;
+  border-right: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.recoveryPointMeta span:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.recoveryFiles {
+  margin-top: 9px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.recoveryFiles code {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recoveryActions {
+  min-height: 34px;
+  margin-top: 10px;
+  justify-content: flex-end;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 9px;
+}
+
+.recoveryActions > span {
+  min-width: 0;
+  margin-right: auto;
+  color: var(--warning);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.recoveryActions .iconButton {
+  width: 30px;
+  height: 30px;
+}
+
+.rollbackButton {
+  color: var(--accent);
+}
+
+.confirmRollback {
+  color: #ffffff;
+  border-color: var(--warning);
+  background: var(--warning);
+}
+
+:root[data-theme="dark"] .confirmRollback {
+  color: #111214;
 }
 
 .contextList article {
