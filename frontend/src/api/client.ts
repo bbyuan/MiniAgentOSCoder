@@ -42,6 +42,10 @@ export interface RunSummary {
   contract?: AgentContract;
   artifacts?: RunArtifacts;
   plan?: PlanStep[];
+  budget?: Record<string, number>;
+  last_observation?: Record<string, unknown>;
+  termination_reason?: string;
+  final_message?: string;
 }
 
 export interface PlanStep {
@@ -121,6 +125,12 @@ export interface ModelProviderStatus {
   issues: string[];
 }
 
+export interface StartRunResponse {
+  run_id: string;
+  status: string;
+  events_url: string;
+}
+
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -133,7 +143,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    let detail = "";
+    try {
+      const body = (await response.json()) as { detail?: string };
+      detail = body.detail || "";
+    } catch {
+      // The status code remains useful when an intermediary returns a non-JSON error.
+    }
+    throw new Error(detail || `Request failed: ${response.status}`);
   }
 
   return response.json() as Promise<T>;
@@ -151,6 +168,10 @@ export const daemonApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  startRun: (runId: string) =>
+    request<StartRunResponse>(`/runs/${runId}/start`, { method: "POST" }),
+  cancelRun: (runId: string) =>
+    request<{ run_id: string; status: string }>(`/runs/${runId}/cancel`, { method: "POST" }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
@@ -158,4 +179,19 @@ export const daemonApi = {
   replayRun: (runId: string) => request<TraceResponse>(`/runs/${runId}/replay`, { method: "POST" }),
   getModelStatus: (projectId?: string) =>
     request<ModelProviderStatus>(`/models/status${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
+  streamRunEvents: (
+    runId: string,
+    after: number,
+    onEvent: (event: TraceEvent) => void,
+    onError?: () => void,
+  ) => {
+    const source = new EventSource(`${API_BASE}/runs/${runId}/events/stream?after=${after}`);
+    source.addEventListener("trace", (message) => {
+      onEvent(JSON.parse((message as MessageEvent<string>).data) as TraceEvent);
+    });
+    if (onError) {
+      source.onerror = onError;
+    }
+    return () => source.close();
+  },
 };

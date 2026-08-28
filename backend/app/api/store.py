@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.models import AgentContract, ApprovalRequest, ContextPack, RunArtifacts, RunState
+from app.models import AgentContract, ApprovalRequest, ContextPack, RunArtifacts, RunLoopResult, RunState
+from app.runtime.run_worker import RunWorker
 
 
 @dataclass
@@ -23,6 +24,9 @@ class RuntimeStore:
     contexts: dict[str, ContextPack] = field(default_factory=dict)
     approvals: dict[str, ApprovalRequest] = field(default_factory=dict)
     artifacts: dict[str, RunArtifacts] = field(default_factory=dict)
+    run_results: dict[str, RunLoopResult] = field(default_factory=dict)
+    run_projects: dict[str, str] = field(default_factory=dict)
+    worker: RunWorker = field(default_factory=RunWorker)
 
 
 store = RuntimeStore()

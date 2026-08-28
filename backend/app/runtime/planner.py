@@ -30,9 +30,18 @@ def build_action_request(
     ]
     context_summary = "No context pack is available."
     if context_pack is not None:
-        context_summary = "\n".join(
-            f"- {item.path}: {item.summary} ({item.tokens} tokens)" for item in context_pack.items
-        )
+        budget = context_pack.budget_report
+        context_lines = [
+            f"- required: {', '.join(context_pack.required_items) or 'none'}",
+            f"- selected: {', '.join(context_pack.selected_items) or 'none'}",
+            f"- compressed: {', '.join(context_pack.compressed_items) or 'none'}",
+            f"- omitted: {', '.join(context_pack.omitted_items) or 'none'}",
+        ]
+        if budget is not None:
+            context_lines.append(
+                f"- budget: {budget.used_tokens}/{budget.max_tokens} tokens used"
+            )
+        context_summary = "\n".join(context_lines)
 
     observation_summary = "No actions have been executed yet."
     if observations:

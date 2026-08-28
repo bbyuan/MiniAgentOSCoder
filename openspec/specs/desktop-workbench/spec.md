@@ -65,3 +65,14 @@ The workbench SHALL read model Provider readiness from the local Daemon and SHAL
 - WHEN the workbench requests model status
 - THEN the Daemon SHALL return a non-sensitive issue list
 - AND SHALL NOT include any credential value
+
+### DW-007 Live Run Execution
+
+The workbench SHALL start prepared runs through the Daemon and incrementally update runtime state from the SSE Trace stream.
+
+#### Scenario: Render a live run
+
+- GIVEN model configuration is ready and a user submits a task
+- WHEN the Daemon starts the run
+- THEN the workbench SHALL display running status
+- AND append model, action, tool, budget, and terminal events as they arrive

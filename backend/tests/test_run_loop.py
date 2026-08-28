@@ -1,4 +1,5 @@
 from pathlib import Path
+from threading import Event
 
 from app.models import RunPhase
 from app.runtime.agent_loop import execute_agent_run
@@ -209,3 +210,33 @@ def test_run_loop_stops_at_wall_time_budget_before_model_call(tmp_path: Path) ->
     assert result.termination_reason == "max_wall_time_seconds"
     assert result.model_calls == 0
     assert client.requests == []
+
+
+def test_run_loop_cancels_after_model_response_before_tool_effect(tmp_path: Path) -> None:
+    cancel_event = Event()
+
+    class CancellingModelClient:
+        def complete(self, request):
+            cancel_event.set()
+            return QueuedStaticModelClient(
+                ['{"type":"read_file","rationale":"inspect","params":{"path":"app.py"}}']
+            ).complete(request)
+
+    gateway = make_gateway(tmp_path)
+    tracer = TraceWriter(tmp_path / "runs")
+
+    result = AgentRunLoop(
+        run_id="run-cancel-after-model",
+        gateway=gateway,
+        model_client=CancellingModelClient(),
+        tracer=tracer,
+        should_cancel=cancel_event.is_set,
+    ).run(task="inspect", contract=gateway.contract)
+
+    assert result.status == RunPhase.CANCELLED
+    assert result.termination_reason == "user_cancelled"
+    assert result.model_calls == 1
+    assert result.tool_calls == 0
+    events = [event["event"] for event in tracer.read_events("run-cancel-after-model")]
+    assert events[-1] == "run.cancelled"
+    assert "action.parsed" not in events

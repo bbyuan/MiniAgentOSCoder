@@ -27,12 +27,14 @@ class AgentRunLoop:
         model_client: ModelClient,
         tracer: TraceWriter,
         clock: Callable[[], float] = time.monotonic,
+        should_cancel: Callable[[], bool] = lambda: False,
     ) -> None:
         self.run_id = run_id
         self.gateway = gateway
         self.model_client = model_client
         self.tracer = tracer
         self.clock = clock
+        self.should_cancel = should_cancel
 
     def run(
         self,
@@ -59,6 +61,14 @@ class AgentRunLoop:
         )
 
         for step in range(1, max_steps + 1):
+            if self.should_cancel():
+                return self._cancelled_result(
+                    steps=step - 1,
+                    model_calls=model_calls,
+                    initial_tool_calls=initial_tool_calls,
+                    token_usage=token_usage,
+                    observations=observations,
+                )
             budget_reason = self._preflight_budget_reason(
                 contract=contract,
                 model_calls=model_calls,
@@ -113,6 +123,14 @@ class AgentRunLoop:
                 )
 
             _add_usage(token_usage, decision.response.usage)
+            if self.should_cancel():
+                return self._cancelled_result(
+                    steps=step,
+                    model_calls=model_calls,
+                    initial_tool_calls=initial_tool_calls,
+                    token_usage=token_usage,
+                    observations=observations,
+                )
             token_reason = _token_budget_reason(contract, token_usage)
             if token_reason is not None:
                 return self._budget_result(
@@ -190,6 +208,27 @@ class AgentRunLoop:
             token_usage=token_usage,
             observations=observations,
         )
+
+    def _cancelled_result(
+        self,
+        *,
+        steps: int,
+        model_calls: int,
+        initial_tool_calls: int,
+        token_usage: dict[str, int],
+        observations: list[ActionObservation],
+    ) -> RunLoopResult:
+        result = self._result(
+            status=RunPhase.CANCELLED,
+            reason="user_cancelled",
+            steps=steps,
+            model_calls=model_calls,
+            initial_tool_calls=initial_tool_calls,
+            token_usage=token_usage,
+            observations=observations,
+        )
+        self.tracer.event(self.run_id, "run.cancelled", _terminal_payload(result))
+        return result
 
     def _preflight_budget_reason(
         self,

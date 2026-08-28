@@ -128,6 +128,20 @@ button {
   color: #ffffff;
 }
 
+.stopButton {
+  color: #9b2c20;
+  background: #fff6f4;
+  border-color: rgba(155, 44, 32, 0.2);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 88px minmax(420px, 1fr) minmax(360px, 430px);

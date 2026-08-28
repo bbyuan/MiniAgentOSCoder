@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   daemonApi,
   type AgentContract,
@@ -29,12 +29,16 @@ export function Workbench() {
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
+  const [finalMessage, setFinalMessage] = useState("");
+  const [runBudget, setRunBudget] = useState<Record<string, number>>({});
+  const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     daemonApi
       .health()
       .then(() => setConnection("connected"))
       .catch(() => setConnection("offline"));
+    return () => streamCleanup.current?.();
   }, []);
 
   const displayContract = useMemo(() => {
@@ -72,10 +76,22 @@ export function Workbench() {
   const displayPlan = artifacts?.plan ?? mockRun.plan;
   const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
   const displayTests = artifacts?.test_summary ?? mockRun.tests;
+  const runIsActive = ["running", "cancellation_requested"].includes(runStatus);
+  const displayBudget = {
+    modelCalls: runBudget.model_calls ?? 0,
+    toolCalls: runBudget.tool_calls ?? 0,
+    tokens: contextPack
+      ? `${contextPack.budget_report.used_tokens}/${contextPack.budget_report.max_tokens}`
+      : mockRun.budget.tokens,
+  };
 
   async function startRun() {
     setBusy(true);
     setError(null);
+    setFinalMessage("");
+    setRunBudget({});
+    streamCleanup.current?.();
+    streamCleanup.current = null;
     try {
       const project = await daemonApi.openProject(workspacePath);
       const [run, providerStatus] = await Promise.all([
@@ -95,11 +111,65 @@ export function Workbench() {
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
+
+      if (!providerStatus?.configured) {
+        const issues = providerStatus?.issues.join(", ") || "provider status unavailable";
+        setError(`Model setup required: ${issues}`);
+        return;
+      }
+
+      const started = await daemonApi.startRun(run.run_id);
+      setRunStatus(started.status);
+      streamCleanup.current = daemonApi.streamRunEvents(
+        run.run_id,
+        traceResponse.events.length,
+        (event) => {
+          setTraceEvents((current) => [...current, event]);
+          const eventBudget = Object.fromEntries(
+            Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
+          );
+          if (Object.keys(eventBudget).length > 0) {
+            setRunBudget((current) => ({ ...current, ...eventBudget }));
+          }
+          if (["run.finished", "run.failed", "run.cancelled", "run.budget_exceeded"].includes(event.event)) {
+            const eventStatus = event.payload.status;
+            if (typeof eventStatus === "string") {
+              setRunStatus(eventStatus);
+            }
+          }
+          const transitionedStatus = event.payload.status;
+          if (
+            event.event === "run.transitioned" &&
+            typeof transitionedStatus === "string" &&
+            ["completed", "failed", "cancelled"].includes(transitionedStatus)
+          ) {
+            streamCleanup.current?.();
+            streamCleanup.current = null;
+            daemonApi.getRun(run.run_id).then((summary) => {
+              setRunStatus(summary.status);
+              setFinalMessage(summary.final_message || "");
+              setRunBudget(summary.budget || {});
+            });
+          }
+        },
+        () => setError("Live event stream disconnected"),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Failed to start run");
-      setConnection("offline");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function cancelRun() {
+    if (!runId) {
+      return;
+    }
+    try {
+      const cancelled = await daemonApi.cancelRun(runId);
+      setRunStatus(cancelled.status);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to cancel run");
     }
   }
 
@@ -122,13 +192,25 @@ export function Workbench() {
         </section>
 
         <section className="mainColumn">
-          <MetricStrip budget={mockRun.budget} />
+          <MetricStrip budget={displayBudget} />
           <section className="conversation">
             <div className="emptyState">
               <span className="eyebrow">Contract-first runtime</span>
-              <h1>{runId ? "Daemon-backed run created." : "Start a managed coding-agent run."}</h1>
+              <h1>
+                {runStatus === "completed"
+                  ? "Run completed."
+                  : runStatus === "running"
+                    ? "Agent run in progress."
+                    : runStatus === "cancellation_requested"
+                      ? "Stopping at a safe boundary."
+                  : runId
+                    ? "Managed run is ready."
+                    : "Start a managed coding-agent run."}
+              </h1>
               <p>
-                {runId
+                {finalMessage
+                  ? finalMessage
+                  : runId
                   ? `Run ${runId} compiled a contract and loaded runtime artifacts from the daemon.`
                   : "The runtime will compile a contract, build context, request approval for patches, run tests, and preserve trace."}
               </p>
@@ -138,11 +220,13 @@ export function Workbench() {
               workspacePath={workspacePath}
               task={task}
               mode={mode}
-              disabled={busy || !workspacePath || !task}
+              disabled={busy || runStatus === "cancellation_requested" || !workspacePath || !task}
+              running={runIsActive}
               onWorkspacePathChange={setWorkspacePath}
               onTaskChange={setTask}
               onModeChange={setMode}
               onSubmit={startRun}
+              onCancel={cancelRun}
             />
           </section>
         </section>

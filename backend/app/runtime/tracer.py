@@ -27,8 +27,19 @@ class TraceWriter:
         trace_path = self.trace_path(run_id)
         if not trace_path.exists():
             return []
-        return [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        text = trace_path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        events: list[dict[str, Any]] = []
+        for index, line in enumerate(lines):
+            if not line.strip():
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError:
+                if index == len(lines) - 1 and not text.endswith("\n"):
+                    break
+                raise
+        return events
 
     def trace_path(self, run_id: str) -> Path:
         return self.runs_dir / run_id / "trace.jsonl"
-

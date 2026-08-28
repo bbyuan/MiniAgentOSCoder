@@ -70,7 +70,7 @@ cd frontend
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`, keep the default example workspace path, and start a run. The workbench will call the daemon to open the project, create a run, and load contract, context, and trace.
+Open `http://127.0.0.1:5173/`, keep the default example workspace path, and start a run. The workbench opens the project, prepares the contract and context, starts the local Run Worker, and incrementally renders model, action, tool, budget, and terminal events from the SSE Trace stream.
 
 ## Model Provider Configuration
 
@@ -83,6 +83,8 @@ export OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 Set `models.default_model` to the model exposed by the selected endpoint. Check readiness through `GET /models/status`; the Daemon never returns the credential value.
+
+Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events, while the existing `/events` endpoint remains a JSON snapshot for replay and CLI use.
 
 P0 demo:
 

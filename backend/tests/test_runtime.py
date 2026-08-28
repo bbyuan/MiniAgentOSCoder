@@ -60,6 +60,18 @@ def test_trace_writer_appends_jsonl(tmp_path: Path) -> None:
     assert events[0]["payload"]["ok"] is True
 
 
+def test_trace_writer_ignores_incomplete_trailing_event(tmp_path: Path) -> None:
+    writer = TraceWriter(tmp_path)
+    writer.event("run-001", "complete.event", {"ok": True})
+    trace_path = writer.trace_path("run-001")
+    with trace_path.open("a", encoding="utf-8") as handle:
+        handle.write('{"event":"partial')
+
+    events = writer.read_events("run-001")
+
+    assert [event["event"] for event in events] == ["complete.event"]
+
+
 def test_checkpoint_store_saves_checkpoint(tmp_path: Path) -> None:
     store = CheckpointStore(tmp_path)
     checkpoint = Checkpoint(
@@ -101,4 +113,3 @@ def test_create_runtime_run_records_initial_trace(tmp_path: Path) -> None:
         "contract.compiled",
         "run.transitioned",
     ]
-

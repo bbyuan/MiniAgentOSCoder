@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.api.store import store
 from app.main import create_app
+from app.runtime.model_client import QueuedStaticModelClient
 
 
 def make_client() -> TestClient:
@@ -13,6 +14,9 @@ def make_client() -> TestClient:
     store.contexts.clear()
     store.approvals.clear()
     store.artifacts.clear()
+    store.run_results.clear()
+    store.run_projects.clear()
+    store.worker.reset()
     store.current_project_id = None
     return TestClient(create_app())
 
@@ -101,6 +105,8 @@ def test_cancel_run(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.json()["status"] == "cancelled"
+    summary = client.get(f"/runs/{run['run_id']}").json()
+    assert summary["termination_reason"] == "cancelled_before_start"
 
 
 def test_events_and_replay_follow_trace_contract(tmp_path: Path) -> None:
@@ -164,3 +170,79 @@ def test_model_status_reports_missing_key_without_exposing_environment_value(
 
     assert ready_response.json()["configured"] is True
     assert secret not in ready_response.text
+
+
+def test_start_run_executes_worker_and_exposes_terminal_summary(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            ['{"type":"finish","rationale":"done","params":{"message":"API run complete"}}']
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+    ).json()
+
+    start_response = client.post(f"/runs/{run['run_id']}/start")
+    summary = client.get(f"/runs/{run['run_id']}").json()
+    trace = client.get(f"/runs/{run['run_id']}/trace").json()
+
+    assert start_response.status_code == 202
+    assert start_response.json()["status"] == "running"
+    assert summary["status"] == "completed"
+    assert summary["termination_reason"] == "finish"
+    assert summary["final_message"] == "API run complete"
+    assert summary["budget"]["model_calls"] == 1
+    assert trace["events"][-1]["payload"]["status"] == "completed"
+
+    duplicate = client.post(f"/runs/{run['run_id']}/start")
+    assert duplicate.status_code == 409
+
+
+def test_start_run_rejects_missing_model_configuration(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+    ).json()
+
+    response = client.post(f"/runs/{run['run_id']}/start")
+
+    assert response.status_code == 409
+    assert "model_not_configured" in response.json()["detail"]
+    assert client.get(f"/runs/{run['run_id']}").json()["status"] == "planning"
+
+
+def test_terminal_run_sse_stream_supports_event_cursor(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            ['{"type":"finish","rationale":"done","params":{"message":"stream complete"}}']
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+    ).json()
+    client.post(f"/runs/{run['run_id']}/start")
+    trace_events = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
+
+    response = client.get(
+        f"/runs/{run['run_id']}/events/stream",
+        params={"after": len(trace_events) - 2},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert response.text.count("event: trace") == 2
+    assert "run.finished" in response.text
+    assert "run.transitioned" in response.text

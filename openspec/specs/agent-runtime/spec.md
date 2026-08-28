@@ -112,3 +112,31 @@ The runtime SHALL construct an OpenAI-compatible model client from project confi
 - WHEN a client or workbench checks provider readiness
 - THEN the runtime SHALL report the missing configuration before any network request
 - AND SHALL NOT expose credential values
+
+### AR-010 Daemon Run Worker
+
+The Daemon SHALL execute prepared runs in a background worker and synchronize loop status, budget, observations, and final output to the Run API.
+
+#### Scenario: Start a prepared run
+
+- GIVEN a run is planning and model configuration is valid
+- WHEN the client starts the run
+- THEN the Daemon SHALL transition it to running
+- AND execute its AgentContract through AgentRunLoop and Tool Gateway
+
+#### Scenario: Cancel at a safe boundary
+
+- GIVEN a run is active
+- WHEN cancellation is requested
+- THEN AgentRunLoop SHALL stop before starting the next model or tool effect
+- AND finish with cancelled status
+
+### AR-011 Live Trace Stream
+
+The Daemon SHALL expose an ordered SSE stream of Trace events with cursor-based continuation.
+
+#### Scenario: Close after terminal event
+
+- GIVEN a run is completed, failed, or cancelled
+- WHEN all remaining Trace events have been sent
+- THEN the SSE stream SHALL close without re-executing any action

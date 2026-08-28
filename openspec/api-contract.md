@@ -61,6 +61,22 @@ Response:
 
 Return run status, active phase, budget, current plan, and latest observation.
 
+### `POST /runs/{run_id}/start`
+
+Validate the active model Provider and schedule a prepared run on the local worker.
+
+Response:
+
+```json
+{
+  "run_id": "run-001",
+  "status": "running",
+  "events_url": "/runs/run-001/events/stream"
+}
+```
+
+The endpoint returns `409` when model configuration is incomplete or the run is already active or terminal.
+
 ### `POST /runs/{run_id}/cancel`
 
 Cancel a running or waiting run.
@@ -97,7 +113,11 @@ Request:
 
 ### `GET /runs/{run_id}/events`
 
-Stream run events with SSE or WebSocket.
+Return the current Trace events as a JSON snapshot for replay and compatibility.
+
+### `GET /runs/{run_id}/events/stream`
+
+Stream ordered Trace events as Server-Sent Events. Pass `after=<event-count>` to resume after an existing snapshot without receiving duplicates. The stream closes after the run reaches a terminal state and all trace events have been sent.
 
 ### `GET /runs/{run_id}/trace`
 
