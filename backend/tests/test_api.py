@@ -12,6 +12,7 @@ def make_client() -> TestClient:
     store.contracts.clear()
     store.contexts.clear()
     store.approvals.clear()
+    store.artifacts.clear()
     store.current_project_id = None
     return TestClient(create_app())
 
@@ -66,14 +67,29 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     run = run_response.json()
     trace = client.get(f"/runs/{run['run_id']}/trace").json()
     context = client.get(f"/runs/{run['run_id']}/context").json()
+    artifacts = client.get(f"/runs/{run['run_id']}/artifacts").json()
 
     assert run_response.status_code == 200
     assert run["status"] == "planning"
     assert run["phase"] == "planning"
     assert run["contract"]["agent_id"] == "miniagent-coder"
     assert run["contract"]["effects"]["allow"]
+    assert run["artifacts"]["plan"][0]["title"] == "Scan workspace"
     assert trace["events"][0]["event"] == "run.created"
     assert context["required_items"] == ["user_task", "project_profile"]
+    assert context["explanation"][0]["id"] == "user_task"
+    assert artifacts["test_summary"]["command"] in ["pytest", "Not selected"]
+
+
+def test_get_run_returns_plan(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post("/runs", json={"project_id": project["project_id"], "task": "plan", "mode": "Bugfix"}).json()
+
+    response = client.get(f"/runs/{run['run_id']}")
+
+    assert response.status_code == 200
+    assert response.json()["plan"][0]["id"] == "scan"
 
 
 def test_cancel_run(tmp_path: Path) -> None:

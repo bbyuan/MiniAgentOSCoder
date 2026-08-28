@@ -40,6 +40,15 @@ export interface RunSummary {
   phase: string;
   current_action?: string;
   contract?: AgentContract;
+  artifacts?: RunArtifacts;
+  plan?: PlanStep[];
+}
+
+export interface PlanStep {
+  id: string;
+  title: string;
+  state: string;
+  detail: string;
 }
 
 export interface ContextPack {
@@ -48,6 +57,14 @@ export interface ContextPack {
   selected_items: string[];
   compressed_items: string[];
   omitted_items: string[];
+  explanation?: Array<{
+    id: string;
+    source: string;
+    reason: string;
+    tokens: number;
+    priority: number;
+    state: string;
+  }>;
   budget_report: {
     max_tokens: number;
     used_tokens: number;
@@ -67,6 +84,32 @@ export interface TraceResponse {
   run_id: string;
   events: TraceEvent[];
   trace_path?: string;
+}
+
+export interface RunArtifacts {
+  run_id: string;
+  plan: PlanStep[];
+  context_explanation: Array<{
+    id: string;
+    source: string;
+    reason: string;
+    tokens: number;
+    priority: number;
+    state: string;
+  }>;
+  diff_summary: {
+    status: string;
+    files: number;
+    insertions: number;
+    deletions: number;
+  };
+  test_summary: {
+    status: string;
+    command: string;
+    passed: number;
+    failed: number;
+  };
+  trace_summary: string[];
 }
 
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
@@ -100,6 +143,7 @@ export const daemonApi = {
       body: JSON.stringify(body),
     }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
+  getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
   getTrace: (runId: string) => request<TraceResponse>(`/runs/${runId}/trace`),
   replayRun: (runId: string) => request<TraceResponse>(`/runs/${runId}/replay`, { method: "POST" }),

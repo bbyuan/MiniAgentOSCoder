@@ -332,6 +332,18 @@ button {
   font-size: 13px;
 }
 
+.planItem span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planItem small {
+  color: #777777;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .planItem.done {
   color: #2f6f48;
 }

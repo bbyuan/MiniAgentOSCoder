@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { daemonApi, type AgentContract, type ContextPack, type RunMode, type TraceEvent } from "../api/client";
+import {
+  daemonApi,
+  type AgentContract,
+  type ContextPack,
+  type RunArtifacts,
+  type RunMode,
+  type TraceEvent,
+} from "../api/client";
 import { MetricStrip } from "../components/MetricStrip";
 import { PlanPanel } from "../components/PlanPanel";
 import { RuntimePanels } from "../components/RuntimePanels";
@@ -18,6 +25,7 @@ export function Workbench() {
   const [runStatus, setRunStatus] = useState(mockRun.status);
   const [contract, setContract] = useState<AgentContract | undefined>();
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
+  const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
 
   useEffect(() => {
@@ -41,21 +49,27 @@ export function Workbench() {
     if (!contextPack) {
       return mockRun.context;
     }
+    const explanation = artifacts?.context_explanation ?? contextPack.explanation ?? [];
+    if (explanation.length > 0) {
+      return explanation.map((item) => ({
+        path: item.source,
+        reason: `${item.reason} · ${item.state}`,
+        tokens: item.tokens,
+      }));
+    }
     return [
       {
         path: "required",
         reason: contextPack.required_items.join(", ") || "none",
         tokens: contextPack.budget_report.used_tokens,
       },
-      {
-        path: "selected",
-        reason: contextPack.selected_items.join(", ") || "none",
-        tokens: contextPack.budget_report.remaining_tokens,
-      },
     ];
-  }, [contextPack]);
+  }, [artifacts, contextPack]);
 
   const displayTrace = traceEvents.length > 0 ? traceEvents.map((event) => event.event) : mockRun.trace;
+  const displayPlan = artifacts?.plan ?? mockRun.plan;
+  const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
+  const displayTests = artifacts?.test_summary ?? mockRun.tests;
 
   async function startRun() {
     setBusy(true);
@@ -63,14 +77,16 @@ export function Workbench() {
     try {
       const project = await daemonApi.openProject(workspacePath);
       const run = await daemonApi.createRun({ project_id: project.project_id, task, mode });
-      const [contextResponse, traceResponse] = await Promise.all([
+      const [contextResponse, traceResponse, artifactResponse] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
+        daemonApi.getArtifacts(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
       setContract(run.contract);
       setContextPack(contextResponse);
+      setArtifacts(artifactResponse);
       setTraceEvents(traceResponse.events);
       setConnection("connected");
     } catch (caught) {
@@ -120,12 +136,12 @@ export function Workbench() {
         </section>
 
         <section className="sideColumn">
-          <PlanPanel items={mockRun.plan} />
+          <PlanPanel items={displayPlan} />
           <RuntimePanels
             contract={displayContract}
             context={displayContext}
-            diff={mockRun.diff}
-            tests={mockRun.tests}
+            diff={displayDiff}
+            tests={displayTests}
             trace={displayTrace}
             runId={runId}
           />

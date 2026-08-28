@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.models import AgentContract, ApprovalRequest, ContextPack, RunState
+from app.models import AgentContract, ApprovalRequest, ContextPack, RunArtifacts, RunState
 
 
 @dataclass
@@ -22,6 +22,7 @@ class RuntimeStore:
     contracts: dict[str, AgentContract] = field(default_factory=dict)
     contexts: dict[str, ContextPack] = field(default_factory=dict)
     approvals: dict[str, ApprovalRequest] = field(default_factory=dict)
+    artifacts: dict[str, RunArtifacts] = field(default_factory=dict)
 
 
 store = RuntimeStore()
