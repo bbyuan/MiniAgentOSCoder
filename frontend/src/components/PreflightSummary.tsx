@@ -14,6 +14,7 @@ interface PreflightSummaryProps {
   busy: boolean;
   onBack: () => void;
   onLaunch: () => void;
+  onConfigureModel: () => void;
 }
 
 export function PreflightSummary({
@@ -27,6 +28,7 @@ export function PreflightSummary({
   busy,
   onBack,
   onLaunch,
+  onConfigureModel,
 }: PreflightSummaryProps) {
   const { locale, t } = usePreferences();
   const extensionCount = extensions
@@ -88,6 +90,7 @@ export function PreflightSummary({
         <div className="preflightWarning" role="alert">
           <TriangleAlert size={17} />
           <span>{t("preflight.blocked")}</span>
+          <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button>
         </div>
       ) : null}
 

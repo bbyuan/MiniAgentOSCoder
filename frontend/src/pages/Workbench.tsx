@@ -25,13 +25,14 @@ import {
 import { ActivityFeed } from "../components/ActivityFeed";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { MetricStrip } from "../components/MetricStrip";
+import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
-import { chooseProjectDirectory, isDesktopHost } from "../desktop/runtime";
+import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -80,6 +81,9 @@ export function Workbench() {
   const [rollbackBusy, setRollbackBusy] = useState<string>();
   const [report, setReport] = useState<RunReportResponse>();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [modelSetupOpen, setModelSetupOpen] = useState(false);
+  const [modelSetupBusy, setModelSetupBusy] = useState(false);
+  const [modelSetupError, setModelSetupError] = useState<string>();
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -154,6 +158,25 @@ export function Workbench() {
       if (selected) await openWorkspace(selected);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.openProject"));
+    }
+  }
+
+  async function saveModelCredential(apiKey: string) {
+    if (!project) return;
+    setModelSetupBusy(true);
+    setModelSetupError(undefined);
+    try {
+      await saveDesktopModelCredential(apiKey);
+      const reopened = await daemonApi.openProject(project.path);
+      const providerStatus = await daemonApi.getModelStatus(reopened.project_id);
+      setProject(reopened);
+      setModelStatus(providerStatus);
+      if (runId) resetRunState(false);
+      setModelSetupOpen(false);
+    } catch (caught) {
+      setModelSetupError(caught instanceof Error ? caught.message : t("modelSetup.failed"));
+    } finally {
+      setModelSetupBusy(false);
     }
   }
 
@@ -587,10 +610,12 @@ export function Workbench() {
             task={task}
             mode={mode}
             busy={busy}
+            model={modelStatus}
             onTaskChange={setTask}
             onModeChange={setMode}
             onAnalyze={prepareRun}
             onChangeProject={changeProject}
+            onConfigureModel={() => setModelSetupOpen(true)}
           />
         </div>
       ) : (
@@ -610,6 +635,7 @@ export function Workbench() {
                   busy={busy}
                   onBack={discardPreparedRun}
                   onLaunch={launchRun}
+                  onConfigureModel={() => setModelSetupOpen(true)}
                 />
               </>
             ) : (
@@ -685,6 +711,19 @@ export function Workbench() {
         </div>
       )}
       <RunCenter open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <ModelSetupDialog
+        open={modelSetupOpen}
+        desktop={isDesktopHost()}
+        busy={modelSetupBusy}
+        error={modelSetupError}
+        onClose={() => {
+          if (!modelSetupBusy) {
+            setModelSetupOpen(false);
+            setModelSetupError(undefined);
+          }
+        }}
+        onSave={saveModelCredential}
+      />
     </main>
   );
 }

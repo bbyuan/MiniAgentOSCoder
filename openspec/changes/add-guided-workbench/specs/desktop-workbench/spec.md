@@ -55,3 +55,19 @@ The workbench SHALL reveal runtime metrics, activity, approvals, and inspector v
 - **WHEN** a Run completes, fails, or is cancelled
 - **THEN** the primary canvas SHALL summarize outcome, changed files, tests, and available evidence
 - **AND** SHALL provide a clear action to begin another task
+
+### Requirement: Model setup does not block the guided flow
+
+The desktop workbench SHALL provide an actionable model credential setup when the selected project reports an unconfigured Provider, SHALL store the secret in the operating system credential manager, and SHALL restart the managed Daemon without exposing the credential through a Daemon response, log, project file, or browser storage.
+
+#### Scenario: User saves a model credential
+
+- **WHEN** a desktop user submits a non-empty API key through model setup
+- **THEN** the host SHALL save it under the application credential identity
+- **AND** SHALL restart the managed Daemon with the credential injected through its environment
+- **AND** the Workbench SHALL reopen the current project and refresh non-sensitive Provider status
+
+#### Scenario: Browser development needs a credential
+
+- **WHEN** model setup is opened outside the desktop host
+- **THEN** the Workbench SHALL show environment-file instructions instead of persisting the credential in browser storage

@@ -16,6 +16,8 @@ use std::path::PathBuf;
 
 const READY_TIMEOUT: Duration = Duration::from_secs(25);
 const HEALTH_INTERVAL: Duration = Duration::from_millis(125);
+const KEYRING_SERVICE: &str = "com.miniagentos.coder";
+const MODEL_CREDENTIAL_ACCOUNT: &str = "DEEPSEEK_API_KEY";
 
 #[derive(Clone, Debug, Serialize)]
 struct DesktopRuntimeStatus {
@@ -147,6 +149,22 @@ fn restart_desktop_runtime(
     supervisor.status.clone()
 }
 
+#[tauri::command]
+fn save_model_credential(
+    app: AppHandle,
+    state: State<'_, Mutex<DaemonSupervisor>>,
+    api_key: String,
+) -> Result<DesktopRuntimeStatus, String> {
+    let api_key = validate_api_key(&api_key)?;
+    model_credential_entry()?
+        .set_password(api_key)
+        .map_err(|error| format!("Cannot save model credential: {error}"))?;
+
+    let mut supervisor = state.lock().expect("desktop runtime mutex poisoned");
+    supervisor.start(&app);
+    Ok(supervisor.status.clone())
+}
+
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -165,7 +183,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             desktop_runtime_status,
-            restart_desktop_runtime
+            restart_desktop_runtime,
+            save_model_credential
         ])
         .build(tauri::generate_context!())
         .expect("error while building MiniAgentOS Coder desktop host");
@@ -201,7 +220,37 @@ fn daemon_command(port: u16, data_dir: &Path) -> Result<Command, String> {
         .env("MINIAGENTOS_HOME", data_dir)
         .env("PYTHONUNBUFFERED", "1")
         .stdin(Stdio::null());
+    apply_model_credential(&mut command);
     Ok(command)
+}
+
+fn model_credential_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(KEYRING_SERVICE, MODEL_CREDENTIAL_ACCOUNT)
+        .map_err(|error| format!("Cannot access system credential store: {error}"))
+}
+
+fn apply_model_credential(command: &mut Command) {
+    if std::env::var_os(MODEL_CREDENTIAL_ACCOUNT).is_some() {
+        return;
+    }
+    if let Ok(entry) = model_credential_entry() {
+        if let Ok(api_key) = entry.get_password() {
+            if !api_key.is_empty() {
+                command.env(MODEL_CREDENTIAL_ACCOUNT, api_key);
+            }
+        }
+    }
+}
+
+fn validate_api_key(value: &str) -> Result<&str, String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err("API key cannot be empty".to_owned());
+    }
+    if trimmed.len() > 4096 || trimmed.chars().any(char::is_whitespace) {
+        return Err("API key contains an invalid character".to_owned());
+    }
+    Ok(trimmed)
 }
 
 #[cfg(debug_assertions)]
@@ -335,5 +384,12 @@ mod tests {
     #[test]
     fn source_layout_resolves_repository() {
         assert!(repository_root().join("backend/app/main.py").is_file());
+    }
+
+    #[test]
+    fn validates_model_api_key_without_exposing_it() {
+        assert_eq!(validate_api_key("  sk-test-123  "), Ok("sk-test-123"));
+        assert!(validate_api_key("").is_err());
+        assert!(validate_api_key("sk-test\nsecond-line").is_err());
     }
 }

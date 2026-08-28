@@ -46,6 +46,15 @@ export async function restartDesktopRuntime(): Promise<DesktopRuntimeStatus> {
   return applyRuntimeStatus(status);
 }
 
+export async function saveDesktopModelCredential(apiKey: string): Promise<DesktopRuntimeStatus> {
+  if (!isDesktopHost()) {
+    throw new Error("Secure credential setup is only available in the desktop app");
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  const status = await invoke<DesktopRuntimeStatus>("save_model_credential", { apiKey });
+  return applyRuntimeStatus(status);
+}
+
 function applyRuntimeStatus(status: DesktopRuntimeStatus): DesktopRuntimeStatus {
   if (status.state === "ready" && status.daemon_url) {
     configureDesktopDaemon(status.daemon_url);

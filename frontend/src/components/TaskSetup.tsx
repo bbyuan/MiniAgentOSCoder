@@ -1,6 +1,6 @@
-import { ArrowRight, Bug, FileSearch, Lightbulb, MessageSquare, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, Bug, FileSearch, KeyRound, Lightbulb, MessageSquare, Plus, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { OpenProjectResponse, RunMode } from "../api/client";
+import type { ModelProviderStatus, OpenProjectResponse, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -9,10 +9,12 @@ interface TaskSetupProps {
   task: string;
   mode: RunMode;
   busy: boolean;
+  model?: ModelProviderStatus;
   onTaskChange: (task: string) => void;
   onModeChange: (mode: RunMode) => void;
   onAnalyze: () => void;
   onChangeProject: () => void;
+  onConfigureModel: () => void;
 }
 
 const taskModes: Array<{ mode: RunMode; icon: LucideIcon; description: "task.mode.bugfix" | "task.mode.feature" | "task.mode.review" | "task.mode.spec" | "task.mode.chat" }> = [
@@ -36,10 +38,12 @@ export function TaskSetup({
   task,
   mode,
   busy,
+  model,
   onTaskChange,
   onModeChange,
   onAnalyze,
   onChangeProject,
+  onConfigureModel,
 }: TaskSetupProps) {
   const { locale, t } = usePreferences();
 
@@ -59,6 +63,14 @@ export function TaskSetup({
         <h1 id="task-setup-title">{t("task.title")}</h1>
         <p>{t("task.description")}</p>
       </header>
+
+      {model && !model.configured ? (
+        <div className="taskModelNotice">
+          <KeyRound size={17} />
+          <div><strong>{t("task.modelNeeded")}</strong><span>{t("task.modelNeededHint")}</span></div>
+          <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button>
+        </div>
+      ) : null}
 
       <div className="taskModeGroup" role="radiogroup" aria-label={t("composer.mode")}>
         {taskModes.map(({ mode: item, icon: Icon, description }) => (
