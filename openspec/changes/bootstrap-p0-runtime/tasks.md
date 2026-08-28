@@ -2,22 +2,22 @@
 
 ## 1. Project Scaffold
 
-- [ ] 1.1 Create backend FastAPI scaffold.
+- [x] 1.1 Create backend FastAPI scaffold.
 - [ ] 1.2 Create frontend React/Vite scaffold.
-- [ ] 1.3 Add shared daemon API contract notes.
+- [x] 1.3 Add shared daemon API contract notes.
 - [ ] 1.4 Add basic development commands to README after scaffold exists.
-- [ ] 1.5 Validate `.agent/config.yaml` and `.agent/skills.yaml` can be loaded.
+- [x] 1.5 Validate `.agent/config.yaml` and `.agent/skills.yaml` can be loaded.
 
 ## 2. Core Models
 
-- [ ] 2.1 Define `ActionIR`.
-- [ ] 2.2 Define `AgentContract`.
-- [ ] 2.3 Define `RunState`.
-- [ ] 2.4 Define `ToolDescriptor`.
-- [ ] 2.5 Define `ContextItem` and `ContextPack`.
-- [ ] 2.6 Define `TraceEvent`.
-- [ ] 2.7 Define `ApprovalRequest`.
-- [ ] 2.8 Add model serialization tests.
+- [x] 2.1 Define `ActionIR`.
+- [x] 2.2 Define `AgentContract`.
+- [x] 2.3 Define `RunState`.
+- [x] 2.4 Define `ToolDescriptor`.
+- [x] 2.5 Define `ContextItem` and `ContextPack`.
+- [x] 2.6 Define `TraceEvent`.
+- [x] 2.7 Define `ApprovalRequest`.
+- [x] 2.8 Add model serialization tests.
 
 ## 3. Runtime
 
