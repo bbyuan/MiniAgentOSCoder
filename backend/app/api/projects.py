@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -26,7 +24,8 @@ def open_project(request: OpenProjectRequest) -> dict[str, object]:
     profile_path = write_project_profile(profile, root)
     build_workspace_index(root, root / ".agent" / "index")
 
-    project_id = f"proj-{uuid4().hex[:8]}"
+    persisted = store.history.upsert_project(root, profile.to_dict())
+    project_id = str(persisted["project_id"])
     store.projects[project_id] = ProjectRecord(project_id=project_id, path=root, profile=profile.to_dict())
     store.current_project_id = project_id
 
@@ -50,4 +49,3 @@ def current_project() -> dict[str, object]:
         "profile": project.profile,
         "status": "ready",
     }
-

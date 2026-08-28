@@ -62,6 +62,7 @@ class RunJob:
     artifacts: RunArtifacts | None = None
     on_approval_requested: Callable[[ApprovalRequest], None] = lambda approval: None
     on_approval_resolved: Callable[[str], None] = lambda approval_id: None
+    on_state_changed: Callable[[RunState, RunLoopResult | None], None] = lambda run, result: None
     governance: GovernanceSettings = field(default_factory=GovernanceSettings)
     extension_catalog: ExtensionCatalog = field(default_factory=ExtensionCatalog)
     extension_settings: ExtensionSettings = field(default_factory=ExtensionSettings)
@@ -93,6 +94,7 @@ class RunWorker:
 
         transition_run(job.run, RunPhase.RUNNING)
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": RunPhase.RUNNING.value})
+        job.on_state_changed(job.run, None)
 
     def start(self, job: RunJob) -> None:
         self.prepare(job)
@@ -230,6 +232,7 @@ class RunWorker:
             self._write_final_report(job, result)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
             self._set_result_status(job.run, result.status)
+            job.on_state_changed(job.run, result)
             job.on_result(result)
             return result
         finally:
@@ -322,6 +325,7 @@ class RunWorker:
             {"approval": approval.to_dict()},
         )
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+        job.on_state_changed(job.run, None)
         job.on_approval_requested(approval)
         if job.artifacts is not None and action.type == "apply_patch":
             job.artifacts.diff_summary.status = "Awaiting approval"
@@ -378,6 +382,7 @@ class RunWorker:
             else:
                 transition_run(job.run, RunPhase.RUNNING)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+            job.on_state_changed(job.run, None)
             return ToolApprovalDecision(
                 approved=True,
                 metadata={"approval_id": approval_id, "checkpoint_id": checkpoint_id},
@@ -390,6 +395,7 @@ class RunWorker:
             {"approval_id": approval_id, "decision": "deny", "reason": waiter.reason},
         )
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+        job.on_state_changed(job.run, None)
         return ToolApprovalDecision(
             approved=False,
             reason=waiter.reason or "User denied the patch",
@@ -480,6 +486,7 @@ class RunWorker:
                 )
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
 
+        job.on_state_changed(job.run, None)
         self._update_context_from_result(job, action, result)
 
     @staticmethod

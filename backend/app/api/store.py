@@ -17,6 +17,7 @@ from app.models import (
     RunState,
 )
 from app.runtime.run_worker import RunWorker
+from app.runtime.history_store import HistoryStore
 
 
 @dataclass
@@ -43,6 +44,12 @@ class RuntimeStore:
     skills_registries: dict[str, Path] = field(default_factory=dict)
     context_lock: RLock = field(default_factory=RLock)
     worker: RunWorker = field(default_factory=RunWorker)
+    history: HistoryStore = field(default_factory=HistoryStore)
+
+    def configure_history(self, path: str | Path) -> None:
+        self.history.close()
+        self.history = HistoryStore(path)
+        self.history.mark_interrupted()
 
 
 store = RuntimeStore()

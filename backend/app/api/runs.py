@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.api.store import store
 from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory
 from app.guards import redact_secrets
-from app.models import GovernanceSettings, MemoryScope, RunLoopResult, RunPhase
+from app.models import GovernanceSettings, MemoryScope, RunLoopResult, RunPhase, RunState
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
@@ -86,6 +86,10 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
             "diagnostics": extension_catalog.diagnostics,
         },
     )
+    try:
+        store.history.record_run(run, project.project_id, project.path, artifacts)
+    except Exception as exc:
+        tracer.event(run.run_id, "history.persist_failed", {"error": redact_secrets(str(exc))})
 
     return {
         "run_id": run.run_id,
@@ -158,6 +162,7 @@ def start_run(run_id: str) -> dict[str, object]:
         artifacts=store.artifacts.get(run_id),
         on_approval_requested=lambda approval: store.approvals.__setitem__(approval.approval_id, approval),
         on_approval_resolved=lambda approval_id: store.approvals.pop(approval_id, None),
+        on_state_changed=lambda current, result: _persist_run_snapshot(current, result),
         governance=store.governance.get(run_id, GovernanceSettings()),
         extension_catalog=store.extension_catalogs.get(run_id),
         extension_settings=store.extension_settings.get(run_id),
@@ -280,6 +285,7 @@ def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
             "status": run.status.value,
         },
     )
+    _persist_run_snapshot(run, store.run_results.get(run_id))
     _regenerate_report(run_id, tracer)
     return {
         "run_id": run_id,
@@ -317,6 +323,7 @@ def cancel_run(run_id: str) -> dict[str, object]:
                 {"status": RunPhase.CANCELLED.value, "termination_reason": "cancelled_before_start"},
             )
             _regenerate_report(run_id, tracer)
+        _persist_run_snapshot(run, store.run_results.get(run_id))
     return {"run_id": run.run_id, "status": run.status.value}
 
 
@@ -330,6 +337,24 @@ def _find_config_path(project_path: Path) -> Path:
 def _project_for_run(run_id: str):
     project_id = store.run_projects.get(run_id)
     return store.projects.get(project_id) if project_id is not None else None
+
+
+def _persist_run_snapshot(run: RunState, result: RunLoopResult | None) -> None:
+    project = _project_for_run(run.run_id)
+    if project is None:
+        return
+    try:
+        store.history.update_run(
+            run,
+            result=result,
+            artifacts=store.artifacts.get(run.run_id),
+        )
+    except Exception as exc:
+        TraceWriter(project.path / "runs").event(
+            run.run_id,
+            "history.persist_failed",
+            {"error": redact_secrets(str(exc))},
+        )
 
 
 def _regenerate_report(run_id: str, tracer: TraceWriter) -> None:
@@ -365,6 +390,7 @@ def _regenerate_report(run_id: str, tracer: TraceWriter) -> None:
                 "patch_count": run.applied_patches,
             },
         )
+        _persist_run_snapshot(run, result)
     except (OSError, ValueError) as exc:
         tracer.event(run_id, "report.failed", {"error": redact_secrets(str(exc))})
 
