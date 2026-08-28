@@ -242,11 +242,16 @@ def test_governance_api_rebuilds_policy_and_sandbox_history(tmp_path: Path, monk
     client.post(f"/runs/{run['run_id']}/start")
     wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
     governance = client.get(f"/runs/{run['run_id']}/governance").json()
+    locked_update = client.put(
+        f"/runs/{run['run_id']}/governance",
+        json={"sandbox_profile": "strict", "tool_overrides": {}},
+    )
 
     assert governance["editable"] is False
     assert governance["evaluations"][0]["tool"] == "run_test"
     assert governance["evaluations"][0]["outcome"] == "allowed"
     assert governance["executions"][0]["backend"] == "portable-process"
+    assert locked_update.status_code == 409
 
 
 def test_elevated_test_policy_uses_generic_approval_and_resumes(tmp_path: Path, monkeypatch) -> None:
