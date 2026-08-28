@@ -46,6 +46,8 @@ class ToolApprovalDecision:
 ToolPreflight = Callable[[dict[str, Any]], ToolResult]
 ToolApprovalHandler = Callable[[ActionIR, ToolDescriptor, ToolResult | None], ToolApprovalDecision]
 ToolResultHandler = Callable[[ActionIR, ToolResult], None]
+ToolBeforeHandler = Callable[[ActionIR, ToolDescriptor], None]
+ToolAfterHandler = Callable[[ActionIR, ToolDescriptor, ToolResult], None]
 PolicyAuditHandler = Callable[[PolicyEvaluation], None]
 SandboxValidator = Callable[[list[str]], None]
 
@@ -60,6 +62,8 @@ class ToolGateway:
     preflight_handlers: dict[str, ToolPreflight] = field(default_factory=dict)
     approval_handler: ToolApprovalHandler | None = None
     result_handler: ToolResultHandler | None = None
+    before_handler: ToolBeforeHandler | None = None
+    after_handler: ToolAfterHandler | None = None
     policy_handler: PolicyAuditHandler | None = None
     governance: GovernanceSettings = field(default_factory=GovernanceSettings)
     sandbox_validator: SandboxValidator | None = None
@@ -219,7 +223,11 @@ class ToolGateway:
 
         self._audit(evaluation, "allowed")
 
+        if self.before_handler is not None:
+            self.before_handler(action, descriptor)
         result = handler(action.params)
+        if self.after_handler is not None:
+            self.after_handler(action, descriptor, result)
         if approval_metadata:
             result.metadata.update(approval_metadata)
         self._attach_policy(result, evaluation)

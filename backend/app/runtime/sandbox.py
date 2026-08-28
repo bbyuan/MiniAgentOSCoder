@@ -63,7 +63,13 @@ class SandboxExecutor:
         if any(pattern in joined for pattern in blocked):
             raise SandboxViolation("Strict sandbox rejects an obvious network-capable command")
 
-    def run(self, argv: list[str], *, timeout_seconds: int) -> tuple[SandboxExecution, str]:
+    def run(
+        self,
+        argv: list[str],
+        *,
+        timeout_seconds: int,
+        extra_env: dict[str, str] | None = None,
+    ) -> tuple[SandboxExecution, str]:
         self.validate_argv(argv)
         timeout = min(timeout_seconds, 30 if self.profile == SandboxProfile.STRICT else timeout_seconds)
         output_limit = 12000 if self.profile == SandboxProfile.STRICT else 24000
@@ -83,7 +89,7 @@ class SandboxExecutor:
             process = subprocess.Popen(
                 argv,
                 cwd=self.workspace,
-                env=self._environment(home, temporary),
+                env=self._environment(home, temporary, extra_env=extra_env),
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -111,6 +117,21 @@ class SandboxExecutor:
         self._emit("sandbox.finished", execution.to_dict())
         return execution, output
 
+    def process_environment(
+        self,
+        namespace: str,
+        *,
+        extra_env: dict[str, str] | None = None,
+        host_env_allow: list[str] | None = None,
+    ) -> dict[str, str]:
+        home, temporary = self._prepare_directories(namespace)
+        return self._environment(
+            home,
+            temporary,
+            extra_env=extra_env,
+            host_env_allow=host_env_allow,
+        )
+
     def _prepare_directories(self, sandbox_id: str) -> tuple[Path, Path]:
         agent_dir = self.workspace / ".agent"
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -123,10 +144,18 @@ class SandboxExecutor:
         temporary.mkdir(parents=True, exist_ok=True)
         return home, temporary
 
-    def _environment(self, home: Path, temporary: Path) -> dict[str, str]:
+    def _environment(
+        self,
+        home: Path,
+        temporary: Path,
+        *,
+        extra_env: dict[str, str] | None = None,
+        host_env_allow: list[str] | None = None,
+    ) -> dict[str, str]:
         allowed = {"PATH", "LANG", "LC_ALL"}
         if self.profile == SandboxProfile.STANDARD:
             allowed.update({"CI", "NO_COLOR"})
+        allowed.update(host_env_allow or [])
         environment = {key: value for key, value in os.environ.items() if key in allowed}
         environment.update(
             {
@@ -136,6 +165,10 @@ class SandboxExecutor:
                 "MINIAGENTOS_SANDBOX_PROFILE": self.profile.value,
             }
         )
+        for key, value in (extra_env or {}).items():
+            if not key.startswith("MINIAGENTOS_"):
+                raise SandboxViolation(f"Sandbox extra environment key is not allowed: {key}")
+            environment[key] = value
         return environment
 
     def _emit(self, event: str, payload: dict[str, object]) -> None:

@@ -28,6 +28,9 @@ def make_client() -> TestClient:
     store.run_results.clear()
     store.run_projects.clear()
     store.governance.clear()
+    store.extension_catalogs.clear()
+    store.extension_settings.clear()
+    store.skills_registries.clear()
     store.worker.reset()
     store.current_project_id = None
     return TestClient(create_app())
@@ -293,6 +296,72 @@ def test_elevated_test_policy_uses_generic_approval_and_resumes(tmp_path: Path, 
     assert approval["target"]["files"] == []
     assert approved.status_code == 200
     assert client.get(f"/runs/{run['run_id']}").json()["final_message"] == "approved test ran"
+
+
+def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "fix parser", "mode": "Bugfix"},
+    ).json()
+    url = f"/runs/{run['run_id']}/extensions"
+
+    initial = client.get(url)
+    updated = client.put(
+        url,
+        json={
+            "active_skill_ids": ["bugfix"],
+            "enabled_mcp_server_ids": [],
+            "enabled_hook_ids": [],
+        },
+    )
+    invalid = client.put(
+        url,
+        json={
+            "active_skill_ids": ["code-review"],
+            "enabled_mcp_server_ids": [],
+            "enabled_hook_ids": [],
+        },
+    )
+
+    assert initial.status_code == 200
+    assert initial.json()["editable"] is True
+    assert initial.json()["settings"]["active_skill_ids"] == ["bugfix", "test-repair"]
+    assert updated.json()["settings"]["active_skill_ids"] == ["bugfix"]
+    assert invalid.status_code == 422
+
+
+def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            ['{"type":"finish","rationale":"done","params":{"message":"skill used"}}']
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "review code", "mode": "Review"},
+    ).json()
+    url = f"/runs/{run['run_id']}/extensions"
+
+    client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
+    extensions = client.get(url).json()
+    locked = client.put(
+        url,
+        json={"active_skill_ids": [], "enabled_mcp_server_ids": [], "enabled_hook_ids": []},
+    )
+    trace = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
+    model_request = next(event for event in trace if event["event"] == "model.requested")
+
+    assert extensions["editable"] is False
+    assert extensions["settings"]["active_skill_ids"] == ["code-review"]
+    assert any(event["event"] == "skill.activated" for event in extensions["evidence"])
+    assert model_request["payload"]["request"]["metadata"]["active_skill_ids"] == ["code-review"]
+    assert locked.status_code == 409
 
 
 def test_cancel_run(tmp_path: Path) -> None:

@@ -2,6 +2,16 @@ from app.models.action import ActionIR, ActionObservation
 from app.models.artifacts import DiffSummary, PlanStep, RunArtifacts, TestSummary
 from app.models.contract import AgentContract, CostEnvelope, EffectSet, PolicySet, ProgramSpec
 from app.models.context import ContextItem, ContextPack, ContextPackBudget
+from app.models.extensions import (
+    ActiveSkill,
+    ExtensionCatalog,
+    ExtensionSettings,
+    HookEvent,
+    HookFailurePolicy,
+    HookManifest,
+    MCPServerManifest,
+    SkillManifest,
+)
 from app.models.memory import MemoryEntry, MemoryScope
 from app.models.governance import (
     DecisionStatus,
@@ -19,6 +29,7 @@ from app.models.trace import TraceEvent
 __all__ = [
     "ActionIR",
     "ActionObservation",
+    "ActiveSkill",
     "AgentContract",
     "ApprovalPolicy",
     "ApprovalRequest",
@@ -30,10 +41,16 @@ __all__ = [
     "DiffSummary",
     "DecisionStatus",
     "EffectSet",
+    "ExtensionCatalog",
+    "ExtensionSettings",
     "GovernanceSettings",
     "GuardDecision",
+    "HookEvent",
+    "HookFailurePolicy",
+    "HookManifest",
     "MemoryEntry",
     "MemoryScope",
+    "MCPServerManifest",
     "PolicySet",
     "PolicyEvaluation",
     "PlanStep",
@@ -43,6 +60,7 @@ __all__ = [
     "SandboxCapabilities",
     "SandboxExecution",
     "SandboxProfile",
+    "SkillManifest",
     "RunPhase",
     "RunArtifacts",
     "RunLoopResult",

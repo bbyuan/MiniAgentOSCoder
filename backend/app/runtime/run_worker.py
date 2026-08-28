@@ -22,7 +22,10 @@ from app.models import (
     ApprovalRequest,
     Checkpoint,
     ContextPack,
+    ExtensionCatalog,
+    ExtensionSettings,
     GovernanceSettings,
+    HookEvent,
     RunArtifacts,
     RunLoopResult,
     RunPhase,
@@ -32,11 +35,14 @@ from app.models import (
 )
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import ModelClient
+from app.runtime.hooks import HookPipeline
+from app.runtime.mcp import MCPRuntime
 from app.runtime.run_loop import AgentRunLoop
 from app.runtime.sandbox import SandboxExecutor
 from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.state_machine import InvalidRunTransition, transition_run
 from app.runtime.tracer import TraceWriter
+from app.runtime.skills import activate_skills
 from app.tools import PatchPipeline, PatchSummary, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
 
 
@@ -57,6 +63,9 @@ class RunJob:
     on_approval_requested: Callable[[ApprovalRequest], None] = lambda approval: None
     on_approval_resolved: Callable[[str], None] = lambda approval_id: None
     governance: GovernanceSettings = field(default_factory=GovernanceSettings)
+    extension_catalog: ExtensionCatalog = field(default_factory=ExtensionCatalog)
+    extension_settings: ExtensionSettings = field(default_factory=ExtensionSettings)
+    skills_registry_path: Path | None = None
 
 
 @dataclass
@@ -102,6 +111,7 @@ class RunWorker:
         if cancel_event is None:
             raise RunWorkerConflict("Run was not prepared")
 
+        mcp_runtime: MCPRuntime | None = None
         try:
             try:
                 sandbox = SandboxExecutor(
@@ -110,6 +120,28 @@ class RunWorker:
                     profile=job.governance.sandbox_profile,
                     event_handler=lambda event, payload: job.tracer.event(job.run.run_id, event, payload),
                 )
+                active_skills = activate_skills(
+                    job.extension_catalog.skills,
+                    job.extension_settings.active_skill_ids,
+                    job.skills_registry_path,
+                ) if job.skills_registry_path is not None else []
+                for skill in active_skills:
+                    job.tracer.event(
+                        job.run.run_id,
+                        "skill.activated",
+                        {
+                            "skill_id": skill.id,
+                            "name": skill.name,
+                            "path": skill.path,
+                            "digest": skill.digest,
+                        },
+                    )
+                enabled_hook_ids = set(job.extension_settings.enabled_hook_ids)
+                hooks = [
+                    hook for hook in job.extension_catalog.hooks
+                    if hook.id in enabled_hook_ids and hook.valid
+                ]
+                hook_pipeline = HookPipeline(job.run.run_id, hooks, sandbox, job.tracer)
                 gateway = ToolGateway(
                     workspace_root=job.workspace,
                     contract=job.contract,
@@ -128,11 +160,37 @@ class RunWorker:
                     ),
                     governance=job.governance,
                     sandbox_validator=sandbox.validate_argv,
+                    before_handler=lambda action, descriptor: hook_pipeline.execute(
+                        HookEvent.TOOL_BEFORE,
+                        action=action,
+                        descriptor=descriptor,
+                    ),
+                    after_handler=lambda action, descriptor, tool_result: hook_pipeline.execute(
+                        HookEvent.TOOL_AFTER,
+                        action=action,
+                        descriptor=descriptor,
+                        result=tool_result,
+                    ),
                     run_id=job.run.run_id,
                 )
                 for descriptor, handler, preflight in create_builtin_tool_registry(job.workspace, sandbox):
                     gateway.register(descriptor, handler, preflight)
+                enabled_server_ids = set(job.extension_settings.enabled_mcp_server_ids)
+                servers = [
+                    server for server in job.extension_catalog.mcp_servers
+                    if server.id in enabled_server_ids and server.valid
+                ]
+                mcp_runtime = MCPRuntime(
+                    servers,
+                    job.workspace,
+                    job.run.run_id,
+                    sandbox,
+                    lambda event, payload: job.tracer.event(job.run.run_id, event, payload),
+                )
+                for descriptor, handler in mcp_runtime.registrations():
+                    gateway.register(descriptor, handler)
 
+                hook_pipeline.execute(HookEvent.RUN_BEFORE)
                 result = AgentRunLoop(
                     run_id=job.run.run_id,
                     gateway=gateway,
@@ -144,7 +202,9 @@ class RunWorker:
                     task=job.run.task,
                     contract=job.contract,
                     context_pack=job.context_pack,
+                    skills=active_skills,
                 )
+                hook_pipeline.execute(HookEvent.RUN_AFTER)
             except Exception as exc:
                 error = redact_secrets(str(exc))
                 result = RunLoopResult(
@@ -161,6 +221,9 @@ class RunWorker:
                         "error": error,
                     },
                 )
+
+            if mcp_runtime is not None:
+                mcp_runtime.close()
 
             self._record_result_data(job.run, result)
             self._consolidate_memory(job, result)

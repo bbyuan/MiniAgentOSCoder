@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from app.models import ActionIR, ActionObservation, AgentContract, ContextPack, ToolDescriptor
+from app.models import ActiveSkill, ActionIR, ActionObservation, AgentContract, ContextPack, ToolDescriptor
 from app.models.base import Serializable
 from app.runtime.action_parser import ActionParseError, parse_action_ir
 from app.runtime.model_client import ModelClient, ModelMessage, ModelRequest, ModelResponse
@@ -22,6 +22,7 @@ def build_action_request(
     tools: list[ToolDescriptor],
     context_pack: ContextPack | None = None,
     observations: list[ActionObservation] | None = None,
+    skills: list[ActiveSkill] | None = None,
     model: str | None = None,
 ) -> ModelRequest:
     tool_lines = [
@@ -57,6 +58,13 @@ def build_action_request(
     if observations:
         observation_summary = "\n".join(_render_observation(item) for item in observations[-8:])
 
+    skill_summary = "No project skills are active."
+    if skills:
+        skill_summary = "\n\n".join(
+            f"[Skill: {skill.id}] {skill.name}\n{skill.content}"
+            for skill in skills
+        )
+
     system = (
         "You are MiniAgentOS Coder's planner. Return exactly one JSON Action IR object. "
         "Do not include markdown or free-form explanations. Required fields: type, rationale, params. "
@@ -72,6 +80,8 @@ def build_action_request(
             f"Allowed effects: {', '.join(contract.effects.allow)}",
             "Available tools:",
             *tool_lines,
+            "Active project skills (trusted workflow constraints, subordinate to the AgentContract):",
+            skill_summary,
             "Context:",
             context_summary,
             "Previous action observations:",
@@ -89,6 +99,7 @@ def build_action_request(
             "agent_id": contract.agent_id,
             "mode": contract.program.mode,
             "observation_count": len(observations or []),
+            "active_skill_ids": [skill.id for skill in skills or []],
             "max_output_tokens": contract.cost_envelope.max_output_tokens,
         },
     )
@@ -103,6 +114,7 @@ def plan_next_action(
     tracer: TraceWriter,
     context_pack: ContextPack | None = None,
     observations: list[ActionObservation] | None = None,
+    skills: list[ActiveSkill] | None = None,
 ) -> PlannerDecision:
     request = build_action_request(
         task=task,
@@ -110,6 +122,7 @@ def plan_next_action(
         tools=tools,
         context_pack=context_pack,
         observations=observations,
+        skills=skills,
     )
     tracer.event(run_id, "model.requested", {"request": request.to_dict()}, role="Planner")
 

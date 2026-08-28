@@ -263,6 +263,26 @@ Update execution governance before the Run starts:
 
 Overrides support `inherit`, `approval_required`, and `deny`. They can raise but never lower the Descriptor or AgentContract safety policy. Active and terminal Runs return `409`.
 
+## Extension APIs
+
+### `GET /runs/{run_id}/extensions`
+
+Return the immutable Extension Catalog snapshot, current Run settings, editability, discovered MCP tools, and Skill/MCP/Hook evidence reconstructed from `trace.jsonl`.
+
+### `PUT /runs/{run_id}/extensions`
+
+Select extensions while the Run is still prepared:
+
+```json
+{
+  "active_skill_ids": ["bugfix", "test-repair"],
+  "enabled_mcp_server_ids": ["github"],
+  "enabled_hook_ids": ["preflight-check"]
+}
+```
+
+Unknown, invalid, duplicated, or mode-incompatible ids return `422`. Active and terminal Runs return `409`. The endpoint never downloads an extension or starts an MCP Server.
+
 ## Model APIs
 
 ### `GET /models/status`

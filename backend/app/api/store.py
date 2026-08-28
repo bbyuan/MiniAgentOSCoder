@@ -5,7 +5,17 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from app.models import AgentContract, ApprovalRequest, ContextPack, GovernanceSettings, RunArtifacts, RunLoopResult, RunState
+from app.models import (
+    AgentContract,
+    ApprovalRequest,
+    ContextPack,
+    ExtensionCatalog,
+    ExtensionSettings,
+    GovernanceSettings,
+    RunArtifacts,
+    RunLoopResult,
+    RunState,
+)
 from app.runtime.run_worker import RunWorker
 
 
@@ -28,6 +38,9 @@ class RuntimeStore:
     run_results: dict[str, RunLoopResult] = field(default_factory=dict)
     run_projects: dict[str, str] = field(default_factory=dict)
     governance: dict[str, GovernanceSettings] = field(default_factory=dict)
+    extension_catalogs: dict[str, ExtensionCatalog] = field(default_factory=dict)
+    extension_settings: dict[str, ExtensionSettings] = field(default_factory=dict)
+    skills_registries: dict[str, Path] = field(default_factory=dict)
     context_lock: RLock = field(default_factory=RLock)
     worker: RunWorker = field(default_factory=RunWorker)
 

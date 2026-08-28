@@ -14,6 +14,7 @@ from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.config import load_governance_settings
+from app.runtime.extensions import load_extension_catalog
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
 from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_artifact_writer import RunArtifactWriter
@@ -44,6 +45,12 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     run = create_runtime_run(request.task, project.path, config_path, runs_dir=project.path / "runs")
     contract = compile_agent_contract(config_path, task_mode=request.mode, project_profile=project.profile)
     governance = load_governance_settings(config_path)
+    fallback_agent_dir = Path(__file__).resolve().parents[3] / ".agent"
+    extension_catalog, extension_settings, skills_registry = load_extension_catalog(
+        project.path,
+        request.mode,
+        fallback_agent_dir=fallback_agent_dir,
+    )
     run.mode = request.mode
     tracer = TraceWriter(project.path / "runs")
     trace_events = tracer.read_events(run.run_id)
@@ -61,10 +68,23 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     store.artifacts[run.run_id] = artifacts
     store.run_projects[run.run_id] = project.project_id
     store.governance[run.run_id] = governance
+    store.extension_catalogs[run.run_id] = extension_catalog
+    store.extension_settings[run.run_id] = extension_settings
+    store.skills_registries[run.run_id] = skills_registry
     tracer.event(
         run.run_id,
         "memory.loaded",
         {"count": len(memories), "memory_ids": [memory.memory_id for memory in memories]},
+    )
+    tracer.event(
+        run.run_id,
+        "extension.catalog.loaded",
+        {
+            "skills": len(extension_catalog.skills),
+            "mcp_servers": len(extension_catalog.mcp_servers),
+            "hooks": len(extension_catalog.hooks),
+            "diagnostics": extension_catalog.diagnostics,
+        },
     )
 
     return {
@@ -139,6 +159,9 @@ def start_run(run_id: str) -> dict[str, object]:
         on_approval_requested=lambda approval: store.approvals.__setitem__(approval.approval_id, approval),
         on_approval_resolved=lambda approval_id: store.approvals.pop(approval_id, None),
         governance=store.governance.get(run_id, GovernanceSettings()),
+        extension_catalog=store.extension_catalogs.get(run_id),
+        extension_settings=store.extension_settings.get(run_id),
+        skills_registry_path=store.skills_registries.get(run_id),
     )
     try:
         store.worker.start(job)

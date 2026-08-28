@@ -67,6 +67,10 @@ class RunArtifactWriter:
             and event["payload"]["evaluation"].get("outcome") != "allowed"
         ]
         sandbox_executions = [event for event in trace_events if event.get("event") == "sandbox.finished"]
+        active_skills = [event for event in trace_events if event.get("event") == "skill.activated"]
+        mcp_servers = [event for event in trace_events if event.get("event") == "mcp.server.started"]
+        mcp_calls = [event for event in trace_events if event.get("event") == "mcp.tool.called"]
+        hook_executions = [event for event in trace_events if event.get("event") == "hook.finished"]
 
         report = "\n".join(
             [
@@ -124,6 +128,13 @@ class RunArtifactWriter:
                 f"- Denied effects: {_inline_list(contract.effects.deny)}",
                 f"- Policies: {_mapping_list(policies)}",
                 "",
+                "## Extensions",
+                "",
+                f"- Active skills: {_event_ids(active_skills, 'skill_id')}",
+                f"- MCP servers started: {_event_ids(mcp_servers, 'server_id')}",
+                f"- MCP tool calls: {len(mcp_calls)}",
+                f"- Hook executions: {len(hook_executions)}",
+                "",
                 "## Context And Trace",
                 "",
                 f"- Selected context: {_inline_list(selected_context)}",
@@ -158,3 +169,12 @@ def _inline_list(values: list[str]) -> str:
 
 def _mapping_list(values: dict[str, object]) -> str:
     return ", ".join(f"`{key}={value}`" for key, value in sorted(values.items())) if values else "none"
+
+
+def _event_ids(events: list[dict[str, Any]], key: str) -> str:
+    values = [
+        str(event["payload"][key])
+        for event in events
+        if isinstance(event.get("payload"), dict) and event["payload"].get(key)
+    ]
+    return _inline_list(list(dict.fromkeys(values)))

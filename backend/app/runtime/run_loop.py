@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable
 
 from app.models import (
+    ActiveSkill,
     ActionObservation,
     AgentContract,
     ContextPack,
@@ -44,6 +45,7 @@ class AgentRunLoop:
         task: str,
         contract: AgentContract,
         context_pack: ContextPack | None = None,
+        skills: list[ActiveSkill] | None = None,
     ) -> RunLoopResult:
         observations: list[ActionObservation] = []
         token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -103,6 +105,7 @@ class AgentRunLoop:
                     tracer=self.tracer,
                     context_pack=context_pack,
                     observations=observations,
+                    skills=skills,
                 )
             except ActionParseError as exc:
                 return self._failed_result(
