@@ -206,6 +206,12 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
 
 
 def test_start_run_rejects_missing_model_configuration(tmp_path: Path) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        "models:\n  provider: openai-compatible\n  default_model: unset\n",
+        encoding="utf-8",
+    )
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(

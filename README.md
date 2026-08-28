@@ -63,7 +63,7 @@ Connected workbench:
 # terminal 1
 cd backend
 . .venv/bin/activate
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --env-file ../.env
 
 # terminal 2
 cd frontend
@@ -74,15 +74,20 @@ Open `http://127.0.0.1:5173/`, keep the default example workspace path, and star
 
 ## Model Provider Configuration
 
-The runtime supports OpenAI-compatible Chat Completions providers. Set the non-sensitive options in `.agent/config.yaml` and export credentials in the shell that launches the backend:
+The runtime supports OpenAI-compatible Chat Completions providers. The default configuration uses DeepSeek V4 Flash. Keep non-sensitive options in `.agent/config.yaml` and credentials in the ignored root `.env` file:
 
 ```text
-export OPENAI_API_KEY=...
-# Optional for a compatible local or hosted endpoint:
-export OPENAI_BASE_URL=https://api.openai.com/v1
+cp .env.example .env
+# Edit .env and replace the DEEPSEEK_API_KEY placeholder.
+
+cd backend
+. .venv/bin/activate
+uvicorn app.main:app --reload --env-file ../.env
 ```
 
-Set `models.default_model` to the model exposed by the selected endpoint. Check readiness through `GET /models/status`; the Daemon never returns the credential value.
+Use `deepseek-v4-flash` for lower-latency development runs or change `models.default_model` to `deepseek-v4-pro` for higher-quality runs. Both use `https://api.deepseek.com` through the OpenAI-compatible Chat Completions API. See the [official DeepSeek API guide](https://api-docs.deepseek.com/).
+
+Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source files. Check readiness through `GET /models/status`; the Daemon reports only the configured environment-variable name and never returns the credential value.
 
 Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events, while the existing `/events` endpoint remains a JSON snapshot for replay and CLI use.
 

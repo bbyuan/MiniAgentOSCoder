@@ -23,6 +23,7 @@ runs/
 # Local secrets
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 id_rsa
