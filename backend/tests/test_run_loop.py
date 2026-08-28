@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def make_gateway(workspace: Path) -> ToolGateway:
     contract = compile_agent_contract(ROOT / ".agent" / "config.yaml")
     gateway = ToolGateway(workspace_root=workspace, contract=contract)
-    for descriptor, handler in create_builtin_tool_registry(workspace):
-        gateway.register(descriptor, handler)
+    for descriptor, handler, preflight in create_builtin_tool_registry(workspace):
+        gateway.register(descriptor, handler, preflight)
     return gateway
 
 

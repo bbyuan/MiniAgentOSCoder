@@ -25,7 +25,8 @@ def build_action_request(
     model: str | None = None,
 ) -> ModelRequest:
     tool_lines = [
-        f"- {tool.name}: effect={tool.effect}, risk={tool.risk.value}, params={sorted(tool.input_schema.keys())}"
+        f"- {tool.name}: {tool.description} effect={tool.effect}, risk={tool.risk.value}, "
+        f"approval={tool.approval_policy.value}, params={tool.input_schema}"
         for tool in tools
     ]
     context_summary = "No context pack is available."

@@ -5,7 +5,7 @@ import pytest
 from app.guards import BudgetExceeded, DangerousCommand, PathEscape, check_command, redact_secrets, resolve_workspace_path
 from app.models import ActionIR
 from app.runtime.contract_compiler import compile_agent_contract
-from app.tools import PatchPipeline, ToolGateway, create_builtin_tool_registry
+from app.tools import PatchPipeline, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,15 +14,15 @@ ROOT = Path(__file__).resolve().parents[2]
 def make_gateway(workspace: Path) -> ToolGateway:
     contract = compile_agent_contract(ROOT / ".agent" / "config.yaml")
     gateway = ToolGateway(workspace_root=workspace, contract=contract)
-    for descriptor, handler in create_builtin_tool_registry(workspace):
-        gateway.register(descriptor, handler)
+    for descriptor, handler, preflight in create_builtin_tool_registry(workspace):
+        gateway.register(descriptor, handler, preflight)
     return gateway
 
 
 def test_registers_builtin_tools(tmp_path: Path) -> None:
     gateway = make_gateway(tmp_path)
 
-    assert [tool.name for tool in gateway.list_tools()] == ["read_file", "search_code", "run_test"]
+    assert [tool.name for tool in gateway.list_tools()] == ["read_file", "search_code", "run_test", "apply_patch"]
 
 
 def test_read_file_tool_redacts_secrets(tmp_path: Path) -> None:
@@ -96,3 +96,78 @@ def test_patch_pipeline_summarizes_unified_diff(tmp_path: Path) -> None:
     assert summary.additions == 1
     assert summary.deletions == 1
 
+
+def test_apply_patch_runs_preflight_and_requires_approval(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+    gateway = make_gateway(tmp_path)
+    approvals: list[dict[str, object]] = []
+    gateway.approval_handler = lambda action, descriptor, preview: (
+        approvals.append(preview.metadata if preview is not None else {})
+        or ToolApprovalDecision(approved=True, metadata={"approval_id": "appr-test"})
+    )
+
+    result = gateway.call(ActionIR(type="apply_patch", rationale="fix", params={"patch": patch}))
+
+    assert result.ok is True
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "new\n"
+    assert approvals == [{"preflight": True, "files": ["app.py"], "additions": 1, "deletions": 1}]
+    assert result.metadata["approval_id"] == "appr-test"
+
+
+def test_denied_patch_does_not_modify_workspace(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+    gateway = make_gateway(tmp_path)
+    gateway.approval_handler = lambda action, descriptor, preview: ToolApprovalDecision(
+        approved=False,
+        reason="not this change",
+    )
+
+    result = gateway.call(ActionIR(type="apply_patch", rationale="fix", params={"patch": patch}))
+
+    assert result.ok is False
+    assert result.metadata["approval_denied"] is True
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"
+
+
+@pytest.mark.parametrize("target", ["../outside.py", ".env", ".agent/config.yaml", "runs/trace.jsonl"])
+def test_patch_preflight_rejects_unsafe_targets(tmp_path: Path, target: str) -> None:
+    patch = f"""--- /dev/null
++++ b/{target}
+@@ -0,0 +1 @@
++unsafe
+"""
+    gateway = make_gateway(tmp_path)
+    gateway.approval_handler = lambda action, descriptor, preview: pytest.fail("approval must not be requested")
+
+    result = gateway.call(ActionIR(type="apply_patch", rationale="unsafe", params={"patch": patch}))
+
+    assert result.ok is False
+    assert not (tmp_path / target).exists()
+
+
+def test_patch_snapshot_preserves_original_file(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    pipeline = PatchPipeline(tmp_path)
+    summary = pipeline.summarize("""--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+""")
+
+    manifest = pipeline.snapshot(summary, tmp_path / "runs" / "run-test" / "snapshots" / "before")
+
+    assert (manifest.parent / "app.py").read_text(encoding="utf-8") == "old\n"
+    assert '"app.py": true' in manifest.read_text(encoding="utf-8")

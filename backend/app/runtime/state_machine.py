@@ -23,7 +23,14 @@ ALLOWED_TRANSITIONS: dict[RunPhase, set[RunPhase]] = {
     RunPhase.WAITING_APPROVAL: {RunPhase.RUNNING, RunPhase.APPLYING_PATCH, RunPhase.REPAIRING, RunPhase.CANCELLED},
     RunPhase.APPLYING_PATCH: {RunPhase.TESTING, RunPhase.REPAIRING, RunPhase.FAILED},
     RunPhase.TESTING: {RunPhase.REPAIRING, RunPhase.COMPLETED, RunPhase.FAILED},
-    RunPhase.REPAIRING: {RunPhase.RUNNING, RunPhase.WAITING_APPROVAL, RunPhase.FAILED},
+    RunPhase.REPAIRING: {
+        RunPhase.RUNNING,
+        RunPhase.WAITING_APPROVAL,
+        RunPhase.TESTING,
+        RunPhase.COMPLETED,
+        RunPhase.CANCELLED,
+        RunPhase.FAILED,
+    },
     RunPhase.PAUSED: {RunPhase.RUNNING, RunPhase.CANCELLED},
     RunPhase.COMPLETED: set(),
     RunPhase.CANCELLED: set(),
@@ -37,4 +44,3 @@ def transition_run(state: RunState, next_phase: RunPhase) -> RunState:
         raise InvalidRunTransition(f"Cannot transition run {state.run_id} from {state.status} to {next_phase}")
     state.status = next_phase
     return state
-

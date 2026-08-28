@@ -140,3 +140,21 @@ The Daemon SHALL expose an ordered SSE stream of Trace events with cursor-based 
 - GIVEN a run is completed, failed, or cancelled
 - WHEN all remaining Trace events have been sent
 - THEN the SSE stream SHALL close without re-executing any action
+
+### AR-012 Resumable Approval Wait
+
+The Run Worker SHALL retain the active Agent Loop while waiting for approval without blocking the Daemon API, and SHALL continue from the same action after a decision.
+
+#### Scenario: Resume an approved action
+
+- GIVEN a run is waiting for patch approval
+- WHEN the matching approval id is approved
+- THEN the run SHALL transition through applying patch and testing
+- AND prior model and tool calls SHALL NOT be repeated
+
+#### Scenario: Cancel while waiting
+
+- GIVEN a run is waiting for patch approval
+- WHEN the user cancels the run
+- THEN the approval wait SHALL wake
+- AND the run SHALL finish cancelled without applying the patch

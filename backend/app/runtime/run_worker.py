@@ -3,15 +3,30 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from threading import Event, Lock
+import re
+from threading import Event, Lock, Thread
+from uuid import uuid4
 
 from app.guards import redact_secrets
-from app.models import AgentContract, ContextPack, RunLoopResult, RunPhase, RunState
+from app.models import (
+    ActionIR,
+    AgentContract,
+    ApprovalRequest,
+    Checkpoint,
+    ContextPack,
+    RunArtifacts,
+    RunLoopResult,
+    RunPhase,
+    RunState,
+    ToolDescriptor,
+    ToolResult,
+)
+from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import ModelClient
 from app.runtime.run_loop import AgentRunLoop
 from app.runtime.state_machine import InvalidRunTransition, transition_run
 from app.runtime.tracer import TraceWriter
-from app.tools import ToolGateway, create_builtin_tool_registry
+from app.tools import PatchPipeline, PatchSummary, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
 
 
 class RunWorkerConflict(RuntimeError):
@@ -27,11 +42,24 @@ class RunJob:
     model_client: ModelClient
     tracer: TraceWriter
     on_result: Callable[[RunLoopResult], None]
+    artifacts: RunArtifacts | None = None
+    on_approval_requested: Callable[[ApprovalRequest], None] = lambda approval: None
+    on_approval_resolved: Callable[[str], None] = lambda approval_id: None
+
+
+@dataclass
+class ApprovalWaiter:
+    run_id: str
+    event: Event = field(default_factory=Event)
+    approved: bool | None = None
+    reason: str = ""
 
 
 @dataclass
 class RunWorker:
     _cancel_events: dict[str, Event] = field(default_factory=dict)
+    _approval_waiters: dict[str, ApprovalWaiter] = field(default_factory=dict)
+    _threads: dict[str, Thread] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
     def prepare(self, job: RunJob) -> None:
@@ -45,6 +73,18 @@ class RunWorker:
         transition_run(job.run, RunPhase.RUNNING)
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": RunPhase.RUNNING.value})
 
+    def start(self, job: RunJob) -> None:
+        self.prepare(job)
+        thread = Thread(
+            target=self.execute,
+            args=(job,),
+            daemon=True,
+            name=f"miniagentos-{job.run.run_id}",
+        )
+        with self._lock:
+            self._threads[job.run.run_id] = thread
+        thread.start()
+
     def execute(self, job: RunJob) -> RunLoopResult:
         cancel_event = self._cancel_events.get(job.run.run_id)
         if cancel_event is None:
@@ -52,9 +92,20 @@ class RunWorker:
 
         try:
             try:
-                gateway = ToolGateway(workspace_root=job.workspace, contract=job.contract)
-                for descriptor, handler in create_builtin_tool_registry(job.workspace):
-                    gateway.register(descriptor, handler)
+                gateway = ToolGateway(
+                    workspace_root=job.workspace,
+                    contract=job.contract,
+                    approval_handler=lambda action, descriptor, preview: self._request_approval(
+                        job,
+                        cancel_event,
+                        action,
+                        descriptor,
+                        preview,
+                    ),
+                    result_handler=lambda action, result: self._record_tool_result(job, action, result),
+                )
+                for descriptor, handler, preflight in create_builtin_tool_registry(job.workspace):
+                    gateway.register(descriptor, handler, preflight)
 
                 result = AgentRunLoop(
                     run_id=job.run.run_id,
@@ -67,6 +118,7 @@ class RunWorker:
                     contract=job.contract,
                     context_pack=job.context_pack,
                 )
+                self._record_final_result(job, result)
             except Exception as exc:
                 error = redact_secrets(str(exc))
                 result = RunLoopResult(
@@ -91,6 +143,7 @@ class RunWorker:
         finally:
             with self._lock:
                 self._cancel_events.pop(job.run.run_id, None)
+                self._threads.pop(job.run.run_id, None)
 
     def cancel(self, run_id: str) -> bool:
         with self._lock:
@@ -98,6 +151,28 @@ class RunWorker:
             if cancel_event is None:
                 return False
             cancel_event.set()
+            for waiter in self._approval_waiters.values():
+                if waiter.run_id == run_id:
+                    waiter.approved = False
+                    waiter.reason = "Run cancelled while waiting for approval"
+                    waiter.event.set()
+            return True
+
+    def resolve_approval(
+        self,
+        run_id: str,
+        approval_id: str,
+        *,
+        approved: bool,
+        reason: str = "",
+    ) -> bool:
+        with self._lock:
+            waiter = self._approval_waiters.get(approval_id)
+            if waiter is None or waiter.run_id != run_id or waiter.event.is_set():
+                return False
+            waiter.approved = approved
+            waiter.reason = reason
+            waiter.event.set()
             return True
 
     def is_active(self, run_id: str) -> bool:
@@ -108,7 +183,175 @@ class RunWorker:
         with self._lock:
             for cancel_event in self._cancel_events.values():
                 cancel_event.set()
+            for waiter in self._approval_waiters.values():
+                waiter.approved = False
+                waiter.reason = "Runtime reset"
+                waiter.event.set()
             self._cancel_events.clear()
+            self._approval_waiters.clear()
+            self._threads.clear()
+
+    def _request_approval(
+        self,
+        job: RunJob,
+        cancel_event: Event,
+        action: ActionIR,
+        descriptor: ToolDescriptor,
+        preview: ToolResult | None,
+    ) -> ToolApprovalDecision:
+        approval_id = f"appr-{uuid4().hex[:12]}"
+        approval = ApprovalRequest(
+            approval_id=approval_id,
+            run_id=job.run.run_id,
+            action_id=action.action_id or f"action-{uuid4().hex[:8]}",
+            risk=descriptor.risk.value,
+            effect=descriptor.effect,
+            reason=action.rationale,
+            target={
+                "tool": action.type,
+                "patch": action.params.get("patch", ""),
+                **(preview.metadata if preview is not None else {}),
+            },
+            options=["approve_once", "deny"],
+        )
+        waiter = ApprovalWaiter(run_id=job.run.run_id)
+        with self._lock:
+            self._approval_waiters[approval_id] = waiter
+
+        self._save_checkpoint(job, f"before-approval-{approval_id}")
+        transition_run(job.run, RunPhase.WAITING_APPROVAL)
+        job.tracer.event(
+            job.run.run_id,
+            "approval.requested",
+            {"approval": approval.to_dict()},
+        )
+        job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+        job.on_approval_requested(approval)
+        if job.artifacts is not None:
+            job.artifacts.diff_summary.status = "Awaiting approval"
+            job.artifacts.diff_summary.files = len(approval.target.get("files", []))
+            job.artifacts.diff_summary.insertions = int(approval.target.get("additions", 0))
+            job.artifacts.diff_summary.deletions = int(approval.target.get("deletions", 0))
+            _set_plan_state(job.artifacts, "inspect", "done")
+            _set_plan_state(job.artifacts, "patch", "active")
+
+        while not waiter.event.wait(0.1):
+            if cancel_event.is_set():
+                waiter.approved = False
+                waiter.reason = "Run cancelled while waiting for approval"
+                break
+
+        with self._lock:
+            self._approval_waiters.pop(approval_id, None)
+        job.on_approval_resolved(approval_id)
+
+        if cancel_event.is_set():
+            job.tracer.event(
+                job.run.run_id,
+                "approval.cancelled",
+                {"approval_id": approval_id},
+            )
+            return ToolApprovalDecision(
+                approved=False,
+                reason=waiter.reason,
+                metadata={"approval_id": approval_id},
+            )
+
+        if waiter.approved:
+            checkpoint_id = f"before-apply-{uuid4().hex[:10]}"
+            self._save_checkpoint(job, checkpoint_id)
+            summary = PatchSummary(
+                files=list(preview.metadata.get("files", [])) if preview is not None else [],
+                additions=int(preview.metadata.get("additions", 0)) if preview is not None else 0,
+                deletions=int(preview.metadata.get("deletions", 0)) if preview is not None else 0,
+            )
+            snapshot_dir = job.workspace / "runs" / job.run.run_id / "snapshots" / checkpoint_id
+            manifest_path = PatchPipeline(job.workspace).snapshot(summary, snapshot_dir)
+            transition_run(job.run, RunPhase.APPLYING_PATCH)
+            job.tracer.event(
+                job.run.run_id,
+                "approval.resolved",
+                {"approval_id": approval_id, "decision": "approve_once"},
+            )
+            job.tracer.event(
+                job.run.run_id,
+                "patch.snapshot.created",
+                {"checkpoint_id": checkpoint_id, "manifest_path": str(manifest_path)},
+            )
+            job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+            return ToolApprovalDecision(
+                approved=True,
+                metadata={"approval_id": approval_id, "checkpoint_id": checkpoint_id},
+            )
+
+        transition_run(job.run, RunPhase.REPAIRING)
+        job.tracer.event(
+            job.run.run_id,
+            "approval.resolved",
+            {"approval_id": approval_id, "decision": "deny", "reason": waiter.reason},
+        )
+        job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+        return ToolApprovalDecision(
+            approved=False,
+            reason=waiter.reason or "User denied the patch",
+            metadata={"approval_id": approval_id},
+        )
+
+    def _save_checkpoint(self, job: RunJob, checkpoint_id: str) -> None:
+        checkpoint = Checkpoint(
+            checkpoint_id=checkpoint_id,
+            run_id=job.run.run_id,
+            step=job.run.current_step,
+            status=job.run.status,
+            run_state=job.run.to_dict(),
+            context_summary=", ".join(job.context_pack.selected_items),
+            changed_files=list(job.run.changed_files),
+            trace_offset=len(job.tracer.read_events(job.run.run_id)),
+        )
+        path = CheckpointStore(job.workspace / "runs").save(checkpoint)
+        job.tracer.event(
+            job.run.run_id,
+            "checkpoint.saved",
+            {"checkpoint_id": checkpoint_id, "path": str(path)},
+        )
+
+    def _record_tool_result(self, job: RunJob, action: ActionIR, result: ToolResult) -> None:
+        if action.type == "apply_patch":
+            if result.ok:
+                files = [str(path) for path in result.metadata.get("files", [])]
+                job.run.changed_files = files
+                if job.artifacts is not None:
+                    job.artifacts.diff_summary.status = "Applied"
+                    job.artifacts.diff_summary.files = len(files)
+                    job.artifacts.diff_summary.insertions = int(result.metadata.get("additions", 0))
+                    job.artifacts.diff_summary.deletions = int(result.metadata.get("deletions", 0))
+                    _set_plan_state(job.artifacts, "patch", "done")
+                    _set_plan_state(job.artifacts, "test", "active")
+                transition_run(job.run, RunPhase.TESTING)
+            else:
+                transition_run(job.run, RunPhase.REPAIRING)
+            job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+        elif action.type == "run_test":
+            if job.run.status in {RunPhase.RUNNING, RunPhase.REPAIRING}:
+                transition_run(job.run, RunPhase.TESTING)
+            if job.artifacts is not None:
+                job.artifacts.test_summary.status = "Passed" if result.ok else "Failed"
+                job.artifacts.test_summary.command = str(result.metadata.get("command", "Not selected"))
+                job.artifacts.test_summary.passed = _pytest_count(result.output, "passed")
+                job.artifacts.test_summary.failed = _pytest_count(result.output, "failed")
+                _set_plan_state(job.artifacts, "test", "done" if result.ok else "active")
+            if not result.ok and job.run.status == RunPhase.TESTING:
+                transition_run(job.run, RunPhase.REPAIRING)
+            job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
+
+    @staticmethod
+    def _record_final_result(job: RunJob, result: RunLoopResult) -> None:
+        if job.artifacts is None:
+            return
+        if result.status == RunPhase.COMPLETED:
+            _set_plan_state(job.artifacts, "report", "done")
+        elif result.status == RunPhase.FAILED:
+            _set_plan_state(job.artifacts, "report", "active")
 
     @staticmethod
     def _apply_result(run: RunState, result: RunLoopResult) -> None:
@@ -125,3 +368,15 @@ class RunWorker:
         run.last_observation = (
             result.observations[-1].to_dict() if result.observations else {}
         )
+
+
+def _pytest_count(output: str, label: str) -> int:
+    match = re.search(rf"(\d+)\s+{label}", output)
+    return int(match.group(1)) if match else 0
+
+
+def _set_plan_state(artifacts: RunArtifacts, step_id: str, state: str) -> None:
+    for step in artifacts.plan:
+        if step.id == step_id:
+            step.state = state
+            return

@@ -83,9 +83,36 @@ Cancel a running or waiting run.
 
 ## Approval APIs
 
+### `GET /runs/{run_id}/approval`
+
+Return the currently pending approval request, or `null` when the run is not waiting:
+
+```json
+{
+  "approval": {
+    "approval_id": "appr-001",
+    "run_id": "run-001",
+    "action_id": "action-001",
+    "risk": "high",
+    "effect": "fs.write",
+    "reason": "Fix the failing calculation",
+    "target": {
+      "tool": "apply_patch",
+      "files": ["pricing.py"],
+      "additions": 3,
+      "deletions": 1,
+      "patch": "--- a/pricing.py\n+++ b/pricing.py\n..."
+    },
+    "options": ["approve_once", "deny"]
+  }
+}
+```
+
 ### `POST /runs/{run_id}/approve`
 
 Approve a waiting action.
+
+The P0 runtime supports `approve_once`. Approval resumes the exact pending action after checkpoint and snapshot creation.
 
 Request:
 
@@ -99,6 +126,8 @@ Request:
 ### `POST /runs/{run_id}/deny`
 
 Deny a waiting action and provide feedback to the agent loop.
+
+Denial does not apply the effect. The reason becomes an Action Observation for the next model step.
 
 Request:
 

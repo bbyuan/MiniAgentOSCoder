@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.api.store import store
@@ -58,11 +58,16 @@ def get_run(run_id: str) -> dict[str, object]:
         raise HTTPException(status_code=404, detail="Run not found")
     artifacts = store.artifacts.get(run_id)
     result = store.run_results.get(run_id)
+    pending_approval = next(
+        (approval for approval in store.approvals.values() if approval.run_id == run_id),
+        None,
+    )
     return {
         "run_id": run.run_id,
         "status": run.status.value,
         "phase": run.status.value,
         "current_action": run.last_observation.get("action_type"),
+        "waiting_on": pending_approval.approval_id if pending_approval is not None else None,
         "task": run.task,
         "mode": run.mode,
         "plan": [step.to_dict() for step in artifacts.plan] if artifacts else [],
@@ -74,7 +79,7 @@ def get_run(run_id: str) -> dict[str, object]:
 
 
 @router.post("/{run_id}/start", status_code=202)
-def start_run(run_id: str, background_tasks: BackgroundTasks) -> dict[str, object]:
+def start_run(run_id: str) -> dict[str, object]:
     run = store.runs.get(run_id)
     contract = store.contracts.get(run_id)
     context_pack = store.contexts.get(run_id)
@@ -99,12 +104,14 @@ def start_run(run_id: str, background_tasks: BackgroundTasks) -> dict[str, objec
         model_client=model_client,
         tracer=tracer,
         on_result=lambda result: store.run_results.__setitem__(run_id, result),
+        artifacts=store.artifacts.get(run_id),
+        on_approval_requested=lambda approval: store.approvals.__setitem__(approval.approval_id, approval),
+        on_approval_resolved=lambda approval_id: store.approvals.pop(approval_id, None),
     )
     try:
-        store.worker.prepare(job)
+        store.worker.start(job)
     except RunWorkerConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    background_tasks.add_task(store.worker.execute, job)
 
     return {
         "run_id": run_id,

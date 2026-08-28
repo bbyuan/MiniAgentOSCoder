@@ -52,3 +52,21 @@ The first release SHALL support a minimal stdio MCP Adapter that can list MCP to
 - WHEN the MCP Adapter lists its tools
 - THEN each tool SHALL be converted into a `ToolDescriptor`
 - AND registered into Tool Gateway with effect and approval policy
+
+### TG-005 Patch Preflight And One-Time Approval
+
+The Tool Gateway SHALL validate a patch target and dry-run the unified diff before requesting approval, and SHALL execute the write only after one-time user approval.
+
+#### Scenario: Reject an unsafe patch
+
+- GIVEN a patch targets a protected path or escapes the workspace
+- WHEN the patch preflight runs
+- THEN the tool SHALL return a failed observation
+- AND no approval or file mutation SHALL occur
+
+#### Scenario: Apply an approved patch once
+
+- GIVEN a patch passed preflight and is waiting for approval
+- WHEN the user approves it once
+- THEN the runtime SHALL snapshot the target files
+- AND apply the exact pending patch one time

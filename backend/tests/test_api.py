@@ -1,10 +1,21 @@
+import json
 from pathlib import Path
+import time
 
 from fastapi.testclient import TestClient
 
 from app.api.store import store
 from app.main import create_app
 from app.runtime.model_client import QueuedStaticModelClient
+
+
+def wait_until(predicate, timeout: float = 2.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        time.sleep(0.01)
+    raise AssertionError("Timed out waiting for API run state")
 
 
 def make_client() -> TestClient:
@@ -190,6 +201,7 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
     ).json()
 
     start_response = client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
     summary = client.get(f"/runs/{run['run_id']}").json()
     trace = client.get(f"/runs/{run['run_id']}/trace").json()
 
@@ -203,6 +215,64 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
 
     duplicate = client.post(f"/runs/{run['run_id']}/start")
     assert duplicate.status_code == 409
+
+
+def test_patch_approval_api_resumes_run_and_updates_artifacts(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient([
+            json.dumps({"type": "apply_patch", "rationale": "fix app", "params": {"patch": patch}}),
+            json.dumps({
+                "type": "run_test",
+                "rationale": "verify app",
+                "params": {"command": "python3 -c \"assert open('app.py').read() == 'new\\n'\""},
+            }),
+            json.dumps({"type": "finish", "rationale": "done", "params": {"message": "fixed"}}),
+        ]),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "fix app", "mode": "Bugfix"},
+    ).json()
+
+    start = client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}/approval").json()["approval"] is not None)
+    pending = client.get(f"/runs/{run['run_id']}/approval").json()["approval"]
+
+    assert start.status_code == 202
+    assert pending["target"]["files"] == ["app.py"]
+    assert client.get(f"/runs/{run['run_id']}").json()["waiting_on"] == pending["approval_id"]
+    approved = client.post(
+        f"/runs/{run['run_id']}/approve",
+        json={"approval_id": pending["approval_id"], "mode": "approve_once"},
+    )
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
+
+    artifacts = client.get(f"/runs/{run['run_id']}/artifacts").json()
+    events = client.get(f"/runs/{run['run_id']}/events").json()["events"]
+    assert approved.status_code == 200
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "new\n"
+    assert artifacts["diff_summary"] == {
+        "status": "Applied",
+        "files": 1,
+        "insertions": 1,
+        "deletions": 1,
+    }
+    assert artifacts["test_summary"]["status"] == "Passed"
+    assert any(event["event"] == "approval.requested" for event in events)
+    assert any(event["event"] == "patch.snapshot.created" for event in events)
 
 
 def test_start_run_rejects_missing_model_configuration(tmp_path: Path) -> None:
