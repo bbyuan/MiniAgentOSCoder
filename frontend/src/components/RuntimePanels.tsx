@@ -19,9 +19,10 @@ interface RuntimePanelsProps {
     failed: number;
   };
   trace: string[];
+  runId?: string;
 }
 
-export function RuntimePanels({ contract, context, diff, tests, trace }: RuntimePanelsProps) {
+export function RuntimePanels({ contract, context, diff, tests, trace, runId }: RuntimePanelsProps) {
   return (
     <aside className="runtimePanels">
       <section className="panel">
@@ -29,6 +30,7 @@ export function RuntimePanels({ contract, context, diff, tests, trace }: Runtime
           <h2>Contract</h2>
           <ShieldCheck size={16} />
         </div>
+        {runId ? <p className="mutedLine">{runId}</p> : null}
         <div className="tagGrid">
           {contract.effects.map((effect) => (
             <span key={effect}>{effect}</span>

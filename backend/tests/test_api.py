@@ -25,6 +25,21 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_cors_allows_local_workbench_origin() -> None:
+    client = make_client()
+
+    response = client.options(
+        "/health",
+        headers={
+            "Origin": "http://127.0.0.1:5173",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
+
+
 def test_open_project_scans_workspace(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
     (tmp_path / "app.py").write_text("def main(): pass\n", encoding="utf-8")
@@ -54,7 +69,9 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
 
     assert run_response.status_code == 200
     assert run["status"] == "planning"
+    assert run["phase"] == "planning"
     assert run["contract"]["agent_id"] == "miniagent-coder"
+    assert run["contract"]["effects"]["allow"]
     assert trace["events"][0]["event"] == "run.created"
     assert context["required_items"] == ["user_task", "project_profile"]
 

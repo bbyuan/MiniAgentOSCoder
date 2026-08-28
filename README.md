@@ -72,6 +72,21 @@ npm run dev
 npm run build
 ```
 
+Connected workbench:
+
+```text
+# terminal 1
+cd backend
+. .venv/bin/activate
+uvicorn app.main:app --reload
+
+# terminal 2
+cd frontend
+npm run dev
+```
+
+Open `http://127.0.0.1:5173/`, keep the default example workspace path, and start a run. The workbench will call the daemon to open the project, create a run, and load contract, context, and trace.
+
 P0 demo:
 
 ```text

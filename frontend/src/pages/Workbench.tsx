@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from "react";
+import { daemonApi, type AgentContract, type ContextPack, type RunMode, type TraceEvent } from "../api/client";
 import { MetricStrip } from "../components/MetricStrip";
 import { PlanPanel } from "../components/PlanPanel";
 import { RuntimePanels } from "../components/RuntimePanels";
@@ -6,9 +8,82 @@ import { TopBar } from "../components/TopBar";
 import { mockRun } from "../stores/mockRun";
 
 export function Workbench() {
+  const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/python-bugfix");
+  const [task, setTask] = useState("Fix calculator.add so the example test passes");
+  const [mode, setMode] = useState<RunMode>("Bugfix");
+  const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | undefined>();
+  const [runStatus, setRunStatus] = useState(mockRun.status);
+  const [contract, setContract] = useState<AgentContract | undefined>();
+  const [contextPack, setContextPack] = useState<ContextPack | undefined>();
+  const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
+
+  useEffect(() => {
+    daemonApi
+      .health()
+      .then(() => setConnection("connected"))
+      .catch(() => setConnection("offline"));
+  }, []);
+
+  const displayContract = useMemo(() => {
+    if (!contract) {
+      return mockRun.contract;
+    }
+    return {
+      effects: contract.effects.allow,
+      policies: Object.entries(contract.policies).map(([key, value]) => `${key}: ${value}`),
+    };
+  }, [contract]);
+
+  const displayContext = useMemo(() => {
+    if (!contextPack) {
+      return mockRun.context;
+    }
+    return [
+      {
+        path: "required",
+        reason: contextPack.required_items.join(", ") || "none",
+        tokens: contextPack.budget_report.used_tokens,
+      },
+      {
+        path: "selected",
+        reason: contextPack.selected_items.join(", ") || "none",
+        tokens: contextPack.budget_report.remaining_tokens,
+      },
+    ];
+  }, [contextPack]);
+
+  const displayTrace = traceEvents.length > 0 ? traceEvents.map((event) => event.event) : mockRun.trace;
+
+  async function startRun() {
+    setBusy(true);
+    setError(null);
+    try {
+      const project = await daemonApi.openProject(workspacePath);
+      const run = await daemonApi.createRun({ project_id: project.project_id, task, mode });
+      const [contextResponse, traceResponse] = await Promise.all([
+        daemonApi.getContext(run.run_id),
+        daemonApi.getTrace(run.run_id),
+      ]);
+      setRunId(run.run_id);
+      setRunStatus(run.status);
+      setContract(run.contract);
+      setContextPack(contextResponse);
+      setTraceEvents(traceResponse.events);
+      setConnection("connected");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to start run");
+      setConnection("offline");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="appShell">
-      <TopBar project={mockRun.project} mode={mockRun.mode} status={mockRun.status} />
+      <TopBar project={mockRun.project} mode={mode} status={`${connection} · ${runStatus}`} />
       <div className="workspace">
         <section className="leftRail">
           <button className="railItem active">Chat</button>
@@ -23,24 +98,36 @@ export function Workbench() {
           <section className="conversation">
             <div className="emptyState">
               <span className="eyebrow">Contract-first runtime</span>
-              <h1>Start a managed coding-agent run.</h1>
+              <h1>{runId ? "Daemon-backed run created." : "Start a managed coding-agent run."}</h1>
               <p>
-                The runtime will compile a contract, build context, request approval for patches,
-                run tests, and preserve trace.
+                {runId
+                  ? `Run ${runId} compiled a contract and loaded runtime artifacts from the daemon.`
+                  : "The runtime will compile a contract, build context, request approval for patches, run tests, and preserve trace."}
               </p>
+              {error ? <p className="errorLine">{error}</p> : null}
             </div>
-            <TaskComposer />
+            <TaskComposer
+              workspacePath={workspacePath}
+              task={task}
+              mode={mode}
+              disabled={busy || !workspacePath || !task}
+              onWorkspacePathChange={setWorkspacePath}
+              onTaskChange={setTask}
+              onModeChange={setMode}
+              onSubmit={startRun}
+            />
           </section>
         </section>
 
         <section className="sideColumn">
           <PlanPanel items={mockRun.plan} />
           <RuntimePanels
-            contract={mockRun.contract}
-            context={mockRun.context}
+            contract={displayContract}
+            context={displayContext}
             diff={mockRun.diff}
             tests={mockRun.tests}
-            trace={mockRun.trace}
+            trace={displayTrace}
+            runId={runId}
           />
         </section>
       </div>
