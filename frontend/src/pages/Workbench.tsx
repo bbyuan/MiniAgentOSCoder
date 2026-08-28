@@ -28,8 +28,10 @@ const runCopy: Record<string, { title: TranslationKey; description: TranslationK
 
 export function Workbench() {
   const { locale, t } = usePreferences();
-  const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/python-bugfix");
-  const [task, setTask] = useState("Fix calculator.add so the example test passes");
+  const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/deepseek-bugfix");
+  const [task, setTask] = useState(
+    "Fix pricing.apply_discount so percentage calculations and validation satisfy all tests. Keep the change focused on pricing.py.",
+  );
   const [mode, setMode] = useState<RunMode>("Bugfix");
   const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
   const [busy, setBusy] = useState(false);
