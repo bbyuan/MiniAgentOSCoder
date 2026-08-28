@@ -3,13 +3,16 @@ use std::{
     fs::{self, OpenOptions},
     io::{Read, Write},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream},
-    path::{Path, PathBuf},
+    path::Path,
     process::{Child, Command, Stdio},
     sync::Mutex,
     thread,
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, Manager, State};
+
+#[cfg(debug_assertions)]
+use std::path::PathBuf;
 
 const READY_TIMEOUT: Duration = Duration::from_secs(25);
 const HEALTH_INTERVAL: Duration = Duration::from_millis(125);

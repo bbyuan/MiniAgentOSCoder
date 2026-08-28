@@ -16,6 +16,7 @@ from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.config import load_governance_settings
 from app.runtime.extensions import load_extension_catalog
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
+from app.runtime.paths import default_agent_dir
 from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.run_worker import RunJob, RunWorkerConflict
@@ -45,7 +46,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     run = create_runtime_run(request.task, project.path, config_path, runs_dir=project.path / "runs")
     contract = compile_agent_contract(config_path, task_mode=request.mode, project_profile=project.profile)
     governance = load_governance_settings(config_path)
-    fallback_agent_dir = Path(__file__).resolve().parents[3] / ".agent"
+    fallback_agent_dir = default_agent_dir()
     extension_catalog, extension_settings, skills_registry = load_extension_catalog(
         project.path,
         request.mode,
@@ -331,7 +332,7 @@ def _find_config_path(project_path: Path) -> Path:
     local = project_path / ".agent" / "config.yaml"
     if local.exists():
         return local
-    return Path(__file__).resolve().parents[3] / ".agent" / "config.yaml"
+    return default_agent_dir() / "config.yaml"
 
 
 def _project_for_run(run_id: str):

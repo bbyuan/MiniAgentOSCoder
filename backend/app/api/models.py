@@ -10,6 +10,7 @@ from app.runtime.model_provider import (
     inspect_model_provider,
     load_model_provider_config,
 )
+from app.runtime.paths import default_agent_dir
 
 router = APIRouter(prefix="/models", tags=["models"])
 
@@ -36,4 +37,4 @@ def _find_config_path(project_path: Path) -> Path:
     local = project_path / ".agent" / "config.yaml"
     if local.exists():
         return local
-    return Path(__file__).resolve().parents[3] / ".agent" / "config.yaml"
+    return default_agent_dir() / "config.yaml"
