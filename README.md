@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, and a persistent SQLite Run Center. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -72,6 +72,36 @@ npm run dev
 
 Open `http://127.0.0.1:5173/` and prepare a run. Before launch, the Governance view lets you choose the sandbox profile and tighten any tool to approval-required or denied. Launching locks those settings, starts the local Run Worker, and incrementally renders model, policy, sandbox, tool, budget, and terminal events from the SSE Trace stream.
 
+The guided workbench follows one primary path:
+
+```text
+open project -> describe task -> analyze without edits -> review preflight
+-> start execution -> approve guarded effects -> inspect result and replay
+```
+
+Inactive runtime panels stay hidden until a Run exists. The desktop app uses the system folder picker; browser development retains an absolute-path field. Recently opened projects come from the local Run Center.
+
+Desktop development:
+
+```text
+cd backend
+. .venv/bin/activate
+pip install -e ".[dev,desktop]"
+
+cd ../frontend
+npm install
+npm run desktop:dev
+```
+
+Production bundle for the current platform:
+
+```text
+cd frontend
+npm run desktop:build
+```
+
+The build first creates the target-suffixed PyInstaller Daemon sidecar, then packages the Tauri application. macOS artifacts are written under `frontend/src-tauri/target/release/bundle/macos/` and `frontend/src-tauri/target/release/bundle/dmg/`. Local builds are not notarized for distribution.
+
 Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
 
 ## Model Provider Configuration
@@ -90,6 +120,8 @@ uvicorn app.main:app --reload --env-file ../.env
 Use `deepseek-v4-flash` for lower-latency development runs or change `models.default_model` to `deepseek-v4-pro` for higher-quality runs. Both use `https://api.deepseek.com` through the OpenAI-compatible Chat Completions API. See the [official DeepSeek API guide](https://api-docs.deepseek.com/).
 
 Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source files. Check readiness through `GET /models/status`; the Daemon reports only the configured environment-variable name and never returns the credential value.
+
+In the desktop app, use **Configure model** when a project reports that its Provider is unavailable. The Rust host stores the key in the operating system credential manager (macOS Keychain, Windows Credential Manager, or Linux Secret Service), restarts the managed Daemon, and injects the credential only into that process environment. The Workbench never writes it to browser storage or a project file. Browser development continues to use the ignored root `.env` flow above.
 
 Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
 

@@ -7,5 +7,5 @@
 - [x] 2.3 实现前端 Desktop Runtime 初始化、加载/故障状态与浏览器回退
 - [x] 3.1 增加冻结入口、默认配置路径解析和 PyInstaller sidecar 构建脚本
 - [x] 3.2 增加 Tauri production externalBin 配置与平台 target 命名
-- [ ] 4.1 验证后端、前端、Cargo、sidecar 和桌面开发启动
-- [ ] 4.2 更新长期规格、README、构建命令并分阶段推送 main
+- [x] 4.1 验证后端、前端、Cargo、sidecar 和桌面生产构建
+- [x] 4.2 更新长期规格、README、构建命令并分阶段推送 main

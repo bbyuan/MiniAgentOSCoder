@@ -57,7 +57,7 @@ The workbench SHALL replay a run from trace events without re-executing tools.
 
 ### DW-006 Model Provider Status
 
-The workbench SHALL read model Provider readiness from the local Daemon and SHALL NOT read or retain API keys in frontend state.
+The workbench SHALL read model Provider readiness from the local Daemon and SHALL NOT receive credentials from the Daemon, persist them in browser storage, or include them in project files and logs.
 
 #### Scenario: Report missing model configuration
 
@@ -203,3 +203,47 @@ The workbench SHALL provide a localized, theme-aware Run Center for searching pe
 - WHEN comparison is requested
 - THEN the workbench SHALL align execution metrics and show candidate-minus-baseline deltas
 - AND the comparison SHALL not execute a model or tool
+
+### DW-017 Guided Workbench Flow
+
+The workbench SHALL guide the primary journey through project selection, task definition, preflight review, execution observation, and result review, and SHALL reveal runtime detail only when it is relevant to the current state.
+
+#### Scenario: Open the app without a project
+
+- GIVEN no project is active
+- WHEN the workbench becomes ready
+- THEN the primary action SHALL open a local code project
+- AND recent projects SHALL be available without showing inactive Run panels
+
+#### Scenario: Prepare before execution
+
+- GIVEN a project and non-empty task are selected
+- WHEN the user analyzes the task
+- THEN the workbench SHALL create a planning Run without executing tools
+- AND SHALL show model, sandbox, context, effects, Skills, MCP Servers, and Hooks before offering execution
+
+#### Scenario: Finish a run
+
+- GIVEN a Run reaches a terminal state
+- WHEN the result is rendered
+- THEN the workbench SHALL summarize outcome, changed files, tests, and retained evidence
+- AND SHALL offer a direct action to begin another task
+
+### DW-018 Secure Desktop Model Setup
+
+The desktop host SHALL store model credentials in the operating system credential manager and inject them only into the managed Daemon process.
+
+#### Scenario: Save a desktop credential
+
+- GIVEN Provider status reports a missing API key
+- WHEN the user saves a non-empty key through the desktop setup dialog
+- THEN the host SHALL persist it under the application credential identity
+- AND restart the managed Daemon
+- AND reopen the current project before refreshing non-sensitive Provider status
+
+#### Scenario: Configure browser development
+
+- GIVEN the Workbench is running outside Tauri
+- WHEN model setup is opened
+- THEN it SHALL explain the ignored `.env` development flow
+- AND SHALL NOT persist the credential in browser storage
