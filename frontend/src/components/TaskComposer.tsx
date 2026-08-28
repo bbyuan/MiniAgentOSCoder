@@ -1,4 +1,4 @@
-import { ArrowUp, FolderOpen, SlidersHorizontal, Square } from "lucide-react";
+import { ArrowUp, FolderOpen, Play, SlidersHorizontal, Square, X } from "lucide-react";
 import type { RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -9,6 +9,7 @@ interface TaskComposerProps {
   mode: RunMode;
   disabled?: boolean;
   running?: boolean;
+  prepared?: boolean;
   onWorkspacePathChange: (value: string) => void;
   onTaskChange: (value: string) => void;
   onModeChange: (value: RunMode) => void;
@@ -24,6 +25,7 @@ export function TaskComposer({
   mode,
   disabled,
   running,
+  prepared,
   onWorkspacePathChange,
   onTaskChange,
   onModeChange,
@@ -41,7 +43,7 @@ export function TaskComposer({
           aria-label={t("composer.workspace")}
           placeholder={t("composer.workspacePlaceholder")}
           value={workspacePath}
-          disabled={running}
+          disabled={running || prepared}
           onChange={(event) => onWorkspacePathChange(event.target.value)}
         />
       </label>
@@ -49,7 +51,7 @@ export function TaskComposer({
         aria-label={t("composer.taskPlaceholder")}
         placeholder={t("composer.taskPlaceholder")}
         value={task}
-        disabled={running}
+        disabled={running || prepared}
         onChange={(event) => onTaskChange(event.target.value)}
         rows={4}
       />
@@ -59,7 +61,7 @@ export function TaskComposer({
           <span className="srOnly">{t("composer.mode")}</span>
           <select
             value={mode}
-            disabled={running}
+            disabled={running || prepared}
             aria-label={t("composer.mode")}
             onChange={(event) => onModeChange(event.target.value as RunMode)}
           >
@@ -81,12 +83,35 @@ export function TaskComposer({
           >
             <Square size={13} fill="currentColor" />
           </button>
+        ) : prepared ? (
+          <div className="composerPreparedActions">
+            <button
+              type="button"
+              className="iconButton"
+              aria-label={t("composer.discard")}
+              title={t("composer.discard")}
+              disabled={disabled}
+              onClick={onCancel}
+            >
+              <X size={15} />
+            </button>
+            <button
+              type="button"
+              className="primaryAction"
+              aria-label={t("composer.launch")}
+              title={t("composer.launch")}
+              disabled={disabled}
+              onClick={onSubmit}
+            >
+              <Play size={16} fill="currentColor" />
+            </button>
+          </div>
         ) : (
           <button
             type="button"
             className="primaryAction"
-            aria-label={t("composer.start")}
-            title={t("composer.start")}
+            aria-label={t("composer.prepare")}
+            title={t("composer.prepare")}
             disabled={disabled}
             onClick={onSubmit}
           >

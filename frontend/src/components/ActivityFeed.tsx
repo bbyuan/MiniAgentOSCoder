@@ -1,6 +1,7 @@
 import {
   Activity,
   Ban,
+  Box,
   BrainCircuit,
   CheckCircle2,
   CircleAlert,
@@ -34,6 +35,8 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
   if (event.startsWith("rollback.")) return { icon: RotateCcw, tone: "patch" };
   if (event.startsWith("memory.")) return { icon: BrainCircuit, tone: "model" };
   if (event.startsWith("context.")) return { icon: Layers3, tone: "tool" };
+  if (event.startsWith("policy.") || event.startsWith("governance.")) return { icon: ShieldAlert, tone: "approval" };
+  if (event.startsWith("sandbox.")) return { icon: Box, tone: "tool" };
   if (event === "report.generated") return { icon: FileText, tone: "success" };
   if (event === "run.finished") return { icon: CheckCircle2, tone: "success" };
   if (event === "run.cancelled") return { icon: Ban, tone: "muted" };

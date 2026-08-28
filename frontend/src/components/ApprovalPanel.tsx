@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, FileDiff, ShieldAlert, X } from "lucide-react";
+import { Check, FileDiff, ShieldAlert, Terminal, X } from "lucide-react";
 import type { ApprovalRequest } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -25,6 +25,8 @@ export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPan
       </section>
     );
   }
+  const isPatch = approval.target.tool === "apply_patch";
+  const files = approval.target.files ?? [];
 
   return (
     <section className="inspectorSection approvalSection" aria-live="polite">
@@ -48,20 +50,28 @@ export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPan
           <dd><code>{approval.effect}</code></dd>
         </div>
         <div>
-          <dt>{t("approval.files")}</dt>
-          <dd>{approval.target.files.length} · {t("approval.changes", {
+          <dt>{isPatch ? t("approval.files") : t("approval.tool")}</dt>
+          <dd>{isPatch ? `${files.length} · ${t("approval.changes", {
             additions: approval.target.additions,
             deletions: approval.target.deletions,
-          })}</dd>
+          })}` : approval.target.tool}</dd>
         </div>
       </dl>
 
-      <div className="approvalFiles">
-        {approval.target.files.map((file) => <code key={file}>{file}</code>)}
-      </div>
-
-      <div className="patchLabel"><FileDiff size={14} /><span>{t("approval.patch")}</span></div>
-      <pre className="patchPreview" tabIndex={0}>{approval.target.patch}</pre>
+      {isPatch ? (
+        <>
+          <div className="approvalFiles">
+            {files.map((file) => <code key={file}>{file}</code>)}
+          </div>
+          <div className="patchLabel"><FileDiff size={14} /><span>{t("approval.patch")}</span></div>
+          <pre className="patchPreview" tabIndex={0}>{approval.target.patch}</pre>
+        </>
+      ) : (
+        <>
+          <div className="patchLabel"><Terminal size={14} /><span>{t("approval.command")}</span></div>
+          <pre className="patchPreview commandPreview" tabIndex={0}>{approval.target.command || approval.target.tool}</pre>
+        </>
+      )}
 
       <label className="denyReason">
         <span>{t("approval.reason")}</span>

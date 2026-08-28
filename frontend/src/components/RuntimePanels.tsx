@@ -4,11 +4,14 @@ import type {
   ApprovalRequest,
   ContextCompactionResponse,
   ContextPack,
+  GovernanceResponse,
   MemoryInput,
   MemoryResponse,
   RecoveryResponse,
   RunReportResponse,
   TraceEvent,
+  SandboxProfile,
+  ToolOverride,
 } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -19,8 +22,9 @@ import { RunReportPanel } from "./RunReportPanel";
 import { TraceReplayPanel } from "./TraceReplayPanel";
 import { ContextPanel } from "./ContextPanel";
 import { MemoryPanel } from "./MemoryPanel";
+import { GovernancePanel } from "./GovernancePanel";
 
-type InspectorTab = "overview" | "context" | "memory" | "recovery" | "report" | "trace";
+type InspectorTab = "overview" | "context" | "memory" | "governance" | "recovery" | "report" | "trace";
 
 interface RuntimePanelsProps {
   plan: PlanItem[];
@@ -32,6 +36,8 @@ interface RuntimePanelsProps {
   contextBusy: boolean;
   memory?: MemoryResponse;
   memoryBusy: boolean;
+  governance?: GovernanceResponse;
+  governanceBusy: boolean;
   diff: {
     files: number;
     insertions: number;
@@ -59,6 +65,7 @@ interface RuntimePanelsProps {
   onCreateMemory: (input: MemoryInput) => Promise<void>;
   onUpdateMemory: (memoryId: string, input: Omit<MemoryInput, "scope">) => Promise<void>;
   onDeleteMemory: (memoryId: string) => Promise<void>;
+  onSaveGovernance: (profile: SandboxProfile, overrides: Record<string, ToolOverride>) => Promise<void>;
 }
 
 export function RuntimePanels({
@@ -68,6 +75,8 @@ export function RuntimePanels({
   contextBusy,
   memory,
   memoryBusy,
+  governance,
+  governanceBusy,
   diff,
   tests,
   trace,
@@ -85,6 +94,7 @@ export function RuntimePanels({
   onCreateMemory,
   onUpdateMemory,
   onDeleteMemory,
+  onSaveGovernance,
 }: RuntimePanelsProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
   const { locale, t } = usePreferences();
@@ -92,6 +102,7 @@ export function RuntimePanels({
     { id: "overview", label: t("inspector.overview") },
     { id: "context", label: t("inspector.context") },
     { id: "memory", label: t("inspector.memory") },
+    { id: "governance", label: t("inspector.governance") },
     { id: "recovery", label: t("inspector.recovery") },
     { id: "report", label: t("inspector.report") },
     { id: "trace", label: t("inspector.trace") },
@@ -180,6 +191,10 @@ export function RuntimePanels({
             onUpdate={onUpdateMemory}
             onDelete={onDeleteMemory}
           />
+        ) : null}
+
+        {activeTab === "governance" ? (
+          <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} />
         ) : null}
 
         {activeTab === "recovery" ? (

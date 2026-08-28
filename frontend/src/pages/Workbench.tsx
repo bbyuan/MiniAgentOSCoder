@@ -6,6 +6,7 @@ import {
   type ApprovalRequest,
   type ContextPack,
   type ContextCompactionResponse,
+  type GovernanceResponse,
   type MemoryInput,
   type MemoryResponse,
   type ModelProviderStatus,
@@ -14,6 +15,8 @@ import {
   type RunMode,
   type RunReportResponse,
   type TraceEvent,
+  type SandboxProfile,
+  type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { MetricStrip } from "../components/MetricStrip";
@@ -53,6 +56,8 @@ export function Workbench() {
   const [contextBusy, setContextBusy] = useState(false);
   const [memory, setMemory] = useState<MemoryResponse>();
   const [memoryBusy, setMemoryBusy] = useState(false);
+  const [governance, setGovernance] = useState<GovernanceResponse>();
+  const [governanceBusy, setGovernanceBusy] = useState(false);
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
@@ -92,6 +97,7 @@ export function Workbench() {
     "repairing",
     "cancellation_requested",
   ].includes(runStatus);
+  const runIsPrepared = Boolean(runId && runStatus === "planning");
   const displayStatus = runId ? runStatus : connection;
   const displayBudget = {
     modelCalls: runBudget.model_calls ?? 0,
@@ -104,7 +110,7 @@ export function Workbench() {
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
-  async function startRun() {
+  async function prepareRun() {
     setBusy(true);
     setError(null);
     setFinalMessage("");
@@ -113,6 +119,7 @@ export function Workbench() {
     setRecovery(undefined);
     setReport(undefined);
     setMemory(undefined);
+    setGovernance(undefined);
     setRollbackBusy(undefined);
     streamCleanup.current?.();
     streamCleanup.current = null;
@@ -122,13 +129,22 @@ export function Workbench() {
         daemonApi.createRun({ project_id: project.project_id, task, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
-      const [contextResponse, traceResponse, artifactResponse, recoveryResponse, reportResponse, memoryResponse] = await Promise.all([
+      const [
+        contextResponse,
+        traceResponse,
+        artifactResponse,
+        recoveryResponse,
+        reportResponse,
+        memoryResponse,
+        governanceResponse,
+      ] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
         daemonApi.getArtifacts(run.run_id),
         daemonApi.getCheckpoints(run.run_id),
         daemonApi.getReport(run.run_id),
         daemonApi.getMemory(run.run_id),
+        daemonApi.getGovernance(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
@@ -138,6 +154,7 @@ export function Workbench() {
       setRecovery(recoveryResponse);
       setReport(reportResponse);
       setMemory(memoryResponse);
+      setGovernance(governanceResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -148,72 +165,28 @@ export function Workbench() {
         return;
       }
 
-      const started = await daemonApi.startRun(run.run_id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.prepareRun"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function launchRun() {
+    if (!runId) return;
+    if (!modelStatus?.configured) {
+      const issues = modelStatus?.issues.join(", ") || t("error.providerUnavailable");
+      setError(t("error.modelSetup", { issues }));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const latestTrace = await daemonApi.getTrace(runId);
+      setTraceEvents(latestTrace.events);
+      const started = await daemonApi.startRun(runId);
       setRunStatus(started.status);
-      streamCleanup.current = daemonApi.streamRunEvents(
-        run.run_id,
-        traceResponse.events.length,
-        (event) => {
-          setTraceEvents((current) => [...current, event]);
-          if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
-            setApproval(event.payload.approval);
-            setRunStatus("waiting_approval");
-          } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
-            setApproval(null);
-          }
-          if (["checkpoint.saved", "patch.snapshot.created", "repair.started", "repair.completed"].includes(event.event)) {
-            daemonApi.getCheckpoints(run.run_id).then(setRecovery).catch(() => undefined);
-          }
-          if (event.event === "report.generated") {
-            daemonApi.getReport(run.run_id).then(setReport).catch(() => undefined);
-          }
-          if (event.event.startsWith("context.")) {
-            daemonApi.getContext(run.run_id).then(setContextPack).catch(() => undefined);
-          }
-          if (event.event.startsWith("memory.")) {
-            daemonApi.getMemory(run.run_id).then(setMemory).catch(() => undefined);
-          }
-          const eventBudget = Object.fromEntries(
-            Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
-          );
-          if (Object.keys(eventBudget).length > 0) {
-            setRunBudget((current) => ({ ...current, ...eventBudget }));
-          }
-          const transitionedStatus = event.payload.status;
-          if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
-            setRunStatus(transitionedStatus);
-            if (["waiting_approval", "testing", "repairing", "completed"].includes(transitionedStatus)) {
-              daemonApi.getArtifacts(run.run_id).then(setArtifacts).catch(() => undefined);
-            }
-          }
-          if (
-            event.event === "run.transitioned" &&
-            typeof transitionedStatus === "string" &&
-            ["completed", "failed", "cancelled"].includes(transitionedStatus)
-          ) {
-            streamCleanup.current?.();
-            streamCleanup.current = null;
-            Promise.all([
-              daemonApi.getRun(run.run_id),
-              daemonApi.getArtifacts(run.run_id),
-              daemonApi.getCheckpoints(run.run_id),
-              daemonApi.getReport(run.run_id),
-              daemonApi.getContext(run.run_id),
-              daemonApi.getMemory(run.run_id),
-            ]).then(([summary, latestArtifacts, latestRecovery, latestReport, latestContext, latestMemory]) => {
-              setRunStatus(summary.status);
-              setFinalMessage(summary.final_message || "");
-              setRunBudget(summary.budget || {});
-              setArtifacts(latestArtifacts);
-              setRecovery(latestRecovery);
-              setReport(latestReport);
-              setContextPack(latestContext);
-              setMemory(latestMemory);
-            }).catch(() => undefined);
-          }
-        },
-        () => setError(t("error.streamDisconnected")),
-      );
+      subscribeToRun(runId, latestTrace.events.length);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.startRun"));
     } finally {
@@ -221,11 +194,102 @@ export function Workbench() {
     }
   }
 
+  function subscribeToRun(activeRunId: string, after: number) {
+    streamCleanup.current?.();
+    streamCleanup.current = daemonApi.streamRunEvents(
+      activeRunId,
+      after,
+      (event) => {
+        setTraceEvents((current) => [...current, event]);
+        if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
+          setApproval(event.payload.approval);
+          setRunStatus("waiting_approval");
+        } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
+          setApproval(null);
+        }
+        if (["checkpoint.saved", "patch.snapshot.created", "repair.started", "repair.completed"].includes(event.event)) {
+          daemonApi.getCheckpoints(activeRunId).then(setRecovery).catch(() => undefined);
+        }
+        if (event.event === "report.generated") {
+          daemonApi.getReport(activeRunId).then(setReport).catch(() => undefined);
+        }
+        if (event.event.startsWith("context.")) {
+          daemonApi.getContext(activeRunId).then(setContextPack).catch(() => undefined);
+        }
+        if (event.event.startsWith("memory.")) {
+          daemonApi.getMemory(activeRunId).then(setMemory).catch(() => undefined);
+        }
+        if (["policy.evaluated", "sandbox.started", "sandbox.finished", "governance.updated"].includes(event.event)) {
+          daemonApi.getGovernance(activeRunId).then(setGovernance).catch(() => undefined);
+        }
+        const eventBudget = Object.fromEntries(
+          Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
+        );
+        if (Object.keys(eventBudget).length > 0) {
+          setRunBudget((current) => ({ ...current, ...eventBudget }));
+        }
+        const transitionedStatus = event.payload.status;
+        if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
+          setRunStatus(transitionedStatus);
+          if (["waiting_approval", "testing", "repairing", "completed"].includes(transitionedStatus)) {
+            daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
+          }
+        }
+        if (
+          event.event === "run.transitioned" &&
+          typeof transitionedStatus === "string" &&
+          ["completed", "failed", "cancelled"].includes(transitionedStatus)
+        ) {
+          streamCleanup.current?.();
+          streamCleanup.current = null;
+          Promise.all([
+            daemonApi.getRun(activeRunId),
+            daemonApi.getArtifacts(activeRunId),
+            daemonApi.getCheckpoints(activeRunId),
+            daemonApi.getReport(activeRunId),
+            daemonApi.getContext(activeRunId),
+            daemonApi.getMemory(activeRunId),
+            daemonApi.getGovernance(activeRunId),
+          ]).then(([
+            summary,
+            latestArtifacts,
+            latestRecovery,
+            latestReport,
+            latestContext,
+            latestMemory,
+            latestGovernance,
+          ]) => {
+            setRunStatus(summary.status);
+            setFinalMessage(summary.final_message || "");
+            setRunBudget(summary.budget || {});
+            setArtifacts(latestArtifacts);
+            setRecovery(latestRecovery);
+            setReport(latestReport);
+            setContextPack(latestContext);
+            setMemory(latestMemory);
+            setGovernance(latestGovernance);
+          }).catch(() => undefined);
+        }
+      },
+      () => setError(t("error.streamDisconnected")),
+    );
+  }
+
   async function cancelRun() {
     if (!runId) return;
     try {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
+      if (cancelled.status === "cancelled") {
+        const [latestReport, latestGovernance, latestTrace] = await Promise.all([
+          daemonApi.getReport(runId),
+          daemonApi.getGovernance(runId),
+          daemonApi.getTrace(runId),
+        ]);
+        setReport(latestReport);
+        setGovernance(latestGovernance);
+        setTraceEvents(latestTrace.events);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
     }
@@ -237,8 +301,9 @@ export function Workbench() {
     setError(null);
     try {
       await daemonApi.approveAction(runId, approval.approval_id);
+      const approvedTool = approval.target.tool;
       setApproval(null);
-      setRunStatus("applying_patch");
+      setRunStatus(approvedTool === "apply_patch" ? "applying_patch" : "running");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.approveAction"));
     } finally {
@@ -356,6 +421,26 @@ export function Workbench() {
     }
   }
 
+  async function saveGovernance(
+    profile: SandboxProfile,
+    overrides: Record<string, ToolOverride>,
+  ) {
+    if (!runId) return;
+    setGovernanceBusy(true);
+    setError(null);
+    try {
+      const latestGovernance = await daemonApi.updateGovernance(runId, profile, overrides);
+      const latestTrace = await daemonApi.getTrace(runId);
+      setGovernance(latestGovernance);
+      setTraceEvents(latestTrace.events);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.governanceWrite"));
+      throw caught;
+    } finally {
+      setGovernanceBusy(false);
+    }
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -395,10 +480,11 @@ export function Workbench() {
             mode={mode}
             disabled={busy || runStatus === "cancellation_requested" || !workspacePath || !task}
             running={runIsActive}
+            prepared={runIsPrepared}
             onWorkspacePathChange={setWorkspacePath}
             onTaskChange={setTask}
             onModeChange={setMode}
-            onSubmit={startRun}
+            onSubmit={runIsPrepared ? launchRun : prepareRun}
             onCancel={cancelRun}
           />
         </section>
@@ -410,6 +496,8 @@ export function Workbench() {
           contextBusy={contextBusy}
           memory={memory}
           memoryBusy={memoryBusy}
+          governance={governance}
+          governanceBusy={governanceBusy}
           diff={displayDiff}
           tests={displayTests}
           trace={traceEvents}
@@ -427,6 +515,7 @@ export function Workbench() {
           onCreateMemory={createMemory}
           onUpdateMemory={updateMemory}
           onDeleteMemory={deleteMemory}
+          onSaveGovernance={saveGovernance}
         />
       </div>
     </main>

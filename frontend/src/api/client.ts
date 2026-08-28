@@ -126,6 +126,79 @@ export interface MemoryInput {
   confirmed: boolean;
 }
 
+export type SandboxProfile = "standard" | "strict";
+export type ToolOverride = "inherit" | "approval_required" | "deny";
+
+export interface GuardDecision {
+  guard: string;
+  status: "allow" | "deny" | "skipped";
+  reason: string;
+  rule: string;
+  duration_ms: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface PolicyEvaluation {
+  evaluation_id: string;
+  run_id: string;
+  action_id: string;
+  tool: string;
+  effect: string;
+  risk: string;
+  sandbox_profile: SandboxProfile;
+  outcome: "pending" | "allowed" | "denied" | "approval_denied";
+  effective_policy: string;
+  decisions: GuardDecision[];
+}
+
+export interface GovernanceTool {
+  name: string;
+  description: string;
+  effect: string;
+  risk: string;
+  approval_policy: string;
+  timeout_seconds: number;
+  metadata: Record<string, unknown>;
+  override: ToolOverride;
+  effective_policy: string;
+}
+
+export interface SandboxExecution {
+  sandbox_id: string;
+  run_id: string;
+  profile: SandboxProfile;
+  backend: string;
+  executable: string;
+  timeout_seconds: number;
+  returncode?: number;
+  duration_ms: number;
+  timed_out: boolean;
+  output_truncated: boolean;
+  termination_reason: string;
+}
+
+export interface GovernanceResponse {
+  run_id: string;
+  editable: boolean;
+  settings: {
+    sandbox_profile: SandboxProfile;
+    tool_overrides: Record<string, ToolOverride>;
+  };
+  capabilities: {
+    backend: string;
+    guarantees: string[];
+    limitations: string[];
+    profiles: SandboxProfile[];
+  };
+  contract: {
+    effects: { allow: string[]; deny: string[] };
+    policies: Record<string, string>;
+  };
+  tools: GovernanceTool[];
+  evaluations: PolicyEvaluation[];
+  executions: SandboxExecution[];
+}
+
 export interface TraceEvent {
   time: string;
   run_id: string;
@@ -199,6 +272,7 @@ export interface ApprovalRequest {
   target: {
     tool: string;
     patch: string;
+    command?: string;
     files: string[];
     additions: number;
     deletions: number;
@@ -297,6 +371,15 @@ export const daemonApi = {
       body: JSON.stringify({ force: true, target_ratio: targetRatio, confirmed }),
     }),
   getMemory: (runId: string) => request<MemoryResponse>(`/runs/${runId}/memory`),
+  getGovernance: (runId: string) => request<GovernanceResponse>(`/runs/${runId}/governance`),
+  updateGovernance: (
+    runId: string,
+    sandboxProfile: SandboxProfile,
+    toolOverrides: Record<string, ToolOverride>,
+  ) => request<GovernanceResponse>(`/runs/${runId}/governance`, {
+    method: "PUT",
+    body: JSON.stringify({ sandbox_profile: sandboxProfile, tool_overrides: toolOverrides }),
+  }),
   createMemory: (runId: string, input: MemoryInput) =>
     request<{ run_id: string; entry: MemoryEntry }>(`/runs/${runId}/memory`, {
       method: "POST",
