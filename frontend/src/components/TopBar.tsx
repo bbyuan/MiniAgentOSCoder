@@ -1,12 +1,14 @@
-import { Activity, Box, Cpu, Settings } from "lucide-react";
+import { Activity, Bot, Box, Cpu, Settings } from "lucide-react";
 
 interface TopBarProps {
   project: string;
   mode: string;
   status: string;
+  model: string;
+  modelConfigured: boolean | undefined;
 }
 
-export function TopBar({ project, mode, status }: TopBarProps) {
+export function TopBar({ project, mode, status, model, modelConfigured }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -27,6 +29,10 @@ export function TopBar({ project, mode, status }: TopBarProps) {
           <Activity size={15} />
           <span>{status}</span>
         </div>
+        <div className={`pill ${modelConfigured === false ? "pillWarning" : ""}`}>
+          <Bot size={15} />
+          <span>{model}</span>
+        </div>
         <button className="iconButton" aria-label="Settings">
           <Settings size={17} />
         </button>
@@ -34,4 +40,3 @@ export function TopBar({ project, mode, status }: TopBarProps) {
     </header>
   );
 }
-

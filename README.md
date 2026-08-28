@@ -17,22 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The project is starting from the specification layer:
-
-```text
-AGENTS.md
-.agent/config.yaml
-.agent/skills/
-openspec/project.md
-openspec/specs/
-openspec/changes/bootstrap-p0-runtime/
-```
-
-The active implementation change is:
-
-```text
-openspec/changes/bootstrap-p0-runtime/
-```
+The repository now includes the local Daemon API, guarded Tool Gateway, Context Pack, Patch Pipeline, trace/replay, run artifacts, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -86,6 +71,18 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:5173/`, keep the default example workspace path, and start a run. The workbench will call the daemon to open the project, create a run, and load contract, context, and trace.
+
+## Model Provider Configuration
+
+The runtime supports OpenAI-compatible Chat Completions providers. Set the non-sensitive options in `.agent/config.yaml` and export credentials in the shell that launches the backend:
+
+```text
+export OPENAI_API_KEY=...
+# Optional for a compatible local or hosted endpoint:
+export OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+Set `models.default_model` to the model exposed by the selected endpoint. Check readiness through `GET /models/status`; the Daemon never returns the credential value.
 
 P0 demo:
 

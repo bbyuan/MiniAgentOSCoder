@@ -94,3 +94,21 @@ The runtime SHALL repeatedly plan one Action IR, execute it through the guarded 
 - WHEN the loop attempts to continue
 - THEN the runtime SHALL stop before the next prohibited effect
 - AND append a machine-readable budget event
+
+### AR-009 Model Provider Adapter
+
+The runtime SHALL construct an OpenAI-compatible model client from project configuration and environment variables without exposing credentials through configuration files, traces, errors, or daemon responses.
+
+#### Scenario: Complete a provider request
+
+- GIVEN provider configuration, a model name, and the configured API key environment variable are available
+- WHEN the runtime requests the next model action
+- THEN the client SHALL send messages to the compatible Chat Completions endpoint
+- AND return response content and usage as a `ModelResponse`
+
+#### Scenario: Diagnose missing model configuration
+
+- GIVEN a model name or API key environment variable is missing
+- WHEN a client or workbench checks provider readiness
+- THEN the runtime SHALL report the missing configuration before any network request
+- AND SHALL NOT expose credential values

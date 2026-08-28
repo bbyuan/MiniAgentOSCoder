@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import approvals, context, health, projects, runs, trace
+from app.api import approvals, context, health, models, projects, runs, trace
 
 
 def create_app() -> FastAPI:
@@ -19,6 +19,7 @@ def create_app() -> FastAPI:
     app.include_router(approvals.router)
     app.include_router(trace.router)
     app.include_router(context.router)
+    app.include_router(models.router)
     return app
 
 

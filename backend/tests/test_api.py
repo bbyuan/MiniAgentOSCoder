@@ -124,3 +124,43 @@ def test_approval_endpoint_returns_conflict_without_pending_approval(tmp_path: P
     response = client.post(f"/runs/{run['run_id']}/approve", json={"approval_id": "missing", "mode": "approve_once"})
 
     assert response.status_code == 409
+
+
+def test_model_status_reports_missing_key_without_exposing_environment_value(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        "\n".join(
+            [
+                "models:",
+                "  provider: openai-compatible",
+                "  default_model: demo-model",
+                "  api_key_env: MINIAGENT_API_STATUS_TEST_KEY",
+                "  base_url: https://provider.example/v1",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("MINIAGENT_API_STATUS_TEST_KEY", raising=False)
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.get("/models/status", params={"project_id": project["project_id"]})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["configured"] is False
+    assert data["issues"] == ["missing_environment_variable:MINIAGENT_API_STATUS_TEST_KEY"]
+    assert data["api_key_env"] == "MINIAGENT_API_STATUS_TEST_KEY"
+    assert "api_key" not in data
+
+    secret = "status-secret-must-not-leak"
+    monkeypatch.setenv("MINIAGENT_API_STATUS_TEST_KEY", secret)
+    ready_response = client.get("/models/status", params={"project_id": project["project_id"]})
+
+    assert ready_response.json()["configured"] is True
+    assert secret not in ready_response.text

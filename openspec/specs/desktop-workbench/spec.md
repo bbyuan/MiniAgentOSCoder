@@ -54,3 +54,14 @@ The workbench SHALL replay a run from trace events without re-executing tools.
 - WHEN the user starts replay
 - THEN the workbench SHALL render trace events in order
 - AND no tools SHALL be executed during replay
+
+### DW-006 Model Provider Status
+
+The workbench SHALL read model Provider readiness from the local Daemon and SHALL NOT read or retain API keys in frontend state.
+
+#### Scenario: Report missing model configuration
+
+- GIVEN the active project is missing a model name or API key environment variable
+- WHEN the workbench requests model status
+- THEN the Daemon SHALL return a non-sensitive issue list
+- AND SHALL NOT include any credential value

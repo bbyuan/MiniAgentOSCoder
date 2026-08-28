@@ -117,3 +117,29 @@ Return the latest `ContextPack` with required, selected, compressed, omitted, an
 
 Request manual context compaction.
 
+## Model APIs
+
+### `GET /models/status`
+
+Return the active project's non-sensitive model Provider configuration status.
+
+Optional query:
+
+```text
+project_id=proj-001
+```
+
+Response:
+
+```json
+{
+  "provider": "openai-compatible",
+  "model": "gpt-5-mini",
+  "api_key_env": "OPENAI_API_KEY",
+  "base_url": "https://api.openai.com/v1",
+  "configured": true,
+  "issues": []
+}
+```
+
+The response reports only whether the named environment variable exists. It never returns the API key or raw credential-bearing URLs.

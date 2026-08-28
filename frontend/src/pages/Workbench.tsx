@@ -3,6 +3,7 @@ import {
   daemonApi,
   type AgentContract,
   type ContextPack,
+  type ModelProviderStatus,
   type RunArtifacts,
   type RunMode,
   type TraceEvent,
@@ -27,6 +28,7 @@ export function Workbench() {
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
+  const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
 
   useEffect(() => {
     daemonApi
@@ -76,7 +78,10 @@ export function Workbench() {
     setError(null);
     try {
       const project = await daemonApi.openProject(workspacePath);
-      const run = await daemonApi.createRun({ project_id: project.project_id, task, mode });
+      const [run, providerStatus] = await Promise.all([
+        daemonApi.createRun({ project_id: project.project_id, task, mode }),
+        daemonApi.getModelStatus(project.project_id).catch(() => undefined),
+      ]);
       const [contextResponse, traceResponse, artifactResponse] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
@@ -88,6 +93,7 @@ export function Workbench() {
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setTraceEvents(traceResponse.events);
+      setModelStatus(providerStatus);
       setConnection("connected");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Failed to start run");
@@ -99,7 +105,13 @@ export function Workbench() {
 
   return (
     <main className="appShell">
-      <TopBar project={mockRun.project} mode={mode} status={`${connection} · ${runStatus}`} />
+      <TopBar
+        project={mockRun.project}
+        mode={mode}
+        status={`${connection} · ${runStatus}`}
+        model={modelStatus?.configured ? modelStatus.model : modelStatus ? "Model setup needed" : "Model unchecked"}
+        modelConfigured={modelStatus?.configured}
+      />
       <div className="workspace">
         <section className="leftRail">
           <button className="railItem active">Chat</button>

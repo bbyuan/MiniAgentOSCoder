@@ -112,6 +112,15 @@ export interface RunArtifacts {
   trace_summary: string[];
 }
 
+export interface ModelProviderStatus {
+  provider: string;
+  model: string;
+  api_key_env: string;
+  base_url: string;
+  configured: boolean;
+  issues: string[];
+}
+
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -147,4 +156,6 @@ export const daemonApi = {
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
   getTrace: (runId: string) => request<TraceResponse>(`/runs/${runId}/trace`),
   replayRun: (runId: string) => request<TraceResponse>(`/runs/${runId}/replay`, { method: "POST" }),
+  getModelStatus: (projectId?: string) =>
+    request<ModelProviderStatus>(`/models/status${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
 };

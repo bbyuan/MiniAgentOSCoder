@@ -68,6 +68,7 @@ def build_action_request(
             "agent_id": contract.agent_id,
             "mode": contract.program.mode,
             "observation_count": len(observations or []),
+            "max_output_tokens": contract.cost_envelope.max_output_tokens,
         },
     )
 

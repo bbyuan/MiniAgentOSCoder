@@ -56,6 +56,11 @@ models:
   provider: openai-compatible
   default_model: unset
   api_key_env: OPENAI_API_KEY
+  base_url: https://api.openai.com/v1
+  base_url_env: OPENAI_BASE_URL
+  timeout_seconds: 60
+  json_mode: true
+  max_tokens_field: max_tokens
 
 approval:
   default_mode: ask

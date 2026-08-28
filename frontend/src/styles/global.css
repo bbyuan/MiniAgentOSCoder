@@ -84,6 +84,8 @@ button {
 
 .topbarControls {
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .pill,
@@ -104,6 +106,12 @@ button {
   align-items: center;
   gap: 7px;
   font-size: 13px;
+}
+
+.pillWarning {
+  color: #8a3b12;
+  border-color: rgba(174, 74, 27, 0.24);
+  background: #fff8f2;
 }
 
 .iconButton,
