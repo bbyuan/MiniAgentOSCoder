@@ -1,0 +1,34 @@
+schema: spec-driven
+
+context:
+  - Write planning artifacts in Chinese unless a file is intentionally English for tooling compatibility.
+  - This project builds a local coding-agent runtime, not a general chatbot.
+  - P0 must focus on the contract-first agent loop, Tool Gateway, Context Pack, Patch Pipeline, Trace, and Workbench scaffold.
+  - Security, approval, traceability, and local-first data boundaries must be considered in every change.
+
+rules:
+  proposal:
+    - Keep the proposal focused on why the change is needed and what behavior changes.
+    - List every affected capability under Capabilities.
+  specs:
+    - Use ADDED, MODIFIED, or REMOVED Requirements sections for change specs.
+    - Every requirement must include at least one Scenario.
+    - Describe observable behavior, not internal implementation steps.
+  design:
+    - Include Context, Goals / Non-Goals, Decisions, Risks / Trade-offs, and Open Questions when relevant.
+  tasks:
+    - Use numbered checkbox items like 1.1, 1.2, 2.1.
+    - Do not add implementation tasks that are not supported by proposal and specs.
+
+operations:
+  apply:
+    guidance:
+      - Read AGENTS.md before applying any change.
+      - Read the active proposal, design, specs, and tasks before editing code.
+      - Mark a task complete only after implementation and validation.
+      - Record commands run or explain why validation could not run.
+  archive:
+    guidance:
+      - Archive only after every task checkbox is complete.
+      - Summarize shipped behavior and update the main specs.
+

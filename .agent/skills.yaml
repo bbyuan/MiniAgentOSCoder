@@ -1,0 +1,64 @@
+skills:
+  - id: bugfix
+    name: Bugfix
+    description: Fix failing behavior, failing tests, runtime errors, regressions, or bug reports.
+    path: .agent/skills/bugfix/SKILL.md
+    modes:
+      - Bugfix
+    default_tools:
+      - read_file
+      - search_code
+      - write_patch
+      - run_test
+    risk: medium
+
+  - id: feature
+    name: Feature
+    description: Add or change product behavior while following existing project patterns.
+    path: .agent/skills/feature/SKILL.md
+    modes:
+      - Feature
+    default_tools:
+      - read_file
+      - search_code
+      - write_patch
+      - run_test
+    risk: medium
+
+  - id: code-review
+    name: Code Review
+    description: Review changed or target files for correctness, security, regressions, and test gaps.
+    path: .agent/skills/code-review/SKILL.md
+    modes:
+      - Review
+    default_tools:
+      - read_file
+      - search_code
+    risk: low
+
+  - id: spec-implement
+    name: Spec Implement
+    description: Implement an OpenSpec change by reading proposal, design, tasks, and change specs.
+    path: .agent/skills/spec-implement/SKILL.md
+    modes:
+      - Spec
+    default_tools:
+      - read_file
+      - search_code
+      - write_patch
+      - run_test
+    risk: medium
+
+  - id: test-repair
+    name: Test Repair
+    description: Repair code based on failing test output and validation observations.
+    path: .agent/skills/test-repair/SKILL.md
+    modes:
+      - Bugfix
+    default_tools:
+      - read_file
+      - search_code
+      - write_patch
+      - run_test
+    risk: medium
+

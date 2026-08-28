@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Runtime outputs
+runs/
+.agent/index/
+.agent/project-profile.json
+
+# Local secrets
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+

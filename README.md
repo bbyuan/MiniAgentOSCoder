@@ -1,0 +1,63 @@
+# MiniAgentOS Coder
+
+MiniAgentOS Coder is a local coding-agent runtime and desktop workbench.
+
+Its core idea is:
+
+```text
+Contract-first, context-aware, traceable coding-agent runtime.
+```
+
+## What This Project Builds
+
+- A local AgentOS-style runtime for coding agents.
+- A single-machine AgentPaaS-style control plane for tools, skills, memory, runs, traces, and policies.
+- A desktop workbench for observing plans, context, diffs, approvals, tests, contracts, budget, and replay.
+- A spec-driven development workflow based on `AGENTS.md`, `.agent/skills/*/SKILL.md`, and `openspec/`.
+
+## Current Stage
+
+The project is starting from the specification layer:
+
+```text
+AGENTS.md
+.agent/config.yaml
+.agent/skills/
+openspec/project.md
+openspec/specs/
+openspec/changes/bootstrap-p0-runtime/
+```
+
+The active implementation change is:
+
+```text
+openspec/changes/bootstrap-p0-runtime/
+```
+
+Shared daemon API contract:
+
+```text
+openspec/api-contract.md
+```
+
+## First Development Target
+
+P0 must deliver a real local coding-agent loop:
+
+```text
+open project -> scan workspace -> compile AgentContract -> plan -> build context
+-> emit Action IR -> guard -> tool gateway -> patch -> approve -> test
+-> repair -> report -> trace/replay
+```
+
+## How To Work In This Repo
+
+1. Read `AGENTS.md`.
+2. Read `openspec/project.md`.
+3. Pick the active change under `openspec/changes/`.
+4. Implement tasks from `tasks.md`.
+5. Update tasks only after validation.
+
+## Definition Of Done
+
+A completed task should map to an OpenSpec requirement, produce observable runtime behavior, include validation, and update the active `tasks.md` checkbox only after the work is verified.

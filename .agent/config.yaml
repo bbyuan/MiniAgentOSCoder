@@ -1,0 +1,64 @@
+agent:
+  id: miniagent-coder
+  name: MiniAgentOS Coder
+  mode: orchestrator
+  roles:
+    - Planner
+    - CodeReader
+    - PatchWriter
+    - TestRunner
+    - Reviewer
+
+runtime:
+  max_steps: 20
+  max_model_calls: 20
+  max_tool_calls: 60
+  max_wall_time_seconds: 600
+
+effects:
+  allow:
+    - fs.read
+    - fs.write
+    - shell.exec
+    - test.run
+    - state.memory
+    - mcp.call
+  deny:
+    - workspace.escape
+    - secret.read
+    - net.public
+
+policies:
+  read_file: auto
+  search_code: auto
+  list_files: auto
+  write_patch: approval_required
+  apply_patch: approval_required
+  run_test: auto
+  run_lint: auto
+  run_command: approval_required
+  mcp_call: depends_on_effect
+  write_memory: confirm_if_long_term
+
+paths:
+  workspace_root: .
+  runs_dir: runs
+  trace_dir: runs
+  index_dir: .agent/index
+  skills_dir: .agent/skills
+  skills_registry: .agent/skills.yaml
+
+mcp:
+  enabled: false
+  servers: []
+
+models:
+  provider: openai-compatible
+  default_model: unset
+  api_key_env: OPENAI_API_KEY
+
+approval:
+  default_mode: ask
+  allow_pattern_approvals: true
+  require_patch_approval: true
+  require_dependency_approval: true
