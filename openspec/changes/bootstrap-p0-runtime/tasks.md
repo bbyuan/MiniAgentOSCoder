@@ -21,13 +21,13 @@
 
 ## 3. Runtime
 
-- [ ] 3.1 Implement AgentContract compiler.
-- [ ] 3.2 Implement Action IR parser.
-- [ ] 3.3 Implement Run state machine.
-- [ ] 3.4 Implement trace JSONL writer.
-- [ ] 3.5 Implement checkpoint writer interface.
-- [ ] 3.6 Implement minimal agent loop skeleton.
-- [ ] 3.7 Implement skill card loading from `.agent/skills.yaml`.
+- [x] 3.1 Implement AgentContract compiler.
+- [x] 3.2 Implement Action IR parser.
+- [x] 3.3 Implement Run state machine.
+- [x] 3.4 Implement trace JSONL writer.
+- [x] 3.5 Implement checkpoint writer interface.
+- [x] 3.6 Implement minimal agent loop skeleton.
+- [x] 3.7 Implement skill card loading from `.agent/skills.yaml`.
 
 ## 4. Tool Gateway
 
