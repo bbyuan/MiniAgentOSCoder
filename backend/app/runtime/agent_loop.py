@@ -3,10 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
-from app.models import RunPhase, RunState
+from app.models import AgentContract, ContextPack, RunPhase, RunState
+from app.runtime.action_executor import ActionExecution, ActionExecutor
 from app.runtime.contract_compiler import compile_agent_contract
+from app.runtime.model_client import ModelClient
+from app.runtime.planner import plan_next_action
 from app.runtime.state_machine import transition_run
 from app.runtime.tracer import TraceWriter
+from app.tools import ToolGateway
 
 
 def create_runtime_run(task: str, workspace: str | Path, config_path: str | Path, runs_dir: str | Path = "runs") -> RunState:
@@ -24,3 +28,24 @@ def create_runtime_run(task: str, workspace: str | Path, config_path: str | Path
     tracer.event(run.run_id, "run.transitioned", {"status": run.status.value})
     return run
 
+
+def execute_next_model_action(
+    *,
+    run_id: str,
+    task: str,
+    contract: AgentContract,
+    gateway: ToolGateway,
+    model_client: ModelClient,
+    tracer: TraceWriter,
+    context_pack: ContextPack | None = None,
+) -> ActionExecution:
+    decision = plan_next_action(
+        run_id=run_id,
+        task=task,
+        contract=contract,
+        tools=gateway.list_tools(),
+        model_client=model_client,
+        tracer=tracer,
+        context_pack=context_pack,
+    )
+    return ActionExecutor(gateway=gateway, tracer=tracer, run_id=run_id).execute(decision.action)

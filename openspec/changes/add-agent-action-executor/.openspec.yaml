@@ -1,0 +1,6 @@
+id: add-agent-action-executor
+title: Add model-planner to guarded-action execution path
+status: active
+owners:
+  - MiniAgentOS Coder
+created: 2026-08-28
