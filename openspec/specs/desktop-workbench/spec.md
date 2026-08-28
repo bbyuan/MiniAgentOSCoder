@@ -127,3 +127,25 @@ The workbench SHALL display a real pending patch with its risk, effect, target f
 - WHEN the user enters a reason and denies it
 - THEN the reason SHALL be sent to the Daemon
 - AND duplicate decisions SHALL be disabled while the request is pending
+
+### DW-012 Context Workbench
+
+The workbench SHALL display Context budget usage, threshold state, token composition, item selection state, and controlled compaction.
+
+#### Scenario: Compact context
+
+- GIVEN a Run has a Context Pack
+- WHEN the user selects a target ratio and requests compaction
+- THEN the workbench SHALL show before/after token usage and affected state
+- AND critical compaction SHALL require a second explicit action
+
+### DW-013 Memory Workbench
+
+The workbench SHALL provide scoped Run, project, and long-term memory views with create, edit, and delete controls for persistent scopes.
+
+#### Scenario: Save long-term memory
+
+- GIVEN the user selects long-term scope
+- WHEN the user enters a reusable preference
+- THEN the save control SHALL remain disabled until explicit reuse confirmation is selected
+- AND the refreshed entry SHALL appear after the Daemon accepts it

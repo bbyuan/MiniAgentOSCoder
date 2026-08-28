@@ -22,6 +22,7 @@ The runtime SHALL build a `ContextPack` containing required items, selected item
 - WHEN the runtime builds context
 - THEN it SHALL produce a `ContextPack`
 - AND include required, selected, compressed, omitted, and budget report sections
+- AND include type composition, threshold state, compaction count, and the actual included content
 
 ### CM-003 Workspace Index
 
@@ -44,6 +45,21 @@ When context exceeds budget, the runtime SHALL preserve user task, current plan,
 - THEN long test output SHALL be summarized
 - AND user task, current plan, latest observation, and current diff SHALL remain available
 
+#### Scenario: Reach critical usage
+
+- GIVEN context usage reaches 95 percent
+- WHEN compaction is requested without confirmation
+- THEN the runtime SHALL return `confirmation_required`
+- AND SHALL NOT discard additional context detail
+
+#### Scenario: Audit effective compaction
+
+- GIVEN a manual or automatic compaction reduces context
+- WHEN the new Context Pack is saved
+- THEN compressed items SHALL remain available to the Planner
+- AND the runtime SHALL save token deltas in Trace
+- AND manual compaction SHALL create a Checkpoint
+
 ### CM-005 Explainability
 
 The workbench SHALL show why each context item was selected, compressed, or omitted.
@@ -53,3 +69,14 @@ The workbench SHALL show why each context item was selected, compressed, or omit
 - GIVEN a run has built a Context Pack
 - WHEN the user opens the Context panel
 - THEN the workbench SHALL show each item with reason, token estimate, priority, and status
+
+### CM-006 Runtime Observations
+
+The runtime SHALL add the latest guarded tool result to Context and downgrade older observations to compressible history.
+
+#### Scenario: Tool returns a new observation
+
+- GIVEN a guarded tool has completed
+- WHEN its result is recorded
+- THEN the latest result SHALL be represented as a protected `latest_observation` ContextItem
+- AND any previous latest observation SHALL become lower-priority tool history

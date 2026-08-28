@@ -12,12 +12,12 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 - A local AgentOS-style runtime for coding agents.
 - A single-machine AgentPaaS-style control plane for tools, skills, memory, runs, traces, and policies.
-- A desktop workbench for observing plans, context, diffs, approvals, tests, contracts, budget, and replay.
+- A desktop workbench for observing plans, context, memory, diffs, approvals, tests, contracts, budget, and replay.
 - A spec-driven development workflow based on `AGENTS.md`, `.agent/skills/*/SKILL.md`, and `openspec/`.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, Context Pack, Patch Pipeline, patch approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, patch approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -32,7 +32,7 @@ P0 must deliver a real local coding-agent loop:
 ```text
 open project -> scan workspace -> compile AgentContract -> plan -> build context
 -> emit Action IR -> guard -> tool gateway -> patch -> approve -> test
--> repair -> report -> trace/replay
+-> observe/compact -> repair -> consolidate memory -> report -> trace/replay
 ```
 
 ## Development Commands
@@ -90,6 +90,8 @@ Use `deepseek-v4-flash` for lower-latency development runs or change `models.def
 Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source files. Check readiness through `GET /models/status`; the Daemon reports only the configured environment-variable name and never returns the credential value.
 
 Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
+
+The Context view shows prompt budget, token composition, selection state, and audited compaction. The Memory view separates read-only Run memory, editable project memory, and explicitly confirmed long-term memory. Persistent entries live under the opened workspace's `.agent/memory/`; secret-like content and path escapes are rejected by the Daemon.
 
 P0 demo:
 
