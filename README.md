@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, patch approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, and portable process sandboxing. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -70,7 +70,7 @@ cd frontend
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`, keep the default example workspace path, and start a run. The workbench opens the project, prepares the contract and context, starts the local Run Worker, and incrementally renders model, action, tool, budget, and terminal events from the SSE Trace stream.
+Open `http://127.0.0.1:5173/` and prepare a run. Before launch, the Governance view lets you choose the sandbox profile and tighten any tool to approval-required or denied. Launching locks those settings, starts the local Run Worker, and incrementally renders model, policy, sandbox, tool, budget, and terminal events from the SSE Trace stream.
 
 ## Model Provider Configuration
 
@@ -92,6 +92,8 @@ Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source 
 Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
 
 The Context view shows prompt budget, token composition, selection state, and audited compaction. The Memory view separates read-only Run memory, editable project memory, and explicitly confirmed long-term memory. Persistent entries live under the opened workspace's `.agent/memory/`; secret-like content and path escapes are rejected by the Daemon.
+
+The Governance view is both a preflight control surface and an evidence viewer. It shows the effective policy for every registered tool, each ordered Guard decision and reason, and sandbox execution records. The current `portable-process` backend guarantees argv-based execution without a shell, workspace confinement for process cwd, sanitized environment variables, private runtime directories, timeout/process-group termination, and bounded returned output. It does not claim kernel network isolation, syscall filtering, or read-only mounts; those capabilities require a future container or OS-native backend.
 
 P0 demo:
 

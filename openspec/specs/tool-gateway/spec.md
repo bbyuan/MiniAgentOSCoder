@@ -70,3 +70,26 @@ The Tool Gateway SHALL validate a patch target and dry-run the unified diff befo
 - WHEN the user approves it once
 - THEN the runtime SHALL snapshot the target files
 - AND apply the exact pending patch one time
+
+### TG-006 Ordered Policy Evaluation
+
+Every registered tool action SHALL produce an ordered, machine-readable policy evaluation before its handler executes. The evaluation SHALL include effect, budget, schema, path or command, tool override, preflight, approval, and sandbox decisions when applicable.
+
+#### Scenario: Explain a denied command
+
+- GIVEN a command action violates the active command policy
+- WHEN Tool Gateway evaluates the action
+- THEN execution SHALL stop before the handler
+- AND Trace SHALL contain the ordered decisions, rejecting guard, reason, action id, and evaluation id
+
+### TG-007 Portable Sandbox Execution
+
+Process-based tools SHALL execute through the configured Sandbox Executor with argv execution, a fixed workspace, sanitized environment, private runtime directories, timeout handling, process-group termination, and bounded returned output.
+
+#### Scenario: Run a test in strict profile
+
+- GIVEN a prepared run selects the strict sandbox profile
+- WHEN an approved test command executes
+- THEN the process SHALL use the strict timeout and output limits
+- AND Trace SHALL record sandbox start and finish evidence
+- AND the API SHALL disclose that kernel network isolation, syscall filtering, and read-only mounts are not provided by the portable backend

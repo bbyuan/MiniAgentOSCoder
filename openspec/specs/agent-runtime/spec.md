@@ -158,3 +158,21 @@ The Run Worker SHALL retain the active Agent Loop while waiting for approval wit
 - WHEN the user cancels the run
 - THEN the approval wait SHALL wake
 - AND the run SHALL finish cancelled without applying the patch
+
+### AR-013 Per-Run Execution Governance
+
+The runtime SHALL allow a prepared run to select a sandbox profile and tighten registered tool policy to inherited, approval-required, or denied before execution starts. Governance SHALL become read-only after launch.
+
+#### Scenario: Elevate a test command to approval-required
+
+- GIVEN a run is prepared and `run_test` inherits an automatic policy
+- WHEN the user changes its run override to approval-required and launches the run
+- THEN the matching action SHALL pause with its tool, command, effect, risk, and reason
+- AND approval SHALL resume the same pending action without repeating the model call
+
+#### Scenario: Reject a late governance mutation
+
+- GIVEN a run has started or reached a terminal state
+- WHEN a client attempts to update its governance settings
+- THEN the Daemon SHALL reject the mutation
+- AND the execution evidence SHALL remain unchanged

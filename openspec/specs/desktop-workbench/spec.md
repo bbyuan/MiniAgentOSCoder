@@ -149,3 +149,21 @@ The workbench SHALL provide scoped Run, project, and long-term memory views with
 - WHEN the user enters a reusable preference
 - THEN the save control SHALL remain disabled until explicit reuse confirmation is selected
 - AND the refreshed entry SHALL appear after the Daemon accepts it
+
+### DW-014 Execution Governance Workbench
+
+The workbench SHALL separate run preparation from launch and expose sandbox profile, effective tool policies, per-run tightening controls, ordered Guard decisions, and sandbox execution evidence.
+
+#### Scenario: Configure governance before launch
+
+- GIVEN a newly prepared run is still in planning state
+- WHEN the user opens Governance, selects a sandbox profile, and tightens a tool policy
+- THEN the workbench SHALL persist the settings before launch
+- AND workspace, task, and mode inputs SHALL remain bound to the prepared run
+
+#### Scenario: Inspect execution evidence
+
+- GIVEN the run has evaluated tools or executed a sandboxed process
+- WHEN the user opens Governance
+- THEN the workbench SHALL show effective policies, decision outcomes and reasons, timings, backend guarantees, limitations, and sandbox execution count
+- AND governance controls SHALL be read-only after launch
