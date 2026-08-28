@@ -118,6 +118,9 @@ def test_cancel_run(tmp_path: Path) -> None:
     assert response.json()["status"] == "cancelled"
     summary = client.get(f"/runs/{run['run_id']}").json()
     assert summary["termination_reason"] == "cancelled_before_start"
+    report = client.get(f"/runs/{run['run_id']}/report").json()
+    assert report["available"] is True
+    assert "Status: `cancelled`" in report["content"]
 
 
 def test_events_and_replay_follow_trace_contract(tmp_path: Path) -> None:
@@ -126,11 +129,16 @@ def test_events_and_replay_follow_trace_contract(tmp_path: Path) -> None:
     run = client.post("/runs", json={"project_id": project["project_id"], "task": "trace", "mode": "Bugfix"}).json()
 
     events = client.get(f"/runs/{run['run_id']}/events").json()
+    before_replay = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
     replay = client.post(f"/runs/{run['run_id']}/replay").json()
+    after_replay = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
 
     assert events["events"][0]["event"] == "run.created"
     assert replay["replayed"] is True
+    assert replay["read_only"] is True
+    assert replay["event_count"] == len(before_replay)
     assert replay["events"][0]["event"] == "run.created"
+    assert after_replay == before_replay
 
 
 def test_approval_endpoint_returns_conflict_without_pending_approval(tmp_path: Path) -> None:
@@ -212,6 +220,10 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
     assert summary["final_message"] == "API run complete"
     assert summary["budget"]["model_calls"] == 1
     assert trace["events"][-1]["payload"]["status"] == "completed"
+    report = client.get(f"/runs/{run['run_id']}/report").json()
+    assert report["available"] is True
+    assert report["patch_available"] is False
+    assert "API run complete" in report["content"]
 
     duplicate = client.post(f"/runs/{run['run_id']}/start")
     assert duplicate.status_code == 409
@@ -276,6 +288,11 @@ def test_patch_approval_api_resumes_run_and_updates_artifacts(
         "deletions": 1,
     }
     assert artifacts["test_summary"]["status"] == "Passed"
+    report = client.get(f"/runs/{run['run_id']}/report").json()
+    assert report["available"] is True
+    assert report["patch_available"] is True
+    assert report["patch_count"] == 1
+    assert "Applied patches: 1" in report["content"]
     assert any(event["event"] == "approval.requested" for event in events)
     assert any(event["event"] == "patch.snapshot.created" for event in events)
 
@@ -294,7 +311,13 @@ def test_patch_approval_api_resumes_run_and_updates_artifacts(
     assert client.get(f"/runs/{run['run_id']}").json()["rolled_back_to"] == recovery_point["checkpoint_id"]
     assert client.get(f"/runs/{run['run_id']}/artifacts").json()["diff_summary"]["status"] == "Rolled back"
     rollback_events = client.get(f"/runs/{run['run_id']}/events").json()["events"]
-    assert [event["event"] for event in rollback_events][-2:] == ["rollback.started", "rollback.completed"]
+    assert [event["event"] for event in rollback_events][-3:] == [
+        "rollback.started",
+        "rollback.completed",
+        "report.generated",
+    ]
+    refreshed_report = client.get(f"/runs/{run['run_id']}/report").json()
+    assert recovery_point["checkpoint_id"] in refreshed_report["content"]
 
 
 def test_start_run_rejects_missing_model_configuration(tmp_path: Path) -> None:
@@ -332,15 +355,17 @@ def test_terminal_run_sse_stream_supports_event_cursor(tmp_path: Path, monkeypat
         json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
     ).json()
     client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
     trace_events = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
 
     response = client.get(
         f"/runs/{run['run_id']}/events/stream",
-        params={"after": len(trace_events) - 2},
+        params={"after": len(trace_events) - 3},
     )
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
-    assert response.text.count("event: trace") == 2
+    assert response.text.count("event: trace") == 3
     assert "run.finished" in response.text
+    assert "report.generated" in response.text
     assert "run.transitioned" in response.text

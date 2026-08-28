@@ -156,6 +156,25 @@ Request:
 }
 ```
 
+## Run Report API
+
+### `GET /runs/{run_id}/report`
+
+Return the deterministic Markdown report generated for a terminal run. Before generation, `available` is false and `content` is empty. A successful response also reports whether `patch.diff` exists, the number of applied patches, and the current changed-file list.
+
+```json
+{
+  "run_id": "run-001",
+  "available": true,
+  "content": "# MiniAgentOS Coder Run Report...",
+  "path": "/workspace/runs/run-001/report.md",
+  "generated_at": "2026-08-28T12:00:00+00:00",
+  "patch_available": true,
+  "patch_count": 2,
+  "files": ["pricing.py"]
+}
+```
+
 ## Trace APIs
 
 ### `GET /runs/{run_id}/events`
@@ -172,7 +191,7 @@ Return `trace.jsonl` metadata and parsed events.
 
 ### `POST /runs/{run_id}/replay`
 
-Replay trace events without executing tools.
+Return an ordered, immutable Trace snapshot without executing models or tools. The response includes `read_only=true`, `event_count`, and the event array used by client-side replay controls.
 
 ## Context APIs
 

@@ -1,17 +1,20 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.api.store import store
+from app.guards import redact_secrets
 from app.models import RunLoopResult, RunPhase
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
 from app.runtime.recovery import RecoveryError, RunRecovery
+from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.run_worker import RunJob, RunWorkerConflict
 from app.runtime.state_machine import transition_run
 from app.runtime.tracer import TraceWriter
@@ -84,6 +87,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "repair_status": run.repair_status,
         "last_checkpoint_id": run.last_checkpoint_id,
         "rolled_back_to": run.rolled_back_to,
+        "applied_patches": run.applied_patches,
     }
 
 
@@ -135,6 +139,37 @@ def get_run_artifacts(run_id: str) -> dict[str, object]:
     if artifacts is None:
         raise HTTPException(status_code=404, detail="Run artifacts not found")
     return artifacts.to_dict()
+
+
+@router.get("/{run_id}/report")
+def get_run_report(run_id: str) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    if run is None or project is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    writer = RunArtifactWriter(project.path, run_id)
+    if not writer.report_path.is_file():
+        return {
+            "run_id": run_id,
+            "available": False,
+            "content": "",
+            "patch_available": writer.patch_path.is_file(),
+            "patch_count": run.applied_patches,
+            "files": run.changed_files,
+        }
+    return {
+        "run_id": run_id,
+        "available": True,
+        "content": writer.report_path.read_text(encoding="utf-8"),
+        "path": str(writer.report_path),
+        "generated_at": datetime.fromtimestamp(
+            writer.report_path.stat().st_mtime,
+            tz=timezone.utc,
+        ).isoformat(),
+        "patch_available": writer.patch_path.is_file(),
+        "patch_count": run.applied_patches,
+        "files": run.changed_files,
+    }
 
 
 @router.get("/{run_id}/checkpoints")
@@ -203,6 +238,7 @@ def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
             "status": run.status.value,
         },
     )
+    _regenerate_report(run_id, tracer)
     return {
         "run_id": run_id,
         "checkpoint_id": request.checkpoint_id,
@@ -237,6 +273,7 @@ def cancel_run(run_id: str) -> dict[str, object]:
                 "run.cancelled",
                 {"status": RunPhase.CANCELLED.value, "termination_reason": "cancelled_before_start"},
             )
+            _regenerate_report(run_id, tracer)
     return {"run_id": run.run_id, "status": run.status.value}
 
 
@@ -250,3 +287,40 @@ def _find_config_path(project_path: Path) -> Path:
 def _project_for_run(run_id: str):
     project_id = store.run_projects.get(run_id)
     return store.projects.get(project_id) if project_id is not None else None
+
+
+def _regenerate_report(run_id: str, tracer: TraceWriter) -> None:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    contract = store.contracts.get(run_id)
+    context_pack = store.contexts.get(run_id)
+    result = store.run_results.get(run_id)
+    if run is None or project is None or contract is None or context_pack is None or result is None:
+        return
+    writer = RunArtifactWriter(project.path, run_id)
+    try:
+        report_path = writer.write_report(
+            run=run,
+            contract=contract,
+            context_pack=context_pack,
+            artifacts=store.artifacts.get(run_id),
+            result=result,
+            trace_events=tracer.read_events(run_id),
+        )
+        artifacts = store.artifacts.get(run_id)
+        if artifacts is not None:
+            for step in artifacts.plan:
+                if step.id == "report":
+                    step.state = "done"
+                    break
+        tracer.event(
+            run_id,
+            "report.generated",
+            {
+                "path": str(report_path),
+                "patch_available": writer.patch_path.exists(),
+                "patch_count": run.applied_patches,
+            },
+        )
+    except (OSError, ValueError) as exc:
+        tracer.event(run_id, "report.failed", {"error": redact_secrets(str(exc))})

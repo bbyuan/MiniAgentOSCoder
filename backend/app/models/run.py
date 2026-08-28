@@ -40,6 +40,7 @@ class RunState(Serializable):
     repair_status: str = "not_started"
     last_checkpoint_id: str | None = None
     rolled_back_to: str | None = None
+    applied_patches: int = 0
 
 
 @dataclass(slots=True)

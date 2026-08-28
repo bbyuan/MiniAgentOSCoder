@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from app.guards import redact_secrets
+from app.models import AgentContract, ContextPack, RunArtifacts, RunLoopResult, RunState
+
+
+class RunArtifactWriter:
+    def __init__(
+        self,
+        workspace: str | Path,
+        run_id: str,
+        *,
+        now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+    ) -> None:
+        if not run_id or run_id in {".", ".."} or Path(run_id).name != run_id:
+            raise ValueError("Run id is invalid")
+        self.workspace = Path(workspace).resolve()
+        self.run_id = run_id
+        self.run_dir = self.workspace / "runs" / run_id
+        self.now = now
+
+    @property
+    def patch_path(self) -> Path:
+        return self.run_dir / "patch.diff"
+
+    @property
+    def report_path(self) -> Path:
+        return self.run_dir / "report.md"
+
+    def append_patch(self, patch: str, sequence: int) -> Path:
+        if not patch.strip():
+            raise ValueError("Applied patch artifact must not be empty")
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        prefix = "\n" if self.patch_path.exists() and self.patch_path.stat().st_size else ""
+        block = f"{prefix}# Applied patch {sequence}\n{patch.rstrip()}\n"
+        with self.patch_path.open("a", encoding="utf-8") as handle:
+            handle.write(redact_secrets(block))
+        return self.patch_path
+
+    def write_report(
+        self,
+        *,
+        run: RunState,
+        contract: AgentContract,
+        context_pack: ContextPack,
+        artifacts: RunArtifacts | None,
+        result: RunLoopResult,
+        trace_events: list[dict[str, Any]],
+    ) -> Path:
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        test = artifacts.test_summary if artifacts is not None else None
+        diff = artifacts.diff_summary if artifacts is not None else None
+        budget = run.budget
+        selected_context = context_pack.selected_items or context_pack.required_items
+        policies = contract.policies.to_dict()
+        generated_at = self.now().astimezone(timezone.utc).isoformat()
+
+        report = "\n".join(
+            [
+                "# MiniAgentOS Coder Run Report",
+                "",
+                f"Generated: `{generated_at}`",
+                "",
+                "## Outcome",
+                "",
+                f"- Run: `{run.run_id}`",
+                f"- Status: `{result.status.value}`",
+                f"- Mode: `{run.mode}`",
+                f"- Termination: `{result.termination_reason}`",
+                f"- Steps: {result.steps}",
+                f"- Repair attempts: {run.repair_attempts} (`{run.repair_status}`)",
+                f"- Rolled back to: `{run.rolled_back_to or 'none'}`",
+                "",
+                "## Task",
+                "",
+                _text_block(run.task),
+                "",
+                "## Final Answer",
+                "",
+                _text_block(result.final_message or "No final message was produced."),
+                "",
+                "## Changes",
+                "",
+                f"- Applied patches: {run.applied_patches}",
+                f"- Patch artifact: `{'patch.diff' if self.patch_path.exists() else 'not available'}`",
+                f"- Diff status: `{diff.status if diff is not None else 'Unavailable'}`",
+                f"- Files in latest change: {diff.files if diff is not None else 0}",
+                f"- Latest insertions/deletions: +{diff.insertions if diff is not None else 0} / -{diff.deletions if diff is not None else 0}",
+                f"- Current changed files: {_inline_list(run.changed_files)}",
+                "",
+                "## Validation",
+                "",
+                f"- Status: `{test.status if test is not None else 'Not run'}`",
+                f"- Command: `{test.command if test is not None else 'Not selected'}`",
+                f"- Passed: {test.passed if test is not None else 0}",
+                f"- Failed: {test.failed if test is not None else 0}",
+                "",
+                "## Budget",
+                "",
+                f"- Model calls: {budget.get('model_calls', 0)}",
+                f"- Tool calls: {budget.get('tool_calls', 0)}",
+                f"- Input tokens: {budget.get('input_tokens', 0)}",
+                f"- Output tokens: {budget.get('output_tokens', 0)}",
+                f"- Total tokens: {budget.get('total_tokens', 0)}",
+                "",
+                "## Agent Contract",
+                "",
+                f"- Agent: `{contract.agent_id}`",
+                f"- Config version: `{contract.config_version}`",
+                f"- Allowed effects: {_inline_list(contract.effects.allow)}",
+                f"- Denied effects: {_inline_list(contract.effects.deny)}",
+                f"- Policies: {_mapping_list(policies)}",
+                "",
+                "## Context And Trace",
+                "",
+                f"- Selected context: {_inline_list(selected_context)}",
+                f"- Compressed context: {_inline_list(context_pack.compressed_items)}",
+                f"- Omitted context: {_inline_list(context_pack.omitted_items)}",
+                f"- Trace events before report: {len(trace_events)}",
+                f"- Trace artifact: `trace.jsonl`",
+                "",
+                "This report is a deterministic summary. `trace.jsonl` remains the authoritative event record.",
+                "",
+            ]
+        )
+        self.report_path.write_text(redact_secrets(report), encoding="utf-8")
+        return self.report_path
+
+
+def _text_block(value: str, limit: int = 4000) -> str:
+    text = value.strip()
+    if len(text) > limit:
+        text = f"{text[:limit]}\n\n[truncated]"
+    return text or "None."
+
+
+def _inline_list(values: list[str]) -> str:
+    return ", ".join(f"`{value}`" for value in values) if values else "none"
+
+
+def _mapping_list(values: dict[str, object]) -> str:
+    return ", ".join(f"`{key}={value}`" for key, value in sorted(values.items())) if values else "none"

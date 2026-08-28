@@ -70,7 +70,14 @@ def stream_events(run_id: str, request: Request, after: int = 0) -> StreamingRes
 @router.post("/{run_id}/replay")
 def replay_run(run_id: str) -> dict[str, object]:
     trace = get_trace(run_id)
-    return {"run_id": run_id, "replayed": True, "events": trace["events"]}
+    events = trace["events"]
+    return {
+        "run_id": run_id,
+        "replayed": True,
+        "read_only": True,
+        "event_count": len(events),
+        "events": events,
+    }
 
 
 def _project_for_run(run_id: str):

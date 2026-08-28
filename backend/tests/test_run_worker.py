@@ -60,7 +60,8 @@ def test_run_worker_executes_prepared_run_and_updates_state(tmp_path: Path) -> N
     assert worker.is_active(job.run.run_id) is False
     events = [event["event"] for event in job.tracer.read_events(job.run.run_id)]
     assert events[0] == "run.transitioned"
-    assert events[-2:] == ["run.finished", "run.transitioned"]
+    assert events[-3:] == ["run.finished", "report.generated", "run.transitioned"]
+    assert (tmp_path / "runs" / job.run.run_id / "report.md").exists()
 
 
 def test_run_worker_rejects_duplicate_prepare(tmp_path: Path) -> None:
@@ -141,6 +142,9 @@ def test_run_worker_waits_for_patch_approval_and_resumes_same_loop(tmp_path: Pat
     assert resolved == [approval.approval_id]
     assert artifacts.diff_summary.status == "Applied"
     assert artifacts.test_summary.status == "Passed"
+    assert run.applied_patches == 1
+    assert (tmp_path / "runs" / run.run_id / "patch.diff").read_text(encoding="utf-8").count("# Applied patch") == 1
+    assert (tmp_path / "runs" / run.run_id / "report.md").exists()
     assert list((tmp_path / "runs" / run.run_id / "snapshots").rglob("manifest.json"))
     events = [event["event"] for event in job.tracer.read_events(run.run_id)]
     assert "approval.requested" in events
@@ -285,5 +289,8 @@ def test_run_worker_repairs_failed_test_with_second_approved_patch(tmp_path: Pat
     events = [event["event"] for event in job.tracer.read_events(run.run_id)]
     assert events.count("approval.requested") == 2
     assert events.count("patch.snapshot.created") == 2
+    assert events.count("patch.artifact.saved") == 2
     assert events.count("repair.started") == 1
     assert events.count("repair.completed") == 1
+    assert run.applied_patches == 2
+    assert (tmp_path / "runs" / run.run_id / "patch.diff").read_text(encoding="utf-8").count("# Applied patch") == 2

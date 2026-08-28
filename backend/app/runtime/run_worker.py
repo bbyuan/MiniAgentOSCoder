@@ -24,6 +24,7 @@ from app.models import (
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import ModelClient
 from app.runtime.run_loop import AgentRunLoop
+from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.state_machine import InvalidRunTransition, transition_run
 from app.runtime.tracer import TraceWriter
 from app.tools import PatchPipeline, PatchSummary, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
@@ -119,7 +120,6 @@ class RunWorker:
                     contract=job.contract,
                     context_pack=job.context_pack,
                 )
-                self._record_final_result(job, result)
             except Exception as exc:
                 error = redact_secrets(str(exc))
                 result = RunLoopResult(
@@ -137,8 +137,10 @@ class RunWorker:
                     },
                 )
 
+            self._record_result_data(job.run, result)
+            self._write_final_report(job, result)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
-            self._apply_result(job.run, result)
+            self._set_result_status(job.run, result.status)
             job.on_result(result)
             return result
         finally:
@@ -322,6 +324,23 @@ class RunWorker:
             if result.ok:
                 files = [str(path) for path in result.metadata.get("files", [])]
                 job.run.changed_files = files
+                job.run.applied_patches += 1
+                try:
+                    patch_path = RunArtifactWriter(job.workspace, job.run.run_id).append_patch(
+                        str(action.params.get("patch", "")),
+                        job.run.applied_patches,
+                    )
+                    job.tracer.event(
+                        job.run.run_id,
+                        "patch.artifact.saved",
+                        {"path": str(patch_path), "sequence": job.run.applied_patches},
+                    )
+                except (OSError, ValueError) as exc:
+                    job.tracer.event(
+                        job.run.run_id,
+                        "artifact.failed",
+                        {"artifact": "patch.diff", "error": redact_secrets(str(exc))},
+                    )
                 if job.artifacts is not None:
                     job.artifacts.diff_summary.status = "Applied"
                     job.artifacts.diff_summary.files = len(files)
@@ -365,20 +384,46 @@ class RunWorker:
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
 
     @staticmethod
-    def _record_final_result(job: RunJob, result: RunLoopResult) -> None:
-        if job.artifacts is None:
-            return
-        if result.status == RunPhase.COMPLETED:
-            _set_plan_state(job.artifacts, "report", "done")
-        elif result.status == RunPhase.FAILED:
-            _set_plan_state(job.artifacts, "report", "active")
+    def _write_final_report(job: RunJob, result: RunLoopResult) -> None:
+        try:
+            writer = RunArtifactWriter(job.workspace, job.run.run_id)
+            report_path = writer.write_report(
+                run=job.run,
+                contract=job.contract,
+                context_pack=job.context_pack,
+                artifacts=job.artifacts,
+                result=result,
+                trace_events=job.tracer.read_events(job.run.run_id),
+            )
+            if job.artifacts is not None:
+                _set_plan_state(job.artifacts, "report", "done")
+            job.tracer.event(
+                job.run.run_id,
+                "report.generated",
+                {
+                    "path": str(report_path),
+                    "patch_available": writer.patch_path.exists(),
+                    "patch_count": job.run.applied_patches,
+                },
+            )
+        except (OSError, ValueError) as exc:
+            if job.artifacts is not None:
+                _set_plan_state(job.artifacts, "report", "active")
+            job.tracer.event(
+                job.run.run_id,
+                "report.failed",
+                {"error": redact_secrets(str(exc))},
+            )
 
     @staticmethod
-    def _apply_result(run: RunState, result: RunLoopResult) -> None:
+    def _set_result_status(run: RunState, status: RunPhase) -> None:
         try:
-            transition_run(run, result.status)
+            transition_run(run, status)
         except InvalidRunTransition:
-            run.status = result.status
+            run.status = status
+
+    @staticmethod
+    def _record_result_data(run: RunState, result: RunLoopResult) -> None:
         run.current_step = result.steps
         run.budget = {
             "model_calls": result.model_calls,
