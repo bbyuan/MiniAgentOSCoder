@@ -1,6 +1,13 @@
-import { FileCode, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, FileCode2, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
+import { translateKnownText } from "../i18n";
+import { usePreferences } from "../preferences";
+import { PlanPanel, type PlanItem } from "./PlanPanel";
+
+type InspectorTab = "overview" | "context" | "trace";
 
 interface RuntimePanelsProps {
+  plan: PlanItem[];
   contract: {
     effects: string[];
     policies: string[];
@@ -22,80 +29,123 @@ interface RuntimePanelsProps {
   runId?: string;
 }
 
-export function RuntimePanels({ contract, context, diff, tests, trace, runId }: RuntimePanelsProps) {
+export function RuntimePanels({ plan, contract, context, diff, tests, trace, runId }: RuntimePanelsProps) {
+  const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
+  const { locale, t } = usePreferences();
+  const tabs: Array<{ id: InspectorTab; label: string }> = [
+    { id: "overview", label: t("inspector.overview") },
+    { id: "context", label: t("inspector.context") },
+    { id: "trace", label: t("inspector.trace") },
+  ];
+
   return (
-    <aside className="runtimePanels">
-      <section className="panel">
-        <div className="panelHeader">
-          <h2>Contract</h2>
-          <ShieldCheck size={16} />
+    <aside className="inspector">
+      <div className="inspectorTop">
+        <div>
+          <span className="inspectorEyebrow">{t("inspector.title")}</span>
+          <strong>{runId ? `${t("run.label")} ${runId.slice(-8)}` : "MiniAgentOS"}</strong>
         </div>
-        {runId ? <p className="mutedLine">{runId}</p> : null}
-        <div className="tagGrid">
-          {contract.effects.map((effect) => (
-            <span key={effect}>{effect}</span>
+        <div className="inspectorTabs" role="tablist" aria-label={t("inspector.title")}>
+          {tabs.map((tab) => (
+            <button
+              type="button"
+              role="tab"
+              id={`inspector-tab-${tab.id}`}
+              aria-controls={`inspector-panel-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              className={activeTab === tab.id ? "active" : ""}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
-        <div className="policyList">
-          {contract.policies.map((policy) => (
-            <p key={policy}>{policy}</p>
-          ))}
-        </div>
-      </section>
+      </div>
 
-      <section className="panel">
-        <div className="panelHeader">
-          <h2>Context</h2>
-          <FileCode size={16} />
-        </div>
-        <div className="contextList">
-          {context.map((item) => (
-            <div key={item.path}>
-              <strong>{item.path}</strong>
-              <span>{item.reason} · {item.tokens} tokens</span>
+      <div
+        className="inspectorBody"
+        role="tabpanel"
+        id={`inspector-panel-${activeTab}`}
+        aria-labelledby={`inspector-tab-${activeTab}`}
+      >
+        {activeTab === "overview" ? (
+          <>
+            <PlanPanel items={plan} />
+            <section className="inspectorSection">
+              <div className="sectionHeader">
+                <h3>{t("contract.title")}</h3>
+                <ShieldCheck size={15} />
+              </div>
+              <div className="subsectionLabel">{t("contract.effects")}</div>
+              <div className="tagGrid">
+                {contract.effects.map((effect) => <span key={effect}>{effect}</span>)}
+              </div>
+              <div className="subsectionLabel policyLabel">{t("contract.policies")}</div>
+              <div className="policyList">
+                {contract.policies.slice(0, 5).map((policy) => <span key={policy}>{policy}</span>)}
+              </div>
+            </section>
+
+            <section className="inspectorSection signalGrid">
+              <div className="signalItem">
+                <div className="signalTitle"><GitPullRequest size={15} /><span>{t("diff.title")}</span></div>
+                <strong>{translateKnownText(locale, diff.status)}</strong>
+                <small>{t("diff.files", { count: diff.files })} · <b className="positive">+{diff.insertions}</b> / <b className="negative">-{diff.deletions}</b></small>
+              </div>
+              <div className="signalItem">
+                <div className="signalTitle"><FlaskConical size={15} /><span>{t("tests.title")}</span></div>
+                <strong>{translateKnownText(locale, tests.status)}</strong>
+                <small>{tests.command} · {t("tests.passed", { count: tests.passed })} · {t("tests.failed", { count: tests.failed })}</small>
+              </div>
+            </section>
+
+            <section className="inspectorSection approvalRow">
+              <div className="signalTitle"><CheckCircle2 size={15} /><span>{t("approval.title")}</span></div>
+              <span>{t("approval.empty")}</span>
+            </section>
+          </>
+        ) : null}
+
+        {activeTab === "context" ? (
+          <section className="inspectorSection contextSection">
+            <div className="sectionHeader">
+              <h3>{t("context.title")}</h3>
+              <FileCode2 size={15} />
             </div>
-          ))}
-        </div>
-      </section>
+            {context.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : (
+              <div className="contextList">
+                {context.map((item) => (
+                  <article key={`${item.path}-${item.reason}`}>
+                    <strong title={item.path}>{item.path}</strong>
+                    <span>{translateKnownText(locale, item.reason)}</span>
+                    <small>{t("context.tokens", { count: item.tokens })}</small>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
 
-      <section className="panel splitPanel">
-        <div>
-          <div className="panelHeader compact">
-            <h2>Diff</h2>
-            <GitPullRequest size={16} />
-          </div>
-          <strong>{diff.status}</strong>
-          <span>{diff.files} files · +{diff.insertions} / -{diff.deletions}</span>
-        </div>
-        <div>
-          <div className="panelHeader compact">
-            <h2>Tests</h2>
-            <FlaskConical size={16} />
-          </div>
-          <strong>{tests.status}</strong>
-          <span>{tests.command} · {tests.passed} passed · {tests.failed} failed</span>
-        </div>
-      </section>
-
-      <section className="panel">
-        <div className="panelHeader">
-          <h2>Trace</h2>
-          <Terminal size={16} />
-        </div>
-        <div className="traceList">
-          {trace.map((event) => (
-            <code key={event}>{event}</code>
-          ))}
-        </div>
-      </section>
-
-      <section className="panel approvalPanel">
-        <div className="panelHeader">
-          <h2>Approval</h2>
-          <ShieldCheck size={16} />
-        </div>
-        <p>No pending approval.</p>
-      </section>
+        {activeTab === "trace" ? (
+          <section className="inspectorSection traceSection">
+            <div className="sectionHeader">
+              <h3>{t("trace.title")}</h3>
+              <Terminal size={15} />
+            </div>
+            {trace.length === 0 ? <p className="emptyText">{t("trace.empty")}</p> : (
+              <div className="traceList">
+                {trace.map((event, index) => (
+                  <div key={`${event}-${index}`}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <code>{translateKnownText(locale, event)}</code>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
+      </div>
     </aside>
   );
 }

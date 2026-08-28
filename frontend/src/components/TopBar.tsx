@@ -1,41 +1,71 @@
-import { Activity, Bot, Box, Cpu, Settings } from "lucide-react";
+import { Bot, CodeXml, Moon, Sun } from "lucide-react";
+import { translateStatus } from "../i18n";
+import { usePreferences } from "../preferences";
 
 interface TopBarProps {
   project: string;
-  mode: string;
   status: string;
   model: string;
   modelConfigured: boolean | undefined;
 }
 
-export function TopBar({ project, mode, status, model, modelConfigured }: TopBarProps) {
+export function TopBar({ project, status, model, modelConfigured }: TopBarProps) {
+  const { locale, setLocale, theme, toggleTheme, t } = usePreferences();
+  const themeLabel = theme === "light" ? t("top.themeDark") : t("top.themeLight");
+
   return (
     <header className="topbar">
-      <div className="brand">
-        <div className="brandMark">
-          <Box size={18} />
+      <div className="topbarInner">
+        <div className="brand">
+          <div className="brandMark" aria-hidden="true">
+            <CodeXml size={19} strokeWidth={2.2} />
+          </div>
+          <div className="brandCopy">
+            <div className="brandName">MiniAgentOS Coder</div>
+            <div className="brandMeta">{project} · {t("app.subtitle")}</div>
+          </div>
         </div>
-        <div>
-          <div className="brandName">MiniAgentOS Coder</div>
-          <div className="brandMeta">{project}</div>
+
+        <div className="topbarControls">
+          <div
+            className={`statusChip modelChip ${modelConfigured === false ? "warning" : ""}`}
+            title={t("top.modelStatus")}
+          >
+            <Bot size={15} />
+            <span>{model}</span>
+          </div>
+          <div className={`statusChip runtimeChip tone-${status}`} title={t("top.runtimeStatus")}>
+            <span className="statusDot" aria-hidden="true" />
+            <span>{translateStatus(locale, status)}</span>
+          </div>
+          <div className="segmentedControl" role="group" aria-label={t("top.locale")}>
+            <button
+              type="button"
+              className={locale === "zh" ? "active" : ""}
+              aria-pressed={locale === "zh"}
+              onClick={() => setLocale("zh")}
+            >
+              中
+            </button>
+            <button
+              type="button"
+              className={locale === "en" ? "active" : ""}
+              aria-pressed={locale === "en"}
+              onClick={() => setLocale("en")}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            type="button"
+            className="iconButton"
+            aria-label={themeLabel}
+            title={themeLabel}
+            onClick={toggleTheme}
+          >
+            {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+          </button>
         </div>
-      </div>
-      <div className="topbarControls">
-        <div className="pill">
-          <Cpu size={15} />
-          <span>{mode}</span>
-        </div>
-        <div className="pill">
-          <Activity size={15} />
-          <span>{status}</span>
-        </div>
-        <div className={`pill ${modelConfigured === false ? "pillWarning" : ""}`}>
-          <Bot size={15} />
-          <span>{model}</span>
-        </div>
-        <button className="iconButton" aria-label="Settings">
-          <Settings size={17} />
-        </button>
       </div>
     </header>
   );

@@ -1,5 +1,7 @@
-import { ArrowUp, SlidersHorizontal, Square } from "lucide-react";
+import { ArrowUp, FolderOpen, SlidersHorizontal, Square } from "lucide-react";
 import type { RunMode } from "../api/client";
+import { translateMode } from "../i18n";
+import { usePreferences } from "../preferences";
 
 interface TaskComposerProps {
   workspacePath: string;
@@ -28,51 +30,66 @@ export function TaskComposer({
   onSubmit,
   onCancel,
 }: TaskComposerProps) {
+  const { locale, t } = usePreferences();
+
   return (
     <section className="composer">
-      <input
-        aria-label="Workspace path"
-        className="pathInput"
-        placeholder="/absolute/path/to/project"
-        value={workspacePath}
-        disabled={running}
-        onChange={(event) => onWorkspacePathChange(event.target.value)}
-      />
+      <label className="workspaceField">
+        <FolderOpen size={15} aria-hidden="true" />
+        <span>{t("composer.workspace")}</span>
+        <input
+          aria-label={t("composer.workspace")}
+          placeholder={t("composer.workspacePlaceholder")}
+          value={workspacePath}
+          disabled={running}
+          onChange={(event) => onWorkspacePathChange(event.target.value)}
+        />
+      </label>
       <textarea
-        aria-label="Task"
-        placeholder="Ask the agent to fix a bug, implement a spec, or review a change..."
+        aria-label={t("composer.taskPlaceholder")}
+        placeholder={t("composer.taskPlaceholder")}
         value={task}
         disabled={running}
         onChange={(event) => onTaskChange(event.target.value)}
         rows={4}
       />
       <div className="composerFooter">
-        <label className="softButton">
-          <SlidersHorizontal size={16} />
+        <label className="modeControl">
+          <SlidersHorizontal size={15} aria-hidden="true" />
+          <span className="srOnly">{t("composer.mode")}</span>
           <select
             value={mode}
             disabled={running}
+            aria-label={t("composer.mode")}
             onChange={(event) => onModeChange(event.target.value as RunMode)}
           >
             {modes.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {translateMode(locale, item)}
               </option>
             ))}
           </select>
         </label>
         {running ? (
           <button
-            className="iconButton stopButton"
-            aria-label="Cancel run"
-            title="Cancel run"
+            type="button"
+            className="primaryAction stopButton"
+            aria-label={t("composer.cancel")}
+            title={t("composer.cancel")}
             disabled={disabled}
             onClick={onCancel}
           >
-            <Square size={14} fill="currentColor" />
+            <Square size={13} fill="currentColor" />
           </button>
         ) : (
-          <button className="sendButton" aria-label="Start run" disabled={disabled} onClick={onSubmit}>
+          <button
+            type="button"
+            className="primaryAction"
+            aria-label={t("composer.start")}
+            title={t("composer.start")}
+            disabled={disabled}
+            onClick={onSubmit}
+          >
             <ArrowUp size={18} />
           </button>
         )}

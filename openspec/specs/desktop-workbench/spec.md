@@ -76,3 +76,36 @@ The workbench SHALL start prepared runs through the Daemon and incrementally upd
 - WHEN the Daemon starts the run
 - THEN the workbench SHALL display running status
 - AND append model, action, tool, budget, and terminal events as they arrive
+
+### DW-008 Localized Workbench
+
+The workbench SHALL support Chinese and English interface copy and persist the selected locale locally.
+
+#### Scenario: Change locale
+
+- GIVEN the workbench is displayed in one supported locale
+- WHEN the user selects the other locale
+- THEN controls, runtime labels, statuses, plans, and inspector copy SHALL update immediately
+- AND the locale SHALL survive a page reload
+
+### DW-009 Light And Dark Themes
+
+The workbench SHALL provide persistent light and dark themes with legible hierarchy and runtime state colors.
+
+#### Scenario: Change theme
+
+- GIVEN the workbench is using the light theme
+- WHEN the user selects dark theme
+- THEN all workbench surfaces SHALL use dark semantic colors
+- AND the preference SHALL survive a page reload
+
+### DW-010 Run Canvas And Inspector
+
+The workbench SHALL present live activity in the primary run canvas and organize plan, contract, context, diff, tests, approval, and trace in a tabbed inspector.
+
+#### Scenario: Reflow on a narrow viewport
+
+- GIVEN the run canvas and inspector cannot fit side by side
+- WHEN the viewport narrows
+- THEN the inspector SHALL stack below the run canvas
+- AND controls and text SHALL remain readable without overlap

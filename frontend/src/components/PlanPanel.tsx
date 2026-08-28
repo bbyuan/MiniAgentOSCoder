@@ -1,6 +1,8 @@
 import { Check, Circle, LoaderCircle } from "lucide-react";
+import { translateKnownText } from "../i18n";
+import { usePreferences } from "../preferences";
 
-interface PlanItem {
+export interface PlanItem {
   id?: string;
   title: string;
   state: string;
@@ -8,26 +10,28 @@ interface PlanItem {
 }
 
 const icons = {
-  done: <Check size={15} />,
-  active: <LoaderCircle size={15} />,
-  waiting: <Circle size={15} />,
+  done: <Check size={14} />,
+  active: <LoaderCircle size={14} />,
+  waiting: <Circle size={14} />,
 };
 
 export function PlanPanel({ items }: { items: PlanItem[] }) {
+  const { locale, t } = usePreferences();
+
   return (
-    <section className="panel">
-      <div className="panelHeader">
-        <h2>Plan</h2>
-        <span>{items.length} steps</span>
+    <section className="inspectorSection planSection">
+      <div className="sectionHeader">
+        <h3>{t("plan.title")}</h3>
+        <span>{t("plan.steps", { count: items.length })}</span>
       </div>
       <div className="planList">
         {items.map((item) => (
-          <div className={`planItem ${item.state}`} key={item.title}>
-            <div className="planIcon">{icons[item.state as keyof typeof icons]}</div>
-            <span>
-              {item.title}
-              {item.detail ? <small>{item.detail}</small> : null}
-            </span>
+          <div className={`planItem ${item.state}`} key={item.id ?? item.title}>
+            <div className="planMarker">{icons[item.state as keyof typeof icons] ?? <Circle size={14} />}</div>
+            <div className="planCopy">
+              <strong>{translateKnownText(locale, item.title)}</strong>
+              {item.detail ? <span>{translateKnownText(locale, item.detail)}</span> : null}
+            </div>
           </div>
         ))}
       </div>

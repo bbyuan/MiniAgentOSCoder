@@ -1,0 +1,82 @@
+import {
+  Activity,
+  Ban,
+  CheckCircle2,
+  CircleAlert,
+  CornerDownRight,
+  Sparkles,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import type { TraceEvent } from "../api/client";
+import { translateKnownText } from "../i18n";
+import { usePreferences } from "../preferences";
+
+interface ActivityFeedProps {
+  events: TraceEvent[];
+  active: boolean;
+}
+
+function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
+  if (event.startsWith("model.")) return { icon: Sparkles, tone: "model" };
+  if (event.startsWith("tool.")) return { icon: Wrench, tone: "tool" };
+  if (event.startsWith("action.")) return { icon: CornerDownRight, tone: "action" };
+  if (event === "run.finished") return { icon: CheckCircle2, tone: "success" };
+  if (event === "run.cancelled") return { icon: Ban, tone: "muted" };
+  if (event.includes("failed") || event.includes("exceeded")) return { icon: CircleAlert, tone: "danger" };
+  return { icon: Activity, tone: "runtime" };
+}
+
+function eventTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+export function ActivityFeed({ events, active }: ActivityFeedProps) {
+  const { locale, t } = usePreferences();
+  const visibleEvents = events.slice(-8);
+
+  return (
+    <section className="activityPanel" aria-live="polite">
+      <div className="sectionHeader activityHeader">
+        <div>
+          <h2>{t("activity.title")}</h2>
+          <span>{t("activity.eventCount", { count: events.length })}</span>
+        </div>
+        <div className={`liveIndicator ${active ? "active" : ""}`}>
+          <span aria-hidden="true" />
+          {active ? t("activity.live") : t("activity.waiting")}
+        </div>
+      </div>
+
+      {visibleEvents.length === 0 ? (
+        <div className="activityEmpty">
+          <div className="emptyGlyph"><Activity size={20} /></div>
+          <strong>{t("activity.emptyTitle")}</strong>
+          <span>{t("activity.emptyDescription")}</span>
+        </div>
+      ) : (
+        <div className="activityList">
+          {visibleEvents.map((event, index) => {
+            const presentation = eventPresentation(event.event);
+            const Icon = presentation.icon;
+            return (
+              <article className="activityItem" key={`${event.time}-${event.event}-${index}`}>
+                <div className={`eventIcon tone-${presentation.tone}`}>
+                  <Icon size={15} aria-hidden="true" />
+                </div>
+                <div className="eventCopy">
+                  <strong>{translateKnownText(locale, event.event)}</strong>
+                  <span>{event.role}</span>
+                </div>
+                <time dateTime={event.time}>{eventTime(event.time)}</time>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}

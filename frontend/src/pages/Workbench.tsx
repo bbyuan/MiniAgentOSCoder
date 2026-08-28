@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, CircleDot, GitBranch } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -8,14 +9,25 @@ import {
   type RunMode,
   type TraceEvent,
 } from "../api/client";
+import { ActivityFeed } from "../components/ActivityFeed";
 import { MetricStrip } from "../components/MetricStrip";
-import { PlanPanel } from "../components/PlanPanel";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { TaskComposer } from "../components/TaskComposer";
 import { TopBar } from "../components/TopBar";
+import { translateMode, type TranslationKey } from "../i18n";
+import { usePreferences } from "../preferences";
 import { mockRun } from "../stores/mockRun";
 
+const runCopy: Record<string, { title: TranslationKey; description: TranslationKey }> = {
+  running: { title: "run.runningTitle", description: "run.runningDescription" },
+  cancellation_requested: { title: "run.stoppingTitle", description: "run.runningDescription" },
+  completed: { title: "run.completedTitle", description: "run.completedDescription" },
+  failed: { title: "run.failedTitle", description: "run.failedDescription" },
+  cancelled: { title: "run.cancelledTitle", description: "run.cancelledDescription" },
+};
+
 export function Workbench() {
+  const { locale, t } = usePreferences();
   const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/python-bugfix");
   const [task, setTask] = useState("Fix calculator.add so the example test passes");
   const [mode, setMode] = useState<RunMode>("Bugfix");
@@ -42,9 +54,7 @@ export function Workbench() {
   }, []);
 
   const displayContract = useMemo(() => {
-    if (!contract) {
-      return mockRun.contract;
-    }
+    if (!contract) return mockRun.contract;
     return {
       effects: contract.effects.allow,
       policies: Object.entries(contract.policies).map(([key, value]) => `${key}: ${value}`),
@@ -52,31 +62,28 @@ export function Workbench() {
   }, [contract]);
 
   const displayContext = useMemo(() => {
-    if (!contextPack) {
-      return mockRun.context;
-    }
+    if (!contextPack) return mockRun.context;
     const explanation = artifacts?.context_explanation ?? contextPack.explanation ?? [];
     if (explanation.length > 0) {
       return explanation.map((item) => ({
         path: item.source,
-        reason: `${item.reason} · ${item.state}`,
+        reason: item.reason,
         tokens: item.tokens,
       }));
     }
-    return [
-      {
-        path: "required",
-        reason: contextPack.required_items.join(", ") || "none",
-        tokens: contextPack.budget_report.used_tokens,
-      },
-    ];
+    return [{
+      path: "required",
+      reason: contextPack.required_items.join(", ") || "none",
+      tokens: contextPack.budget_report.used_tokens,
+    }];
   }, [artifacts, contextPack]);
 
-  const displayTrace = traceEvents.length > 0 ? traceEvents.map((event) => event.event) : mockRun.trace;
   const displayPlan = artifacts?.plan ?? mockRun.plan;
   const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
   const displayTests = artifacts?.test_summary ?? mockRun.tests;
+  const displayTrace = traceEvents.map((event) => event.event);
   const runIsActive = ["running", "cancellation_requested"].includes(runStatus);
+  const displayStatus = runId ? runStatus : connection;
   const displayBudget = {
     modelCalls: runBudget.model_calls ?? 0,
     toolCalls: runBudget.tool_calls ?? 0,
@@ -84,6 +91,9 @@ export function Workbench() {
       ? `${contextPack.budget_report.used_tokens}/${contextPack.budget_report.max_tokens}`
       : mockRun.budget.tokens,
   };
+  const copy = runId
+    ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
+    : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
   async function startRun() {
     setBusy(true);
@@ -113,8 +123,8 @@ export function Workbench() {
       setConnection("connected");
 
       if (!providerStatus?.configured) {
-        const issues = providerStatus?.issues.join(", ") || "provider status unavailable";
-        setError(`Model setup required: ${issues}`);
+        const issues = providerStatus?.issues.join(", ") || t("error.providerUnavailable");
+        setError(t("error.modelSetup", { issues }));
         return;
       }
 
@@ -133,9 +143,7 @@ export function Workbench() {
           }
           if (["run.finished", "run.failed", "run.cancelled", "run.budget_exceeded"].includes(event.event)) {
             const eventStatus = event.payload.status;
-            if (typeof eventStatus === "string") {
-              setRunStatus(eventStatus);
-            }
+            if (typeof eventStatus === "string") setRunStatus(eventStatus);
           }
           const transitionedStatus = event.payload.status;
           if (
@@ -152,24 +160,22 @@ export function Workbench() {
             });
           }
         },
-        () => setError("Live event stream disconnected"),
+        () => setError(t("error.streamDisconnected")),
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to start run");
+      setError(caught instanceof Error ? caught.message : t("error.startRun"));
     } finally {
       setBusy(false);
     }
   }
 
   async function cancelRun() {
-    if (!runId) {
-      return;
-    }
+    if (!runId) return;
     try {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to cancel run");
+      setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
     }
   }
 
@@ -177,71 +183,58 @@ export function Workbench() {
     <main className="appShell">
       <TopBar
         project={mockRun.project}
-        mode={mode}
-        status={`${connection} · ${runStatus}`}
-        model={modelStatus?.configured ? modelStatus.model : modelStatus ? "Model setup needed" : "Model unchecked"}
+        status={displayStatus}
+        model={modelStatus?.configured ? modelStatus.model : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
         modelConfigured={modelStatus?.configured}
       />
-      <div className="workspace">
-        <section className="leftRail">
-          <button className="railItem active">Chat</button>
-          <button className="railItem">Plan</button>
-          <button className="railItem">Diff</button>
-          <button className="railItem">Tests</button>
-          <button className="railItem">Trace</button>
-        </section>
 
-        <section className="mainColumn">
-          <MetricStrip budget={displayBudget} />
-          <section className="conversation">
-            <div className="emptyState">
-              <span className="eyebrow">Contract-first runtime</span>
-              <h1>
-                {runStatus === "completed"
-                  ? "Run completed."
-                  : runStatus === "running"
-                    ? "Agent run in progress."
-                    : runStatus === "cancellation_requested"
-                      ? "Stopping at a safe boundary."
-                  : runId
-                    ? "Managed run is ready."
-                    : "Start a managed coding-agent run."}
-              </h1>
-              <p>
-                {finalMessage
-                  ? finalMessage
-                  : runId
-                  ? `Run ${runId} compiled a contract and loaded runtime artifacts from the daemon.`
-                  : "The runtime will compile a contract, build context, request approval for patches, run tests, and preserve trace."}
-              </p>
-              {error ? <p className="errorLine">{error}</p> : null}
+      <div className="workbenchLayout">
+        <section className="runCanvas">
+          <header className="runHeader">
+            <div className="runHeading">
+              <span className="eyebrow">{t("run.eyebrow")}</span>
+              <h1>{t(copy.title)}</h1>
+              <p>{finalMessage || t(copy.description)}</p>
             </div>
-            <TaskComposer
-              workspacePath={workspacePath}
-              task={task}
-              mode={mode}
-              disabled={busy || runStatus === "cancellation_requested" || !workspacePath || !task}
-              running={runIsActive}
-              onWorkspacePathChange={setWorkspacePath}
-              onTaskChange={setTask}
-              onModeChange={setMode}
-              onSubmit={startRun}
-              onCancel={cancelRun}
-            />
-          </section>
-        </section>
+            <div className="runMeta">
+              <span><GitBranch size={14} />{translateMode(locale, mode)}</span>
+              {runId ? <span title={runId}><CircleDot size={14} />{runId.slice(-8)}</span> : null}
+            </div>
+          </header>
 
-        <section className="sideColumn">
-          <PlanPanel items={displayPlan} />
-          <RuntimePanels
-            contract={displayContract}
-            context={displayContext}
-            diff={displayDiff}
-            tests={displayTests}
-            trace={displayTrace}
-            runId={runId}
+          <MetricStrip budget={displayBudget} phase={displayStatus} />
+          <ActivityFeed events={traceEvents} active={runIsActive} />
+
+          {error ? (
+            <div className="errorBanner" role="alert">
+              <AlertCircle size={17} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <TaskComposer
+            workspacePath={workspacePath}
+            task={task}
+            mode={mode}
+            disabled={busy || runStatus === "cancellation_requested" || !workspacePath || !task}
+            running={runIsActive}
+            onWorkspacePathChange={setWorkspacePath}
+            onTaskChange={setTask}
+            onModeChange={setMode}
+            onSubmit={startRun}
+            onCancel={cancelRun}
           />
         </section>
+
+        <RuntimePanels
+          plan={displayPlan}
+          contract={displayContract}
+          context={displayContext}
+          diff={displayDiff}
+          tests={displayTests}
+          trace={displayTrace}
+          runId={runId}
+        />
       </div>
     </main>
   );
