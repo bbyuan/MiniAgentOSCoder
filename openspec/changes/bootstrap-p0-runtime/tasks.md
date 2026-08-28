@@ -3,9 +3,9 @@
 ## 1. Project Scaffold
 
 - [x] 1.1 Create backend FastAPI scaffold.
-- [ ] 1.2 Create frontend React/Vite scaffold.
+- [x] 1.2 Create frontend React/Vite scaffold.
 - [x] 1.3 Add shared daemon API contract notes.
-- [ ] 1.4 Add basic development commands to README after scaffold exists.
+- [x] 1.4 Add basic development commands to README after scaffold exists.
 - [x] 1.5 Validate `.agent/config.yaml` and `.agent/skills.yaml` can be loaded.
 
 ## 2. Core Models
@@ -49,16 +49,16 @@
 
 ## 6. Workbench
 
-- [ ] 6.1 Implement workbench shell.
-- [ ] 6.2 Implement task input and run status display.
-- [ ] 6.3 Implement Plan panel.
-- [ ] 6.4 Implement Contract panel.
-- [ ] 6.5 Implement Context panel.
-- [ ] 6.6 Implement Diff panel.
-- [ ] 6.7 Implement Tests panel.
-- [ ] 6.8 Implement Trace panel.
-- [ ] 6.9 Implement Approval panel.
-- [ ] 6.10 Implement API client based on `openspec/api-contract.md`.
+- [x] 6.1 Implement workbench shell.
+- [x] 6.2 Implement task input and run status display.
+- [x] 6.3 Implement Plan panel.
+- [x] 6.4 Implement Contract panel.
+- [x] 6.5 Implement Context panel.
+- [x] 6.6 Implement Diff panel.
+- [x] 6.7 Implement Tests panel.
+- [x] 6.8 Implement Trace panel.
+- [x] 6.9 Implement Approval panel.
+- [x] 6.10 Implement API client based on `openspec/api-contract.md`.
 
 ## 7. Verification
 

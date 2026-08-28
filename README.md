@@ -50,6 +50,28 @@ open project -> scan workspace -> compile AgentContract -> plan -> build context
 -> repair -> report -> trace/replay
 ```
 
+## Development Commands
+
+Backend:
+
+```text
+cd backend
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload
+python -m pytest
+```
+
+Frontend:
+
+```text
+cd frontend
+npm install
+npm run dev
+npm run build
+```
+
 ## How To Work In This Repo
 
 1. Read `AGENTS.md`.
