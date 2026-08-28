@@ -1,5 +1,5 @@
-# Discount Review Task
+# Discount Bugfix Task
 
-Inspect `pricing.py` and its tests, run the test suite, and identify why `apply_discount` fails.
+Fix `pricing.apply_discount` so that it treats `percent` as a percentage, rounds the result to two decimal places with `ROUND_HALF_UP`, and rejects percentage values outside the inclusive range from 0 to 100.
 
-Finish with a concise repair recommendation that explains how percentage calculation and validation should change. Do not modify files in this run.
+Preserve the existing negative-price validation and make all tests pass. Keep the change focused on `pricing.py`.

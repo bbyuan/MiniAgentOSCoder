@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { CheckCircle2, FileCode2, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
+import { FileCode2, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
+import type { ApprovalRequest } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 import { PlanPanel, type PlanItem } from "./PlanPanel";
+import { ApprovalPanel } from "./ApprovalPanel";
 
 type InspectorTab = "overview" | "context" | "trace";
 
@@ -27,9 +29,25 @@ interface RuntimePanelsProps {
   };
   trace: string[];
   runId?: string;
+  approval: ApprovalRequest | null;
+  approvalBusy: boolean;
+  onApprove: () => void;
+  onDeny: (reason: string) => void;
 }
 
-export function RuntimePanels({ plan, contract, context, diff, tests, trace, runId }: RuntimePanelsProps) {
+export function RuntimePanels({
+  plan,
+  contract,
+  context,
+  diff,
+  tests,
+  trace,
+  runId,
+  approval,
+  approvalBusy,
+  onApprove,
+  onDeny,
+}: RuntimePanelsProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
   const { locale, t } = usePreferences();
   const tabs: Array<{ id: InspectorTab; label: string }> = [
@@ -100,10 +118,12 @@ export function RuntimePanels({ plan, contract, context, diff, tests, trace, run
               </div>
             </section>
 
-            <section className="inspectorSection approvalRow">
-              <div className="signalTitle"><CheckCircle2 size={15} /><span>{t("approval.title")}</span></div>
-              <span>{t("approval.empty")}</span>
-            </section>
+            <ApprovalPanel
+              approval={approval}
+              busy={approvalBusy}
+              onApprove={onApprove}
+              onDeny={onDeny}
+            />
           </>
         ) : null}
 

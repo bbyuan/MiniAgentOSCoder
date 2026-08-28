@@ -131,6 +131,24 @@ export interface StartRunResponse {
   events_url: string;
 }
 
+export interface ApprovalRequest {
+  approval_id: string;
+  run_id: string;
+  action_id: string;
+  risk: string;
+  effect: string;
+  reason: string;
+  target: {
+    tool: string;
+    patch: string;
+    files: string[];
+    additions: number;
+    deletions: number;
+    [key: string]: unknown;
+  };
+  options: string[];
+}
+
 const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -176,6 +194,18 @@ export const daemonApi = {
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
   getTrace: (runId: string) => request<TraceResponse>(`/runs/${runId}/trace`),
+  getApproval: (runId: string) =>
+    request<{ approval: ApprovalRequest | null }>(`/runs/${runId}/approval`),
+  approveAction: (runId: string, approvalId: string) =>
+    request<{ status: string }>(`/runs/${runId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ approval_id: approvalId, mode: "approve_once" }),
+    }),
+  denyAction: (runId: string, approvalId: string, reason: string) =>
+    request<{ status: string }>(`/runs/${runId}/deny`, {
+      method: "POST",
+      body: JSON.stringify({ approval_id: approvalId, reason }),
+    }),
   replayRun: (runId: string) => request<TraceResponse>(`/runs/${runId}/replay`, { method: "POST" }),
   getModelStatus: (projectId?: string) =>
     request<ModelProviderStatus>(`/models/status${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),

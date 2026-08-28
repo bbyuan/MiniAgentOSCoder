@@ -3,6 +3,7 @@ import { AlertCircle, CircleDot, GitBranch } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
+  type ApprovalRequest,
   type ContextPack,
   type ModelProviderStatus,
   type RunArtifacts,
@@ -20,6 +21,10 @@ import { mockRun } from "../stores/mockRun";
 
 const runCopy: Record<string, { title: TranslationKey; description: TranslationKey }> = {
   running: { title: "run.runningTitle", description: "run.runningDescription" },
+  waiting_approval: { title: "run.approvalTitle", description: "run.approvalDescription" },
+  applying_patch: { title: "run.applyingTitle", description: "run.applyingDescription" },
+  testing: { title: "run.testingTitle", description: "run.testingDescription" },
+  repairing: { title: "run.repairingTitle", description: "run.repairingDescription" },
   cancellation_requested: { title: "run.stoppingTitle", description: "run.runningDescription" },
   completed: { title: "run.completedTitle", description: "run.completedDescription" },
   failed: { title: "run.failedTitle", description: "run.failedDescription" },
@@ -30,9 +35,9 @@ export function Workbench() {
   const { locale, t } = usePreferences();
   const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/deepseek-bugfix");
   const [task, setTask] = useState(
-    "Inspect pricing.py and its tests, run pytest, identify the root cause, and finish with a concise repair recommendation. Do not modify files.",
+    "Fix pricing.apply_discount so percentage calculations and validation satisfy all tests. Keep the change focused on pricing.py.",
   );
-  const [mode, setMode] = useState<RunMode>("Review");
+  const [mode, setMode] = useState<RunMode>("Bugfix");
   const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +50,8 @@ export function Workbench() {
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
   const [finalMessage, setFinalMessage] = useState("");
   const [runBudget, setRunBudget] = useState<Record<string, number>>({});
+  const [approval, setApproval] = useState<ApprovalRequest | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -84,7 +91,14 @@ export function Workbench() {
   const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
   const displayTests = artifacts?.test_summary ?? mockRun.tests;
   const displayTrace = traceEvents.map((event) => event.event);
-  const runIsActive = ["running", "cancellation_requested"].includes(runStatus);
+  const runIsActive = [
+    "running",
+    "waiting_approval",
+    "applying_patch",
+    "testing",
+    "repairing",
+    "cancellation_requested",
+  ].includes(runStatus);
   const displayStatus = runId ? runStatus : connection;
   const displayBudget = {
     modelCalls: runBudget.model_calls ?? 0,
@@ -102,6 +116,7 @@ export function Workbench() {
     setError(null);
     setFinalMessage("");
     setRunBudget({});
+    setApproval(null);
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
@@ -137,6 +152,12 @@ export function Workbench() {
         traceResponse.events.length,
         (event) => {
           setTraceEvents((current) => [...current, event]);
+          if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
+            setApproval(event.payload.approval);
+            setRunStatus("waiting_approval");
+          } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
+            setApproval(null);
+          }
           const eventBudget = Object.fromEntries(
             Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
           );
@@ -148,6 +169,12 @@ export function Workbench() {
             if (typeof eventStatus === "string") setRunStatus(eventStatus);
           }
           const transitionedStatus = event.payload.status;
+          if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
+            setRunStatus(transitionedStatus);
+            if (["waiting_approval", "testing", "repairing", "completed"].includes(transitionedStatus)) {
+              daemonApi.getArtifacts(run.run_id).then(setArtifacts).catch(() => undefined);
+            }
+          }
           if (
             event.event === "run.transitioned" &&
             typeof transitionedStatus === "string" &&
@@ -178,6 +205,36 @@ export function Workbench() {
       setRunStatus(cancelled.status);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
+    }
+  }
+
+  async function approveAction() {
+    if (!runId || approval === null) return;
+    setApprovalBusy(true);
+    setError(null);
+    try {
+      await daemonApi.approveAction(runId, approval.approval_id);
+      setApproval(null);
+      setRunStatus("applying_patch");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.approveAction"));
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
+
+  async function denyAction(reason: string) {
+    if (!runId || approval === null) return;
+    setApprovalBusy(true);
+    setError(null);
+    try {
+      await daemonApi.denyAction(runId, approval.approval_id, reason);
+      setApproval(null);
+      setRunStatus("repairing");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.denyAction"));
+    } finally {
+      setApprovalBusy(false);
     }
   }
 
@@ -236,8 +293,22 @@ export function Workbench() {
           tests={displayTests}
           trace={displayTrace}
           runId={runId}
+          approval={approval}
+          approvalBusy={approvalBusy}
+          onApprove={approveAction}
+          onDeny={denyAction}
         />
       </div>
     </main>
   );
+}
+
+function isApprovalRequest(value: unknown): value is ApprovalRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<ApprovalRequest>;
+  return typeof candidate.approval_id === "string"
+    && typeof candidate.run_id === "string"
+    && typeof candidate.reason === "string"
+    && typeof candidate.target === "object"
+    && candidate.target !== null;
 }

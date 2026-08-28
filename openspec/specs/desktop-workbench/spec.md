@@ -109,3 +109,21 @@ The workbench SHALL present live activity in the primary run canvas and organize
 - WHEN the viewport narrows
 - THEN the inspector SHALL stack below the run canvas
 - AND controls and text SHALL remain readable without overlap
+
+### DW-011 Patch Approval Workbench
+
+The workbench SHALL display a real pending patch with its risk, effect, target files, change counts, reason, and unified diff, and SHALL let the user approve it once or deny it with feedback.
+
+#### Scenario: Approve a pending patch
+
+- GIVEN the Daemon emits an approval request for a validated patch
+- WHEN the user reviews the diff and approves once
+- THEN the workbench SHALL submit the matching approval id
+- AND continue rendering the resumed run without starting a duplicate run
+
+#### Scenario: Deny with feedback
+
+- GIVEN a patch is waiting for approval
+- WHEN the user enters a reason and denies it
+- THEN the reason SHALL be sent to the Daemon
+- AND duplicate decisions SHALL be disabled while the request is pending
