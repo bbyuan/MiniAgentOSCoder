@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CircleDot, GitBranch } from "lucide-react";
+import { AlertCircle, CircleDot, GitBranch, Square } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -9,9 +9,11 @@ import {
   type ExtensionResponse,
   type ExtensionSettings,
   type GovernanceResponse,
+  type HistoryProject,
   type MemoryInput,
   type MemoryResponse,
   type ModelProviderStatus,
+  type OpenProjectResponse,
   type RecoveryResponse,
   type RunArtifacts,
   type RunMode,
@@ -21,14 +23,17 @@ import {
   type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { CompletionSummary } from "../components/CompletionSummary";
 import { MetricStrip } from "../components/MetricStrip";
+import { PreflightSummary } from "../components/PreflightSummary";
+import { ProjectLauncher } from "../components/ProjectLauncher";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
-import { TaskComposer } from "../components/TaskComposer";
+import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
+import { chooseProjectDirectory, isDesktopHost } from "../desktop/runtime";
 import { translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
-import { mockRun } from "../stores/mockRun";
 
 const runCopy: Record<string, { title: TranslationKey; description: TranslationKey }> = {
   running: { title: "run.runningTitle", description: "run.runningDescription" },
@@ -44,16 +49,17 @@ const runCopy: Record<string, { title: TranslationKey; description: TranslationK
 
 export function Workbench() {
   const { locale, t } = usePreferences();
-  const [workspacePath, setWorkspacePath] = useState("/Users/shaoboyuan/seecoder/MiniAgentOSCoder/examples/deepseek-bugfix");
-  const [task, setTask] = useState(
-    "Fix pricing.apply_discount so percentage calculations and validation satisfy all tests. Keep the change focused on pricing.py.",
-  );
+  const [workspacePath, setWorkspacePath] = useState("");
+  const [project, setProject] = useState<OpenProjectResponse>();
+  const [recentProjects, setRecentProjects] = useState<HistoryProject[]>([]);
+  const [projectBusy, setProjectBusy] = useState(false);
+  const [task, setTask] = useState("");
   const [mode, setMode] = useState<RunMode>("Bugfix");
   const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | undefined>();
-  const [runStatus, setRunStatus] = useState(mockRun.status);
+  const [runStatus, setRunStatus] = useState("idle");
   const [contract, setContract] = useState<AgentContract | undefined>();
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
   const [contextBusy, setContextBusy] = useState(false);
@@ -79,22 +85,26 @@ export function Workbench() {
   useEffect(() => {
     daemonApi
       .health()
-      .then(() => setConnection("connected"))
+      .then(async () => {
+        setConnection("connected");
+        const history = await daemonApi.getHistoryProjects().catch(() => undefined);
+        if (history) setRecentProjects(history.projects);
+      })
       .catch(() => setConnection("offline"));
     return () => streamCleanup.current?.();
   }, []);
 
   const displayContract = useMemo(() => {
-    if (!contract) return mockRun.contract;
+    if (!contract) return { effects: [], policies: [] };
     return {
       effects: contract.effects.allow,
       policies: Object.entries(contract.policies).map(([key, value]) => `${key}: ${value}`),
     };
   }, [contract]);
 
-  const displayPlan = artifacts?.plan ?? mockRun.plan;
-  const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
-  const displayTests = artifacts?.test_summary ?? mockRun.tests;
+  const displayPlan = artifacts?.plan ?? [];
+  const displayDiff = artifacts?.diff_summary ?? { files: 0, insertions: 0, deletions: 0, status: "Not run" };
+  const displayTests = artifacts?.test_summary ?? { command: "-", status: "Not run", passed: 0, failed: 0 };
   const runIsActive = [
     "running",
     "waiting_approval",
@@ -110,13 +120,45 @@ export function Workbench() {
     toolCalls: runBudget.tool_calls ?? 0,
     tokens: contextPack
       ? `${contextPack.budget_report.used_tokens}/${contextPack.budget_report.max_tokens}`
-      : mockRun.budget.tokens,
+      : "0/0",
   };
   const copy = runId
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
+  const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
+
+  async function openWorkspace(path: string) {
+    if (!path.trim()) return;
+    setProjectBusy(true);
+    setError(null);
+    try {
+      const opened = await daemonApi.openProject(path.trim());
+      const providerStatus = await daemonApi.getModelStatus(opened.project_id).catch(() => undefined);
+      setProject(opened);
+      setWorkspacePath(opened.path);
+      setModelStatus(providerStatus);
+      setConnection("connected");
+      const history = await daemonApi.getHistoryProjects().catch(() => undefined);
+      if (history) setRecentProjects(history.projects);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.openProject"));
+    } finally {
+      setProjectBusy(false);
+    }
+  }
+
+  async function browseWorkspace() {
+    try {
+      const selected = await chooseProjectDirectory();
+      if (selected) await openWorkspace(selected);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.openProject"));
+    }
+  }
+
   async function prepareRun() {
+    if (!project) return;
     setBusy(true);
     setError(null);
     setFinalMessage("");
@@ -131,7 +173,6 @@ export function Workbench() {
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
-      const project = await daemonApi.openProject(workspacePath);
       const [run, providerStatus] = await Promise.all([
         daemonApi.createRun({ project_id: project.project_id, task, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
@@ -168,12 +209,6 @@ export function Workbench() {
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
-
-      if (!providerStatus?.configured) {
-        const issues = providerStatus?.issues.join(", ") || t("error.providerUnavailable");
-        setError(t("error.modelSetup", { issues }));
-        return;
-      }
 
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.prepareRun"));
@@ -313,6 +348,49 @@ export function Workbench() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
     }
+  }
+
+  async function discardPreparedRun() {
+    if (!runId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await daemonApi.cancelRun(runId);
+      resetRunState();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function resetRunState(clearTask = false) {
+    streamCleanup.current?.();
+    streamCleanup.current = null;
+    setRunId(undefined);
+    setRunStatus("idle");
+    setContract(undefined);
+    setContextPack(undefined);
+    setMemory(undefined);
+    setGovernance(undefined);
+    setExtensions(undefined);
+    setArtifacts(undefined);
+    setTraceEvents([]);
+    setFinalMessage("");
+    setRunBudget({});
+    setApproval(null);
+    setRecovery(undefined);
+    setReport(undefined);
+    setRollbackBusy(undefined);
+    setError(null);
+    if (clearTask) setTask("");
+  }
+
+  function changeProject() {
+    resetRunState(true);
+    setProject(undefined);
+    setWorkspacePath("");
+    setModelStatus(undefined);
   }
 
   async function approveAction() {
@@ -481,15 +559,61 @@ export function Workbench() {
   return (
     <main className="appShell">
       <TopBar
-        project={mockRun.project}
+        project={project ? basename(project.path) : t("top.noProject")}
         status={displayStatus}
         model={modelStatus?.configured ? modelStatus.model : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
         modelConfigured={modelStatus?.configured}
         onOpenHistory={() => setHistoryOpen(true)}
       />
 
-      <div className="workbenchLayout">
-        <section className="runCanvas">
+      {!project ? (
+        <div className="guidedStage">
+          {error ? <ErrorBanner message={error} /> : null}
+          <ProjectLauncher
+            desktop={isDesktopHost()}
+            path={workspacePath}
+            recentProjects={recentProjects}
+            busy={projectBusy}
+            onPathChange={setWorkspacePath}
+            onBrowse={browseWorkspace}
+            onOpen={openWorkspace}
+          />
+        </div>
+      ) : !runId ? (
+        <div className="guidedStage taskStage">
+          {error ? <ErrorBanner message={error} /> : null}
+          <TaskSetup
+            project={project}
+            task={task}
+            mode={mode}
+            busy={busy}
+            onTaskChange={setTask}
+            onModeChange={setMode}
+            onAnalyze={prepareRun}
+            onChangeProject={changeProject}
+          />
+        </div>
+      ) : (
+        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout" : ""}`}>
+          <section className={`runCanvas ${runIsPrepared ? "preflightCanvas" : ""}`}>
+            {runIsPrepared ? (
+              <>
+                {error ? <ErrorBanner message={error} /> : null}
+                <PreflightSummary
+                  mode={mode}
+                  task={task}
+                  model={modelStatus}
+                  contract={contract}
+                  context={contextPack}
+                  governance={governance}
+                  extensions={extensions}
+                  busy={busy}
+                  onBack={discardPreparedRun}
+                  onLaunch={launchRun}
+                />
+              </>
+            ) : (
+              <>
           <header className="runHeader">
             <div className="runHeading">
               <span className="eyebrow">{t("run.eyebrow")}</span>
@@ -503,28 +627,28 @@ export function Workbench() {
           </header>
 
           <MetricStrip budget={displayBudget} phase={displayStatus} />
+          {terminal ? (
+            <CompletionSummary
+              status={runStatus}
+              message={finalMessage}
+              artifacts={artifacts}
+              onNewTask={() => resetRunState(true)}
+            />
+          ) : null}
           <ActivityFeed events={traceEvents} active={runIsActive} />
 
-          {error ? (
-            <div className="errorBanner" role="alert">
-              <AlertCircle size={17} />
-              <span>{error}</span>
+          {error ? <ErrorBanner message={error} /> : null}
+
+          {runIsActive ? (
+            <div className="activeRunControls">
+              <span>{t("run.safeStopHint")}</span>
+              <button type="button" disabled={busy || runStatus === "cancellation_requested"} onClick={cancelRun}>
+                <Square size={12} fill="currentColor" />{t("composer.cancel")}
+              </button>
             </div>
           ) : null}
-
-          <TaskComposer
-            workspacePath={workspacePath}
-            task={task}
-            mode={mode}
-            disabled={busy || runStatus === "cancellation_requested" || !workspacePath || !task}
-            running={runIsActive}
-            prepared={runIsPrepared}
-            onWorkspacePathChange={setWorkspacePath}
-            onTaskChange={setTask}
-            onModeChange={setMode}
-            onSubmit={runIsPrepared ? launchRun : prepareRun}
-            onCancel={cancelRun}
-          />
+              </>
+            )}
         </section>
 
         <RuntimePanels
@@ -558,10 +682,24 @@ export function Workbench() {
           onSaveGovernance={saveGovernance}
           onSaveExtensions={saveExtensions}
         />
-      </div>
+        </div>
+      )}
       <RunCenter open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </main>
   );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="errorBanner" role="alert">
+      <AlertCircle size={17} />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function basename(path: string): string {
+  return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path;
 }
 
 function isApprovalRequest(value: unknown): value is ApprovalRequest {

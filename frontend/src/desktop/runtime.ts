@@ -14,6 +14,16 @@ export function isDesktopHost(): boolean {
   return "__TAURI_INTERNALS__" in window;
 }
 
+export async function chooseProjectDirectory(): Promise<string | null> {
+  if (!isDesktopHost()) return null;
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  return open({
+    directory: true,
+    multiple: false,
+    title: "Open code project",
+  });
+}
+
 export async function initializeDesktopRuntime(): Promise<DesktopRuntimeStatus> {
   if (!isDesktopHost()) {
     return {
