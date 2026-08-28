@@ -62,8 +62,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Add one example Python bugfix project.
-- [ ] 7.2 Add one run-through script or manual demo path.
-- [ ] 7.3 Generate trace, patch, test result, and report for the example run.
-- [ ] 7.4 Document validation commands and remaining risks.
-- [ ] 7.5 Verify every P0 requirement has an observable scenario or test.
+- [x] 7.1 Add one example Python bugfix project.
+- [x] 7.2 Add one run-through script or manual demo path.
+- [x] 7.3 Generate trace, patch, test result, and report for the example run.
+- [x] 7.4 Document validation commands and remaining risks.
+- [x] 7.5 Verify every P0 requirement has an observable scenario or test.

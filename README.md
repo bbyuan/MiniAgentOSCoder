@@ -72,6 +72,15 @@ npm run dev
 npm run build
 ```
 
+P0 demo:
+
+```text
+cd backend
+.venv/bin/python scripts/demo_p0_run.py
+```
+
+The demo copies `examples/python-bugfix` into a temporary workspace, scans it, builds a context pack, applies a patch through Patch Pipeline, runs tests before and after the patch, and writes artifacts under `runs/{run_id}/`.
+
 ## How To Work In This Repo
 
 1. Read `AGENTS.md`.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import subprocess
 
 
 class PatchPipelineError(ValueError):
@@ -39,3 +40,30 @@ class PatchPipeline:
     def dry_run(self, unified_diff: str) -> PatchSummary:
         return self.summarize(unified_diff)
 
+    def check_apply(self, unified_diff: str) -> PatchSummary:
+        summary = self.summarize(unified_diff)
+        completed = subprocess.run(
+            ["git", "apply", "--check", "-"],
+            cwd=self.workspace_root,
+            input=unified_diff,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise PatchPipelineError(completed.stderr.strip() or "Patch dry-run failed")
+        return summary
+
+    def apply(self, unified_diff: str) -> PatchSummary:
+        summary = self.check_apply(unified_diff)
+        completed = subprocess.run(
+            ["git", "apply", "-"],
+            cwd=self.workspace_root,
+            input=unified_diff,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise PatchPipelineError(completed.stderr.strip() or "Patch apply failed")
+        return summary
