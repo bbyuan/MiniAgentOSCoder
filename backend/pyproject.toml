@@ -11,10 +11,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "httpx2>=0.28",
   "pytest>=8.0",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-
