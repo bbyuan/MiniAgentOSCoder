@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Callable
 
 from app.guards import check_command, redact_secrets, resolve_workspace_path
 from app.models import ApprovalPolicy, RiskLevel, ToolDescriptor, ToolResult
+from app.runtime.sandbox import SandboxExecutor
 from app.tools.patch_pipeline import PatchPipeline, PatchPipelineError
 
 
@@ -16,8 +16,12 @@ BuiltinToolRegistration = tuple[
 ]
 
 
-def create_builtin_tool_registry(workspace_root: str | Path) -> list[BuiltinToolRegistration]:
+def create_builtin_tool_registry(
+    workspace_root: str | Path,
+    sandbox: SandboxExecutor | None = None,
+) -> list[BuiltinToolRegistration]:
     workspace = Path(workspace_root)
+    sandbox_executor = sandbox or SandboxExecutor(workspace, "unmanaged")
     return [
         (
             ToolDescriptor(
@@ -27,6 +31,7 @@ def create_builtin_tool_registry(workspace_root: str | Path) -> list[BuiltinTool
                 risk=RiskLevel.LOW,
                 approval_policy=ApprovalPolicy.AUTO,
                 input_schema={"path": "string"},
+                metadata={"path_params": ["path"], "sandbox": "workspace_read"},
             ),
             lambda params: read_file(workspace, params["path"]),
             None,
@@ -39,6 +44,7 @@ def create_builtin_tool_registry(workspace_root: str | Path) -> list[BuiltinTool
                 risk=RiskLevel.LOW,
                 approval_policy=ApprovalPolicy.AUTO,
                 input_schema={"query": "string"},
+                metadata={"sandbox": "workspace_read"},
             ),
             lambda params: search_code(workspace, params["query"]),
             None,
@@ -52,8 +58,13 @@ def create_builtin_tool_registry(workspace_root: str | Path) -> list[BuiltinTool
                 approval_policy=ApprovalPolicy.AUTO,
                 input_schema={"command": "string"},
                 timeout_seconds=60,
+                metadata={
+                    "command_param": "command",
+                    "allowed_prefixes": ["python", "python3", "pytest", "npm"],
+                    "sandbox": "process",
+                },
             ),
-            lambda params: run_test(workspace, params["command"]),
+            lambda params: run_test(workspace, params["command"], sandbox_executor),
             None,
         ),
         (
@@ -65,6 +76,7 @@ def create_builtin_tool_registry(workspace_root: str | Path) -> list[BuiltinTool
                 approval_policy=ApprovalPolicy.APPROVAL_REQUIRED,
                 input_schema={"patch": "string"},
                 timeout_seconds=30,
+                metadata={"sandbox": "patch_pipeline"},
             ),
             lambda params: apply_patch(workspace, params["patch"]),
             lambda params: preview_patch(workspace, params["patch"]),
@@ -98,22 +110,21 @@ def search_code(workspace_root: Path, query: str) -> ToolResult:
     return ToolResult(ok=True, tool="search_code", output="\n".join(matches), metadata={"matches": matches})
 
 
-def run_test(workspace_root: Path, command: str) -> ToolResult:
+def run_test(workspace_root: Path, command: str, sandbox: SandboxExecutor) -> ToolResult:
     tokens = check_command(command, allowed_prefixes=["python", "python3", "pytest", "npm"])
-    completed = subprocess.run(
-        tokens,
-        cwd=workspace_root,
-        text=True,
-        capture_output=True,
-        timeout=60,
-        check=False,
-    )
-    output = "\n".join(part for part in [completed.stdout, completed.stderr] if part)
+    execution, output = sandbox.run(tokens, timeout_seconds=60)
     return ToolResult(
-        ok=completed.returncode == 0,
+        ok=execution.returncode == 0 and not execution.timed_out,
         tool="run_test",
-        output=redact_secrets(output),
-        metadata={"returncode": completed.returncode, "command": command},
+        output=output,
+        error="Sandbox command timed out" if execution.timed_out else None,
+        metadata={
+            "returncode": execution.returncode,
+            "command": command,
+            "sandbox_id": execution.sandbox_id,
+            "sandbox_profile": execution.profile.value,
+            "output_truncated": execution.output_truncated,
+        },
     )
 
 

@@ -3,6 +3,15 @@ from app.models.artifacts import DiffSummary, PlanStep, RunArtifacts, TestSummar
 from app.models.contract import AgentContract, CostEnvelope, EffectSet, PolicySet, ProgramSpec
 from app.models.context import ContextItem, ContextPack, ContextPackBudget
 from app.models.memory import MemoryEntry, MemoryScope
+from app.models.governance import (
+    DecisionStatus,
+    GovernanceSettings,
+    GuardDecision,
+    PolicyEvaluation,
+    SandboxCapabilities,
+    SandboxExecution,
+    SandboxProfile,
+)
 from app.models.run import ApprovalRequest, Checkpoint, RecoveryPoint, RunLoopResult, RunPhase, RunState, RunStatus
 from app.models.tool import ApprovalPolicy, RiskLevel, ToolDescriptor, ToolHandler, ToolResult
 from app.models.trace import TraceEvent
@@ -19,14 +28,21 @@ __all__ = [
     "ContextPackBudget",
     "CostEnvelope",
     "DiffSummary",
+    "DecisionStatus",
     "EffectSet",
+    "GovernanceSettings",
+    "GuardDecision",
     "MemoryEntry",
     "MemoryScope",
     "PolicySet",
+    "PolicyEvaluation",
     "PlanStep",
     "ProgramSpec",
     "RecoveryPoint",
     "RiskLevel",
+    "SandboxCapabilities",
+    "SandboxExecution",
+    "SandboxProfile",
     "RunPhase",
     "RunArtifacts",
     "RunLoopResult",

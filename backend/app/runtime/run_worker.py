@@ -22,6 +22,7 @@ from app.models import (
     ApprovalRequest,
     Checkpoint,
     ContextPack,
+    GovernanceSettings,
     RunArtifacts,
     RunLoopResult,
     RunPhase,
@@ -32,6 +33,7 @@ from app.models import (
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import ModelClient
 from app.runtime.run_loop import AgentRunLoop
+from app.runtime.sandbox import SandboxExecutor
 from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.state_machine import InvalidRunTransition, transition_run
 from app.runtime.tracer import TraceWriter
@@ -54,6 +56,7 @@ class RunJob:
     artifacts: RunArtifacts | None = None
     on_approval_requested: Callable[[ApprovalRequest], None] = lambda approval: None
     on_approval_resolved: Callable[[str], None] = lambda approval_id: None
+    governance: GovernanceSettings = field(default_factory=GovernanceSettings)
 
 
 @dataclass
@@ -101,6 +104,12 @@ class RunWorker:
 
         try:
             try:
+                sandbox = SandboxExecutor(
+                    job.workspace,
+                    job.run.run_id,
+                    profile=job.governance.sandbox_profile,
+                    event_handler=lambda event, payload: job.tracer.event(job.run.run_id, event, payload),
+                )
                 gateway = ToolGateway(
                     workspace_root=job.workspace,
                     contract=job.contract,
@@ -112,8 +121,16 @@ class RunWorker:
                         preview,
                     ),
                     result_handler=lambda action, result: self._record_tool_result(job, action, result),
+                    policy_handler=lambda evaluation: job.tracer.event(
+                        job.run.run_id,
+                        "policy.evaluated",
+                        {"evaluation": evaluation.to_dict()},
+                    ),
+                    governance=job.governance,
+                    sandbox_validator=sandbox.validate_argv,
+                    run_id=job.run.run_id,
                 )
-                for descriptor, handler, preflight in create_builtin_tool_registry(job.workspace):
+                for descriptor, handler, preflight in create_builtin_tool_registry(job.workspace, sandbox):
                     gateway.register(descriptor, handler, preflight)
 
                 result = AgentRunLoop(
@@ -222,6 +239,7 @@ class RunWorker:
             target={
                 "tool": action.type,
                 "patch": action.params.get("patch", ""),
+                "command": redact_secrets(str(action.params.get("command", ""))),
                 **(preview.metadata if preview is not None else {}),
             },
             options=["approve_once", "deny"],
@@ -239,7 +257,7 @@ class RunWorker:
         )
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
         job.on_approval_requested(approval)
-        if job.artifacts is not None:
+        if job.artifacts is not None and action.type == "apply_patch":
             job.artifacts.diff_summary.status = "Awaiting approval"
             job.artifacts.diff_summary.files = len(approval.target.get("files", []))
             job.artifacts.diff_summary.insertions = int(approval.target.get("additions", 0))
@@ -272,24 +290,27 @@ class RunWorker:
         if waiter.approved:
             checkpoint_id = f"before-apply-{uuid4().hex[:10]}"
             self._save_checkpoint(job, checkpoint_id)
-            summary = PatchSummary(
-                files=list(preview.metadata.get("files", [])) if preview is not None else [],
-                additions=int(preview.metadata.get("additions", 0)) if preview is not None else 0,
-                deletions=int(preview.metadata.get("deletions", 0)) if preview is not None else 0,
-            )
-            snapshot_dir = job.workspace / "runs" / job.run.run_id / "snapshots" / checkpoint_id
-            manifest_path = PatchPipeline(job.workspace).snapshot(summary, snapshot_dir)
-            transition_run(job.run, RunPhase.APPLYING_PATCH)
             job.tracer.event(
                 job.run.run_id,
                 "approval.resolved",
                 {"approval_id": approval_id, "decision": "approve_once"},
             )
-            job.tracer.event(
-                job.run.run_id,
-                "patch.snapshot.created",
-                {"checkpoint_id": checkpoint_id, "manifest_path": str(manifest_path)},
-            )
+            if action.type == "apply_patch":
+                summary = PatchSummary(
+                    files=list(preview.metadata.get("files", [])) if preview is not None else [],
+                    additions=int(preview.metadata.get("additions", 0)) if preview is not None else 0,
+                    deletions=int(preview.metadata.get("deletions", 0)) if preview is not None else 0,
+                )
+                snapshot_dir = job.workspace / "runs" / job.run.run_id / "snapshots" / checkpoint_id
+                manifest_path = PatchPipeline(job.workspace).snapshot(summary, snapshot_dir)
+                transition_run(job.run, RunPhase.APPLYING_PATCH)
+                job.tracer.event(
+                    job.run.run_id,
+                    "patch.snapshot.created",
+                    {"checkpoint_id": checkpoint_id, "manifest_path": str(manifest_path)},
+                )
+            else:
+                transition_run(job.run, RunPhase.RUNNING)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
             return ToolApprovalDecision(
                 approved=True,

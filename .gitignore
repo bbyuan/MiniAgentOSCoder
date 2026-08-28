@@ -19,6 +19,7 @@ build/
 runs/
 .agent/index/
 .agent/project-profile.json
+.agent/sandboxes/
 
 # Local secrets
 .env

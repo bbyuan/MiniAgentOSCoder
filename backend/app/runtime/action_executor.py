@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import uuid4
 
 from app.models import ActionIR, ToolResult
 from app.models.base import Serializable
@@ -21,6 +22,8 @@ class ActionExecutor:
         self.run_id = run_id
 
     def execute(self, action: ActionIR) -> ActionExecution:
+        if action.action_id is None:
+            action.action_id = f"action-{uuid4().hex[:10]}"
         self.tracer.event(self.run_id, "action.parsed", {"action": action.to_dict()}, role=action.role)
 
         try:

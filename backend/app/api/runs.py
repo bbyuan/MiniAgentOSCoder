@@ -9,10 +9,11 @@ from pydantic import BaseModel
 from app.api.store import store
 from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory
 from app.guards import redact_secrets
-from app.models import MemoryScope, RunLoopResult, RunPhase
+from app.models import GovernanceSettings, MemoryScope, RunLoopResult, RunPhase
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
+from app.runtime.config import load_governance_settings
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
 from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_artifact_writer import RunArtifactWriter
@@ -42,6 +43,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     config_path = _find_config_path(project.path)
     run = create_runtime_run(request.task, project.path, config_path, runs_dir=project.path / "runs")
     contract = compile_agent_contract(config_path, task_mode=request.mode, project_profile=project.profile)
+    governance = load_governance_settings(config_path)
     run.mode = request.mode
     tracer = TraceWriter(project.path / "runs")
     trace_events = tracer.read_events(run.run_id)
@@ -58,6 +60,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     store.contexts[run.run_id] = context_pack
     store.artifacts[run.run_id] = artifacts
     store.run_projects[run.run_id] = project.project_id
+    store.governance[run.run_id] = governance
     tracer.event(
         run.run_id,
         "memory.loaded",
@@ -135,6 +138,7 @@ def start_run(run_id: str) -> dict[str, object]:
         artifacts=store.artifacts.get(run_id),
         on_approval_requested=lambda approval: store.approvals.__setitem__(approval.approval_id, approval),
         on_approval_resolved=lambda approval_id: store.approvals.pop(approval_id, None),
+        governance=store.governance.get(run_id, GovernanceSettings()),
     )
     try:
         store.worker.start(job)

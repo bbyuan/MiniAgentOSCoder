@@ -67,3 +67,7 @@ approval:
   allow_pattern_approvals: true
   require_patch_approval: true
   require_dependency_approval: true
+
+sandbox:
+  profile: standard
+  backend: portable-process

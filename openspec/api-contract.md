@@ -241,6 +241,28 @@ Update kind, content, and tags. Updating long-term memory again requires explici
 
 Delete a persisted project or long-term memory entry. Short-term memory remains read-only.
 
+## Governance APIs
+
+### `GET /runs/{run_id}/governance`
+
+Return the Run's editable state, Sandbox profile and Capability Report, AgentContract effects and policies, registered ToolDescriptors, effective tool policies, PolicyEvaluation history, and SandboxExecution history. Histories are reconstructed from `trace.jsonl`.
+
+### `PUT /runs/{run_id}/governance`
+
+Update execution governance before the Run starts:
+
+```json
+{
+  "sandbox_profile": "strict",
+  "tool_overrides": {
+    "run_test": "approval_required",
+    "search_code": "deny"
+  }
+}
+```
+
+Overrides support `inherit`, `approval_required`, and `deny`. They can raise but never lower the Descriptor or AgentContract safety policy. Active and terminal Runs return `409`.
+
 ## Model APIs
 
 ### `GET /models/status`

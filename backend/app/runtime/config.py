@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from app.models import GovernanceSettings, SandboxProfile
+
 try:
     import yaml
 except ModuleNotFoundError:  # pragma: no cover - exercised when dependencies are absent.
@@ -18,6 +20,15 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
             raise ValueError(f"Expected mapping in {config_path}")
         return data
     return _parse_simple_yaml(text)
+
+
+def load_governance_settings(path: str | Path) -> GovernanceSettings:
+    config = load_yaml(path)
+    sandbox = config.get("sandbox", {})
+    if not isinstance(sandbox, dict):
+        raise ValueError("sandbox configuration must be a mapping")
+    profile = SandboxProfile(str(sandbox.get("profile", SandboxProfile.STANDARD.value)))
+    return GovernanceSettings(sandbox_profile=profile)
 
 
 def _parse_simple_yaml(text: str) -> dict[str, Any]:

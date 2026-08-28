@@ -27,6 +27,7 @@ def make_client() -> TestClient:
     store.artifacts.clear()
     store.run_results.clear()
     store.run_projects.clear()
+    store.governance.clear()
     store.worker.reset()
     store.current_project_id = None
     return TestClient(create_app())
@@ -187,6 +188,65 @@ def test_project_memory_is_injected_into_the_next_run_context(tmp_path: Path) ->
 
     assert created["memory_id"] in context["selected_items"]
     assert any(item["id"] == created["memory_id"] for item in context["explanation"])
+
+
+def test_governance_api_updates_pre_run_controls(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "govern tools", "mode": "Bugfix"},
+    ).json()
+    url = f"/runs/{run['run_id']}/governance"
+
+    initial = client.get(url)
+    updated = client.put(
+        url,
+        json={"sandbox_profile": "strict", "tool_overrides": {"run_test": "approval_required"}},
+    )
+    invalid = client.put(
+        url,
+        json={"sandbox_profile": "strict", "tool_overrides": {"unknown": "deny"}},
+    )
+
+    assert initial.status_code == 200
+    assert initial.json()["capabilities"]["backend"] == "portable-process"
+    assert initial.json()["editable"] is True
+    assert updated.json()["settings"]["sandbox_profile"] == "strict"
+    assert next(tool for tool in updated.json()["tools"] if tool["name"] == "run_test")["effective_policy"] == "approval_required"
+    assert invalid.status_code == 422
+
+
+def test_governance_api_rebuilds_policy_and_sandbox_history(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            [
+                json.dumps({
+                    "type": "run_test",
+                    "rationale": "smoke",
+                    "params": {"command": "python3 -c \"print(123)\""},
+                }),
+                json.dumps({"type": "finish", "rationale": "done", "params": {"message": "governed"}}),
+            ]
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "run governed test", "mode": "Bugfix"},
+    ).json()
+
+    client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
+    governance = client.get(f"/runs/{run['run_id']}/governance").json()
+
+    assert governance["editable"] is False
+    assert governance["evaluations"][0]["tool"] == "run_test"
+    assert governance["evaluations"][0]["outcome"] == "allowed"
+    assert governance["executions"][0]["backend"] == "portable-process"
 
 
 def test_cancel_run(tmp_path: Path) -> None:

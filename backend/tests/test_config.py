@@ -12,6 +12,7 @@ def test_agent_config_loads() -> None:
     assert data["agent"]["id"] == "miniagent-coder"
     assert "fs.read" in data["effects"]["allow"]
     assert data["approval"]["require_patch_approval"] is True
+    assert data["sandbox"]["profile"] == "standard"
 
 
 def test_skill_registry_loads() -> None:
@@ -19,4 +20,3 @@ def test_skill_registry_loads() -> None:
 
     assert data["skills"][0]["id"] == "bugfix"
     assert data["skills"][0]["path"].endswith("bugfix/SKILL.md")
-

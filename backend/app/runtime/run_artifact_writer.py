@@ -59,6 +59,14 @@ class RunArtifactWriter:
         selected_context = context_pack.selected_items or context_pack.required_items
         policies = contract.policies.to_dict()
         generated_at = self.now().astimezone(timezone.utc).isoformat()
+        policy_evaluations = [event for event in trace_events if event.get("event") == "policy.evaluated"]
+        denied_evaluations = [
+            event for event in policy_evaluations
+            if isinstance(event.get("payload"), dict)
+            and isinstance(event["payload"].get("evaluation"), dict)
+            and event["payload"]["evaluation"].get("outcome") != "allowed"
+        ]
+        sandbox_executions = [event for event in trace_events if event.get("event") == "sandbox.finished"]
 
         report = "\n".join(
             [
@@ -124,6 +132,8 @@ class RunArtifactWriter:
                 f"- Context compactions: {context_pack.compaction_count}",
                 f"- Context threshold: `{context_pack.threshold_state}`",
                 f"- Memory references: {_inline_list(run.memory_refs)}",
+                f"- Policy evaluations: {len(policy_evaluations)} ({len(denied_evaluations)} denied)",
+                f"- Sandbox executions: {len(sandbox_executions)}",
                 f"- Trace events before report: {len(trace_events)}",
                 f"- Trace artifact: `trace.jsonl`",
                 "",
