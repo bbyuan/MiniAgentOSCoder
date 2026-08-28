@@ -1,0 +1,19 @@
+[package]
+name = "miniagentos-coder-desktop"
+version = "0.1.0"
+description = "Desktop host for the MiniAgentOS Coder local runtime"
+authors = ["MiniAgentOS Coder Contributors"]
+edition = "2021"
+
+[lib]
+name = "miniagentos_coder_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+

@@ -79,6 +79,108 @@ body {
   background: var(--canvas);
 }
 
+.desktopBootstrap {
+  min-height: 100vh;
+  padding: 28px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  color: var(--text);
+  background: var(--canvas);
+}
+
+.desktopBootstrapBrand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 14px;
+}
+
+.desktopBootstrapLoading,
+.desktopBootstrapFailure {
+  width: min(100%, 580px);
+  margin: auto;
+}
+
+.desktopBootstrapLoading {
+  text-align: center;
+}
+
+.desktopLoadingMark {
+  width: 26px;
+  height: 26px;
+  margin: 0 auto 22px;
+  display: block;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: historySpin 900ms linear infinite;
+}
+
+.desktopBootstrap h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.desktopBootstrap p {
+  margin: 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.desktopBootstrapFailure {
+  padding: 24px 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.desktopBootstrapFailure > svg {
+  color: var(--danger);
+}
+
+.desktopBootstrapFailure code {
+  margin-top: 15px;
+  padding: 10px;
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--danger);
+  background: var(--danger-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.desktopBootstrapFailure button {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+@media (max-width: 600px) {
+  .desktopBootstrap {
+    padding: 18px;
+  }
+
+  .desktopBootstrapFailure {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .desktopBootstrapFailure button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
 button,
 input,
 select,

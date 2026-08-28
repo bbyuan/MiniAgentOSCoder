@@ -315,6 +315,12 @@ const en = {
   "history.loadError": "Failed to load run history",
   "history.compareError": "Failed to compare runs",
   "history.archiveError": "Failed to update archive state",
+  "desktop.startingTitle": "Starting local runtime",
+  "desktop.startingDescription": "Preparing the governed Daemon and local workspace services.",
+  "desktop.failedTitle": "Local runtime could not start",
+  "desktop.failedDescription": "The desktop host preserved the failure details. Retry after checking the local runtime setup.",
+  "desktop.retry": "Retry runtime",
+  "desktop.retrying": "Retrying",
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -634,6 +640,12 @@ const zh: Record<TranslationKey, string> = {
   "history.loadError": "运行历史加载失败",
   "history.compareError": "运行对比失败",
   "history.archiveError": "归档状态更新失败",
+  "desktop.startingTitle": "正在启动本地运行时",
+  "desktop.startingDescription": "正在准备受治理的 Daemon 与本地工作区服务。",
+  "desktop.failedTitle": "本地运行时启动失败",
+  "desktop.failedDescription": "桌面宿主已保留失败信息，请检查本地运行环境后重试。",
+  "desktop.retry": "重新启动运行时",
+  "desktop.retrying": "正在重试",
 };
 
 const knownText: Record<Locale, Record<string, string>> = {

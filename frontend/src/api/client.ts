@@ -450,10 +450,22 @@ export interface HistoryRunFilters {
   offset?: number;
 }
 
-const API_BASE = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
+let apiBase = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
+
+export function configureDesktopDaemon(url: string): void {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(parsed.hostname)) {
+    throw new Error("Desktop Daemon must use a loopback HTTP URL");
+  }
+  apiBase = parsed.origin;
+}
+
+export function getDaemonBase(): string {
+  return apiBase;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${apiBase}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...init?.headers,
@@ -579,7 +591,7 @@ export const daemonApi = {
     onEvent: (event: TraceEvent) => void,
     onError?: () => void,
   ) => {
-    const source = new EventSource(`${API_BASE}/runs/${runId}/events/stream?after=${after}`);
+    const source = new EventSource(`${apiBase}/runs/${runId}/events/stream?after=${after}`);
     source.addEventListener("trace", (message) => {
       onEvent(JSON.parse((message as MessageEvent<string>).data) as TraceEvent);
     });

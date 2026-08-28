@@ -14,6 +14,11 @@ dist/
 build/
 .vite/
 *.tsbuildinfo
+frontend/src-tauri/target/
+frontend/src-tauri/gen/
+frontend/src-tauri/binaries/*
+!frontend/src-tauri/binaries/.gitkeep
+frontend/desktop-build/
 
 # Runtime outputs
 runs/
