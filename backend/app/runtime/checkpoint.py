@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.models import Checkpoint
+from app.models import Checkpoint, RunPhase
 
 
 class CheckpointStore:
@@ -25,7 +25,7 @@ class CheckpointStore:
             checkpoint_id=data["checkpoint_id"],
             run_id=data["run_id"],
             step=data["step"],
-            status=data["status"],
+            status=RunPhase(data["status"]),
             run_state=data["run_state"],
             context_summary=data["context_summary"],
             memory_snapshot=data.get("memory_snapshot", {}),
@@ -33,6 +33,16 @@ class CheckpointStore:
             trace_offset=data.get("trace_offset", 0),
         )
 
+    def list(self, run_id: str) -> list[Checkpoint]:
+        checkpoints_dir = self.runs_dir / run_id / "checkpoints"
+        if not checkpoints_dir.exists():
+            return []
+        checkpoints = [
+            checkpoint
+            for path in checkpoints_dir.glob("*.json")
+            if (checkpoint := self.load(run_id, path.stem)) is not None
+        ]
+        return sorted(checkpoints, key=lambda item: (item.trace_offset, item.checkpoint_id))
+
     def path_for(self, run_id: str, checkpoint_id: str) -> Path:
         return self.runs_dir / run_id / "checkpoints" / f"{checkpoint_id}.json"
-

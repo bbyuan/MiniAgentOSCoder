@@ -36,6 +36,10 @@ class RunState(Serializable):
     budget: dict[str, Any] = field(default_factory=dict)
     memory_refs: list[str] = field(default_factory=list)
     last_observation: dict[str, Any] = field(default_factory=dict)
+    repair_attempts: int = 0
+    repair_status: str = "not_started"
+    last_checkpoint_id: str | None = None
+    rolled_back_to: str | None = None
 
 
 @dataclass(slots=True)
@@ -49,6 +53,18 @@ class Checkpoint(Serializable):
     memory_snapshot: dict[str, Any] = field(default_factory=dict)
     changed_files: list[str] = field(default_factory=list)
     trace_offset: int = 0
+
+
+@dataclass(slots=True)
+class RecoveryPoint(Serializable):
+    checkpoint_id: str
+    run_id: str
+    step: int
+    status: RunPhase
+    trace_offset: int
+    files: list[str] = field(default_factory=list)
+    snapshot_available: bool = False
+    can_rollback: bool = False
 
 
 @dataclass(slots=True)

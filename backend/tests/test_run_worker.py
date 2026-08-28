@@ -222,3 +222,68 @@ def test_run_worker_cancels_while_waiting_for_patch_approval(tmp_path: Path) -> 
 
     assert results[0].status == RunPhase.CANCELLED
     assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"
+
+
+def test_run_worker_repairs_failed_test_with_second_approved_patch(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    first_patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++bad
+"""
+    repair_patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-bad
++fixed
+"""
+    responses = [
+        json.dumps({"type": "apply_patch", "rationale": "first fix", "params": {"patch": first_patch}}),
+        json.dumps({
+            "type": "run_test",
+            "rationale": "verify first fix",
+            "params": {"command": "python3 -c \"assert open('app.py').read() == 'fixed\\n'\""},
+        }),
+        json.dumps({"type": "apply_patch", "rationale": "repair failure", "params": {"patch": repair_patch}}),
+        json.dumps({
+            "type": "run_test",
+            "rationale": "verify repair",
+            "params": {"command": "python3 -c \"assert open('app.py').read() == 'fixed\\n'\""},
+        }),
+        json.dumps({"type": "finish", "rationale": "done", "params": {"message": "repaired"}}),
+    ]
+    run = RunState(run_id="run-worker-repair", task="fix", status=RunPhase.PLANNING)
+    approvals: list[ApprovalRequest] = []
+    results: list[RunLoopResult] = []
+    job = RunJob(
+        run=run,
+        workspace=tmp_path,
+        contract=compile_agent_contract(ROOT / ".agent" / "config.yaml"),
+        context_pack=ContextPack(run_id=run.run_id),
+        model_client=QueuedStaticModelClient(responses),
+        tracer=TraceWriter(tmp_path / "runs"),
+        on_result=results.append,
+        artifacts=RunArtifacts(run_id=run.run_id),
+        on_approval_requested=approvals.append,
+    )
+    worker = RunWorker()
+
+    worker.start(job)
+    wait_until(lambda: len(approvals) == 1)
+    assert worker.resolve_approval(run.run_id, approvals[0].approval_id, approved=True)
+    wait_until(lambda: len(approvals) == 2)
+    assert run.status == RunPhase.WAITING_APPROVAL
+    assert run.repair_attempts == 1
+    assert worker.resolve_approval(run.run_id, approvals[1].approval_id, approved=True)
+    wait_until(lambda: len(results) == 1)
+
+    assert results[0].status == RunPhase.COMPLETED
+    assert run.repair_status == "completed"
+    assert run.current_step == 5
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "fixed\n"
+    events = [event["event"] for event in job.tracer.read_events(run.run_id)]
+    assert events.count("approval.requested") == 2
+    assert events.count("patch.snapshot.created") == 2
+    assert events.count("repair.started") == 1
+    assert events.count("repair.completed") == 1

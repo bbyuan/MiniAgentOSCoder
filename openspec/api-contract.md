@@ -138,6 +138,24 @@ Request:
 }
 ```
 
+## Recovery APIs
+
+### `GET /runs/{run_id}/checkpoints`
+
+Return ordered checkpoints with phase, step, trace offset, affected files, snapshot availability, and whether rollback is currently allowed. The response also includes `repair_attempts`, `repair_status`, and `rolled_back_to`.
+
+### `POST /runs/{run_id}/rollback`
+
+Restore workspace files from a patch's pre-apply snapshot. Active runs return `409`; successful rollback preserves the run's terminal execution history and appends `rollback.started` and `rollback.completed` Trace events.
+
+Request:
+
+```json
+{
+  "checkpoint_id": "before-apply-001"
+}
+```
+
 ## Trace APIs
 
 ### `GET /runs/{run_id}/events`

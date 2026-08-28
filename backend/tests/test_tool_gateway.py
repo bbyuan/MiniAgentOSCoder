@@ -5,7 +5,7 @@ import pytest
 from app.guards import BudgetExceeded, DangerousCommand, PathEscape, check_command, redact_secrets, resolve_workspace_path
 from app.models import ActionIR
 from app.runtime.contract_compiler import compile_agent_contract
-from app.tools import PatchPipeline, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
+from app.tools import PatchPipeline, PatchSummary, ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -171,3 +171,20 @@ def test_patch_snapshot_preserves_original_file(tmp_path: Path) -> None:
 
     assert (manifest.parent / "app.py").read_text(encoding="utf-8") == "old\n"
     assert '"app.py": true' in manifest.read_text(encoding="utf-8")
+
+
+def test_patch_restore_recovers_existing_file_and_removes_new_file(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    pipeline = PatchPipeline(tmp_path)
+    snapshot_dir = tmp_path / "runs" / "run-test" / "snapshots" / "before"
+    pipeline.snapshot(PatchSummary(files=["app.py", "new.py"]), snapshot_dir)
+    (tmp_path / "app.py").write_text("changed\n", encoding="utf-8")
+    (tmp_path / "new.py").write_text("created\n", encoding="utf-8")
+
+    restored = pipeline.restore(snapshot_dir)
+
+    assert restored.files == ["app.py", "new.py"]
+    assert restored.restored == 1
+    assert restored.removed == 1
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"
+    assert not (tmp_path / "new.py").exists()

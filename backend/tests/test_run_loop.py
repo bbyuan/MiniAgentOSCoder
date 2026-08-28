@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from threading import Event
 
@@ -7,7 +8,7 @@ from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import QueuedStaticModelClient
 from app.runtime.run_loop import AgentRunLoop
 from app.runtime.tracer import TraceWriter
-from app.tools import ToolGateway, create_builtin_tool_registry
+from app.tools import ToolApprovalDecision, ToolGateway, create_builtin_tool_registry
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -77,6 +78,46 @@ def test_run_loop_allows_recovery_after_rejected_tool(tmp_path: Path) -> None:
     assert result.observations[0].ok is False
     assert result.observations[0].metadata["error_type"] == "ToolNotFound"
     assert "missing_tool" in client.requests[1].messages[1].content
+
+
+def test_run_loop_rejects_finish_until_patch_has_successful_test(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+    client = QueuedStaticModelClient([
+        json.dumps({"type": "apply_patch", "rationale": "fix", "params": {"patch": patch}}),
+        json.dumps({"type": "finish", "rationale": "done", "params": {"message": "too early"}}),
+        json.dumps({
+            "type": "run_test",
+            "rationale": "verify",
+            "params": {"command": "python3 -c \"assert open('app.py').read() == 'new\\n'\""},
+        }),
+        json.dumps({"type": "finish", "rationale": "done", "params": {"message": "verified"}}),
+    ])
+    gateway = make_gateway(tmp_path)
+    gateway.approval_handler = lambda action, descriptor, preview: ToolApprovalDecision(approved=True)
+    tracer = TraceWriter(tmp_path / "runs")
+
+    result = execute_agent_run(
+        run_id="run-test-after-patch",
+        task="fix app",
+        contract=gateway.contract,
+        gateway=gateway,
+        model_client=client,
+        tracer=tracer,
+    )
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.final_message == "verified"
+    assert result.model_calls == 4
+    assert result.observations[1].metadata["policy"] == "test_after_patch"
+    assert "successful test is required" in (result.observations[1].error or "").lower()
+    events = tracer.read_events("run-test-after-patch")
+    assert any(event["event"] == "action.rejected" and event["payload"].get("reason") == "test_after_patch" for event in events)
 
 
 def test_run_loop_stops_at_model_call_budget(tmp_path: Path) -> None:

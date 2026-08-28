@@ -20,6 +20,13 @@ class PatchSummary:
     deletions: int = 0
 
 
+@dataclass(slots=True)
+class RestoreSummary:
+    files: list[str] = field(default_factory=list)
+    restored: int = 0
+    removed: int = 0
+
+
 class PatchPipeline:
     def __init__(self, workspace_root: str | Path) -> None:
         self.workspace_root = Path(workspace_root).resolve()
@@ -93,6 +100,46 @@ class PatchPipeline:
         manifest_path = snapshot_root / "manifest.json"
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
         return manifest_path
+
+    def restore(self, source: str | Path) -> RestoreSummary:
+        snapshot_root = Path(source).resolve()
+        manifest_path = snapshot_root / "manifest.json"
+        if not manifest_path.is_file():
+            raise PatchPipelineError("Snapshot manifest not found")
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise PatchPipelineError("Snapshot manifest is invalid") from exc
+        if not isinstance(manifest, dict) or not manifest:
+            raise PatchPipelineError("Snapshot manifest must contain files")
+
+        operations: list[tuple[str, Path, Path | None]] = []
+        for relative, existed in manifest.items():
+            if not isinstance(relative, str) or not isinstance(existed, bool):
+                raise PatchPipelineError("Snapshot manifest contains invalid entries")
+            target = self._validate_target(relative)
+            snapshot_file = (snapshot_root / relative).resolve() if existed else None
+            if snapshot_file is not None:
+                try:
+                    snapshot_file.relative_to(snapshot_root)
+                except ValueError as exc:
+                    raise PatchPipelineError(f"Snapshot path escapes snapshot root: {relative}") from exc
+                if not snapshot_file.is_file():
+                    raise PatchPipelineError(f"Snapshot file is missing: {relative}")
+            if not existed and target.exists() and not target.is_file():
+                raise PatchPipelineError(f"Rollback target is not a file: {relative}")
+            operations.append((relative, target, snapshot_file))
+
+        summary = RestoreSummary(files=[item[0] for item in operations])
+        for _, target, snapshot_file in operations:
+            if snapshot_file is not None:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(snapshot_file, target)
+                summary.restored += 1
+            elif target.exists():
+                target.unlink()
+                summary.removed += 1
+        return summary
 
     def _validate_target(self, relative: str) -> Path:
         path = Path(relative)

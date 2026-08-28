@@ -28,6 +28,7 @@ class AgentRunLoop:
         tracer: TraceWriter,
         clock: Callable[[], float] = time.monotonic,
         should_cancel: Callable[[], bool] = lambda: False,
+        on_step: Callable[[int], None] = lambda step: None,
     ) -> None:
         self.run_id = run_id
         self.gateway = gateway
@@ -35,6 +36,7 @@ class AgentRunLoop:
         self.tracer = tracer
         self.clock = clock
         self.should_cancel = should_cancel
+        self.on_step = on_step
 
     def run(
         self,
@@ -61,6 +63,7 @@ class AgentRunLoop:
         )
 
         for step in range(1, max_steps + 1):
+            self.on_step(step)
             if self.should_cancel():
                 return self._cancelled_result(
                     steps=step - 1,
@@ -149,6 +152,28 @@ class AgentRunLoop:
                     {"action": decision.action.to_dict(), "control_action": True},
                     role=decision.action.role,
                 )
+                if _patch_requires_successful_test(observations):
+                    observation = ActionObservation(
+                        step=step,
+                        action_type="finish",
+                        ok=False,
+                        error="A successful test is required after the latest applied patch",
+                        metadata={"policy": "test_after_patch"},
+                    )
+                    observations.append(observation)
+                    self.tracer.event(
+                        self.run_id,
+                        "action.rejected",
+                        {"action": decision.action.to_dict(), "reason": "test_after_patch"},
+                        role=decision.action.role,
+                    )
+                    self.tracer.event(
+                        self.run_id,
+                        "observation.recorded",
+                        {"observation": observation.to_dict()},
+                        role=decision.action.role,
+                    )
+                    continue
                 final_message = decision.action.params.get("message")
                 if not isinstance(final_message, str) or not final_message.strip():
                     final_message = decision.action.rationale
@@ -323,6 +348,16 @@ def _add_usage(total: dict[str, int], usage: dict[str, int]) -> None:
     total["input_tokens"] += max(0, input_tokens)
     total["output_tokens"] += max(0, output_tokens)
     total["total_tokens"] = total["input_tokens"] + total["output_tokens"]
+
+
+def _patch_requires_successful_test(observations: list[ActionObservation]) -> bool:
+    requires_test = False
+    for observation in observations:
+        if observation.action_type == "apply_patch" and observation.ok:
+            requires_test = True
+        elif observation.action_type == "run_test" and observation.ok:
+            requires_test = False
+    return requires_test
 
 
 def _token_budget_reason(contract: AgentContract, usage: dict[str, int]) -> str | None:

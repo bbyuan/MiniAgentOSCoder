@@ -11,6 +11,7 @@ from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
+from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_worker import RunJob, RunWorkerConflict
 from app.runtime.state_machine import transition_run
 from app.runtime.tracer import TraceWriter
@@ -22,6 +23,10 @@ class CreateRunRequest(BaseModel):
     project_id: str
     task: str
     mode: str = "Bugfix"
+
+
+class RollbackRequest(BaseModel):
+    checkpoint_id: str
 
 
 @router.post("")
@@ -75,6 +80,10 @@ def get_run(run_id: str) -> dict[str, object]:
         "last_observation": run.last_observation,
         "termination_reason": result.termination_reason if result else None,
         "final_message": result.final_message if result else "",
+        "repair_attempts": run.repair_attempts,
+        "repair_status": run.repair_status,
+        "last_checkpoint_id": run.last_checkpoint_id,
+        "rolled_back_to": run.rolled_back_to,
     }
 
 
@@ -126,6 +135,82 @@ def get_run_artifacts(run_id: str) -> dict[str, object]:
     if artifacts is None:
         raise HTTPException(status_code=404, detail="Run artifacts not found")
     return artifacts.to_dict()
+
+
+@router.get("/{run_id}/checkpoints")
+def get_run_checkpoints(run_id: str) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    if run is None or project is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    points = RunRecovery(project.path, run_id).list_points(run_active=store.worker.is_active(run_id))
+    return {
+        "run_id": run_id,
+        "repair_attempts": run.repair_attempts,
+        "repair_status": run.repair_status,
+        "rolled_back_to": run.rolled_back_to,
+        "checkpoints": [point.to_dict() for point in points],
+    }
+
+
+@router.post("/{run_id}/rollback")
+def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    if run is None or project is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if store.worker.is_active(run_id):
+        raise HTTPException(status_code=409, detail="Cannot rollback an active run")
+
+    recovery = RunRecovery(project.path, run_id)
+    point = next(
+        (item for item in recovery.list_points() if item.checkpoint_id == request.checkpoint_id),
+        None,
+    )
+    if point is None:
+        raise HTTPException(status_code=404, detail="Checkpoint not found")
+    if not point.snapshot_available:
+        raise HTTPException(status_code=409, detail="Checkpoint does not have a restorable snapshot")
+
+    tracer = TraceWriter(project.path / "runs")
+    tracer.event(run_id, "rollback.started", {"checkpoint_id": request.checkpoint_id, "files": point.files})
+    try:
+        summary = recovery.restore(request.checkpoint_id)
+    except RecoveryError as exc:
+        tracer.event(
+            run_id,
+            "rollback.failed",
+            {"checkpoint_id": request.checkpoint_id, "error": str(exc)},
+        )
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    run.changed_files = []
+    run.rolled_back_to = request.checkpoint_id
+    artifacts = store.artifacts.get(run_id)
+    if artifacts is not None:
+        artifacts.diff_summary.status = "Rolled back"
+        artifacts.diff_summary.files = len(summary.files)
+        artifacts.diff_summary.insertions = 0
+        artifacts.diff_summary.deletions = 0
+    tracer.event(
+        run_id,
+        "rollback.completed",
+        {
+            "checkpoint_id": request.checkpoint_id,
+            "files": summary.files,
+            "restored": summary.restored,
+            "removed": summary.removed,
+            "status": run.status.value,
+        },
+    )
+    return {
+        "run_id": run_id,
+        "checkpoint_id": request.checkpoint_id,
+        "status": "rolled_back",
+        "files": summary.files,
+        "restored": summary.restored,
+        "removed": summary.removed,
+    }
 
 
 @router.post("/{run_id}/cancel")

@@ -113,6 +113,7 @@ class RunWorker:
                     model_client=job.model_client,
                     tracer=job.tracer,
                     should_cancel=cancel_event.is_set,
+                    on_step=lambda step: setattr(job.run, "current_step", step),
                 ).run(
                     task=job.run.task,
                     contract=job.contract,
@@ -298,6 +299,7 @@ class RunWorker:
         )
 
     def _save_checkpoint(self, job: RunJob, checkpoint_id: str) -> None:
+        job.run.last_checkpoint_id = checkpoint_id
         checkpoint = Checkpoint(
             checkpoint_id=checkpoint_id,
             run_id=job.run.run_id,
@@ -342,6 +344,24 @@ class RunWorker:
                 _set_plan_state(job.artifacts, "test", "done" if result.ok else "active")
             if not result.ok and job.run.status == RunPhase.TESTING:
                 transition_run(job.run, RunPhase.REPAIRING)
+                job.run.repair_attempts += 1
+                job.run.repair_status = "active"
+                job.tracer.event(
+                    job.run.run_id,
+                    "repair.started",
+                    {
+                        "attempt": job.run.repair_attempts,
+                        "command": result.metadata.get("command", "Not selected"),
+                        "failed": job.artifacts.test_summary.failed if job.artifacts is not None else 0,
+                    },
+                )
+            elif result.ok and job.run.repair_status == "active":
+                job.run.repair_status = "completed"
+                job.tracer.event(
+                    job.run.run_id,
+                    "repair.completed",
+                    {"attempt": job.run.repair_attempts},
+                )
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
 
     @staticmethod

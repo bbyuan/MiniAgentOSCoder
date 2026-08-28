@@ -87,6 +87,7 @@ def test_checkpoint_store_saves_checkpoint(tmp_path: Path) -> None:
 
     assert json.loads(path.read_text(encoding="utf-8"))["status"] == "waiting_approval"
     assert store.load("run-001", "ckpt-001") is not None
+    assert [item.checkpoint_id for item in store.list("run-001")] == ["ckpt-001"]
 
 
 def test_load_skill_cards_from_registry() -> None:
