@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, Context Pack, Patch Pipeline, trace/replay, run artifacts, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, Context Pack, Patch Pipeline, patch approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, and bounded autonomous Agent Loop. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -89,7 +89,7 @@ Use `deepseek-v4-flash` for lower-latency development runs or change `models.def
 
 Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source files. Check readiness through `GET /models/status`; the Daemon reports only the configured environment-variable name and never returns the credential value.
 
-Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events, while the existing `/events` endpoint remains a JSON snapshot for replay and CLI use.
+Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
 
 P0 demo:
 

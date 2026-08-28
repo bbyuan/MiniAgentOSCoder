@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { FileCode2, FlaskConical, GitPullRequest, ShieldCheck, Terminal } from "lucide-react";
-import type { ApprovalRequest, RecoveryResponse } from "../api/client";
+import { FileCode2, FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
+import type { ApprovalRequest, RecoveryResponse, RunReportResponse, TraceEvent } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 import { PlanPanel, type PlanItem } from "./PlanPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { RecoveryPanel } from "./RecoveryPanel";
+import { RunReportPanel } from "./RunReportPanel";
+import { TraceReplayPanel } from "./TraceReplayPanel";
 
-type InspectorTab = "overview" | "context" | "recovery" | "trace";
+type InspectorTab = "overview" | "context" | "recovery" | "report" | "trace";
 
 interface RuntimePanelsProps {
   plan: PlanItem[];
@@ -28,11 +30,13 @@ interface RuntimePanelsProps {
     passed: number;
     failed: number;
   };
-  trace: string[];
+  trace: TraceEvent[];
   runId?: string;
+  runStatus: string;
   approval: ApprovalRequest | null;
   approvalBusy: boolean;
   recovery?: RecoveryResponse;
+  report?: RunReportResponse;
   rollbackBusy?: string;
   onApprove: () => void;
   onDeny: (reason: string) => void;
@@ -47,9 +51,11 @@ export function RuntimePanels({
   tests,
   trace,
   runId,
+  runStatus,
   approval,
   approvalBusy,
   recovery,
+  report,
   rollbackBusy,
   onApprove,
   onDeny,
@@ -61,6 +67,7 @@ export function RuntimePanels({
     { id: "overview", label: t("inspector.overview") },
     { id: "context", label: t("inspector.context") },
     { id: "recovery", label: t("inspector.recovery") },
+    { id: "report", label: t("inspector.report") },
     { id: "trace", label: t("inspector.trace") },
   ];
 
@@ -163,23 +170,10 @@ export function RuntimePanels({
           />
         ) : null}
 
+        {activeTab === "report" ? <RunReportPanel report={report} /> : null}
+
         {activeTab === "trace" ? (
-          <section className="inspectorSection traceSection">
-            <div className="sectionHeader">
-              <h3>{t("trace.title")}</h3>
-              <Terminal size={15} />
-            </div>
-            {trace.length === 0 ? <p className="emptyText">{t("trace.empty")}</p> : (
-              <div className="traceList">
-                {trace.map((event, index) => (
-                  <div key={`${event}-${index}`}>
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <code>{translateKnownText(locale, event)}</code>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} />
         ) : null}
       </div>
     </aside>

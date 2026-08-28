@@ -9,6 +9,7 @@ import {
   type RecoveryResponse,
   type RunArtifacts,
   type RunMode,
+  type RunReportResponse,
   type TraceEvent,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
@@ -55,6 +56,7 @@ export function Workbench() {
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [recovery, setRecovery] = useState<RecoveryResponse>();
   const [rollbackBusy, setRollbackBusy] = useState<string>();
+  const [report, setReport] = useState<RunReportResponse>();
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -93,7 +95,6 @@ export function Workbench() {
   const displayPlan = artifacts?.plan ?? mockRun.plan;
   const displayDiff = artifacts?.diff_summary ?? mockRun.diff;
   const displayTests = artifacts?.test_summary ?? mockRun.tests;
-  const displayTrace = traceEvents.map((event) => event.event);
   const runIsActive = [
     "running",
     "waiting_approval",
@@ -121,6 +122,7 @@ export function Workbench() {
     setRunBudget({});
     setApproval(null);
     setRecovery(undefined);
+    setReport(undefined);
     setRollbackBusy(undefined);
     streamCleanup.current?.();
     streamCleanup.current = null;
@@ -130,11 +132,12 @@ export function Workbench() {
         daemonApi.createRun({ project_id: project.project_id, task, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
-      const [contextResponse, traceResponse, artifactResponse, recoveryResponse] = await Promise.all([
+      const [contextResponse, traceResponse, artifactResponse, recoveryResponse, reportResponse] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
         daemonApi.getArtifacts(run.run_id),
         daemonApi.getCheckpoints(run.run_id),
+        daemonApi.getReport(run.run_id),
       ]);
       setRunId(run.run_id);
       setRunStatus(run.status);
@@ -142,6 +145,7 @@ export function Workbench() {
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
+      setReport(reportResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -168,15 +172,14 @@ export function Workbench() {
           if (["checkpoint.saved", "patch.snapshot.created", "repair.started", "repair.completed"].includes(event.event)) {
             daemonApi.getCheckpoints(run.run_id).then(setRecovery).catch(() => undefined);
           }
+          if (event.event === "report.generated") {
+            daemonApi.getReport(run.run_id).then(setReport).catch(() => undefined);
+          }
           const eventBudget = Object.fromEntries(
             Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
           );
           if (Object.keys(eventBudget).length > 0) {
             setRunBudget((current) => ({ ...current, ...eventBudget }));
-          }
-          if (["run.finished", "run.failed", "run.cancelled", "run.budget_exceeded"].includes(event.event)) {
-            const eventStatus = event.payload.status;
-            if (typeof eventStatus === "string") setRunStatus(eventStatus);
           }
           const transitionedStatus = event.payload.status;
           if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
@@ -196,12 +199,14 @@ export function Workbench() {
               daemonApi.getRun(run.run_id),
               daemonApi.getArtifacts(run.run_id),
               daemonApi.getCheckpoints(run.run_id),
-            ]).then(([summary, latestArtifacts, latestRecovery]) => {
+              daemonApi.getReport(run.run_id),
+            ]).then(([summary, latestArtifacts, latestRecovery, latestReport]) => {
               setRunStatus(summary.status);
               setFinalMessage(summary.final_message || "");
               setRunBudget(summary.budget || {});
               setArtifacts(latestArtifacts);
               setRecovery(latestRecovery);
+              setReport(latestReport);
             }).catch(() => undefined);
           }
         },
@@ -260,14 +265,16 @@ export function Workbench() {
     setError(null);
     try {
       await daemonApi.rollbackRun(runId, checkpointId);
-      const [latestRecovery, latestArtifacts, latestTrace] = await Promise.all([
+      const [latestRecovery, latestArtifacts, latestTrace, latestReport] = await Promise.all([
         daemonApi.getCheckpoints(runId),
         daemonApi.getArtifacts(runId),
         daemonApi.getTrace(runId),
+        daemonApi.getReport(runId),
       ]);
       setRecovery(latestRecovery);
       setArtifacts(latestArtifacts);
       setTraceEvents(latestTrace.events);
+      setReport(latestReport);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.rollback"));
     } finally {
@@ -328,11 +335,13 @@ export function Workbench() {
           context={displayContext}
           diff={displayDiff}
           tests={displayTests}
-          trace={displayTrace}
+          trace={traceEvents}
           runId={runId}
+          runStatus={runStatus}
           approval={approval}
           approvalBusy={approvalBusy}
           recovery={recovery}
+          report={report}
           rollbackBusy={rollbackBusy}
           onApprove={approveAction}
           onDeny={denyAction}
