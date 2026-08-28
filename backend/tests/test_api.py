@@ -249,6 +249,47 @@ def test_governance_api_rebuilds_policy_and_sandbox_history(tmp_path: Path, monk
     assert governance["executions"][0]["backend"] == "portable-process"
 
 
+def test_elevated_test_policy_uses_generic_approval_and_resumes(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            [
+                json.dumps({
+                    "type": "run_test",
+                    "rationale": "approved smoke test",
+                    "params": {"command": "python3 -c \"print('approved')\""},
+                }),
+                json.dumps({"type": "finish", "rationale": "done", "params": {"message": "approved test ran"}}),
+            ]
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "approve test", "mode": "Bugfix"},
+    ).json()
+    client.put(
+        f"/runs/{run['run_id']}/governance",
+        json={"sandbox_profile": "standard", "tool_overrides": {"run_test": "approval_required"}},
+    )
+
+    client.post(f"/runs/{run['run_id']}/start")
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "waiting_approval")
+    approval = client.get(f"/runs/{run['run_id']}/approval").json()["approval"]
+    approved = client.post(
+        f"/runs/{run['run_id']}/approve",
+        json={"approval_id": approval["approval_id"], "mode": "approve_once"},
+    )
+    wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")
+
+    assert approval["target"]["tool"] == "run_test"
+    assert "python3" in approval["target"]["command"]
+    assert approval["target"]["files"] == []
+    assert approved.status_code == 200
+    assert client.get(f"/runs/{run['run_id']}").json()["final_message"] == "approved test ran"
+
+
 def test_cancel_run(tmp_path: Path) -> None:
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
