@@ -11,6 +11,7 @@ import {
   type ExtensionSettings,
   type GovernanceResponse,
   type HistoryProject,
+  type HistoryRun,
   type MemoryInput,
   type MemoryResponse,
   type ModelProviderStatus,
@@ -30,6 +31,7 @@ import { CompletionSummary } from "../components/CompletionSummary";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
+import { ProjectSidebar } from "../components/ProjectSidebar";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { RunProgress } from "../components/RunProgress";
@@ -56,6 +58,8 @@ export function Workbench() {
   const [workspacePath, setWorkspacePath] = useState("");
   const [project, setProject] = useState<OpenProjectResponse>();
   const [recentProjects, setRecentProjects] = useState<HistoryProject[]>([]);
+  const [recentRuns, setRecentRuns] = useState<HistoryRun[]>([]);
+  const [recentRunsBusy, setRecentRunsBusy] = useState(false);
   const [projectBusy, setProjectBusy] = useState(false);
   const [task, setTask] = useState("");
   const [mode, setMode] = useState<RunMode>("Feature");
@@ -87,6 +91,7 @@ export function Workbench() {
   const [rollbackBusy, setRollbackBusy] = useState<string>();
   const [report, setReport] = useState<RunReportResponse>();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRunId, setHistoryRunId] = useState<string>();
   const [modelSetupOpen, setModelSetupOpen] = useState(false);
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
@@ -145,11 +150,30 @@ export function Workbench() {
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
       if (history) setRecentProjects(history.projects);
+      await loadProjectRuns(opened.project_id);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.openProject"));
     } finally {
       setProjectBusy(false);
     }
+  }
+
+  async function loadProjectRuns(projectId = project?.project_id) {
+    if (!projectId) return;
+    setRecentRunsBusy(true);
+    try {
+      const response = await daemonApi.getHistoryRuns({ project_id: projectId, limit: 12 });
+      setRecentRuns(response.runs);
+    } catch {
+      // The main workspace remains usable if history storage is temporarily unavailable.
+    } finally {
+      setRecentRunsBusy(false);
+    }
+  }
+
+  function openHistory(runId?: string) {
+    setHistoryRunId(runId);
+    setHistoryOpen(true);
   }
 
   async function browseWorkspace() {
@@ -235,6 +259,7 @@ export function Workbench() {
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
+      void loadProjectRuns(project.project_id);
       if (startImmediately) {
         if (!providerStatus?.configured) {
           setModelSetupOpen(true);
@@ -242,6 +267,7 @@ export function Workbench() {
         }
         const started = await daemonApi.startRun(run.run_id);
         setRunStatus(started.status);
+        void loadProjectRuns(project.project_id);
         subscribeToRun(run.run_id, traceResponse.events.length);
       }
     } catch (caught) {
@@ -266,6 +292,7 @@ export function Workbench() {
       setTraceEvents(latestTrace.events);
       const started = await daemonApi.startRun(runId);
       setRunStatus(started.status);
+      void loadProjectRuns();
       subscribeToRun(runId, latestTrace.events.length);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.startRun"));
@@ -315,6 +342,7 @@ export function Workbench() {
         if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
           setRunStatus(transitionedStatus);
           daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
+          void loadProjectRuns();
         }
         if (event.event === "run.budget_exceeded" && typeof event.payload.termination_reason === "string") {
           setTerminationReason(event.payload.termination_reason);
@@ -357,6 +385,7 @@ export function Workbench() {
             setMemory(latestMemory);
             setGovernance(latestGovernance);
             setExtensions(latestExtensions);
+            void loadProjectRuns();
           }).catch(() => undefined);
         }
       },
@@ -393,6 +422,7 @@ export function Workbench() {
     try {
       await daemonApi.cancelRun(runId);
       resetRunState();
+      void loadProjectRuns();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
     } finally {
@@ -431,6 +461,15 @@ export function Workbench() {
     setProject(undefined);
     setWorkspacePath("");
     setModelStatus(undefined);
+    setRecentRuns([]);
+  }
+
+  function startNewTask() {
+    if (runIsPrepared) {
+      void discardPreparedRun();
+      return;
+    }
+    resetRunState(true);
   }
 
   async function approveAction() {
@@ -611,7 +650,8 @@ export function Workbench() {
         status={displayStatus}
         model={modelStatus?.configured ? modelStatus.model : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
         modelConfigured={modelStatus?.configured}
-        onOpenHistory={() => setHistoryOpen(true)}
+        onOpenHistory={() => openHistory()}
+        onConfigureModel={() => setModelSetupOpen(true)}
       />
 
       {!project ? (
@@ -627,11 +667,26 @@ export function Workbench() {
             onOpen={openWorkspace}
           />
         </div>
-      ) : !runId ? (
+      ) : (
+        <div className="productFrame">
+          <ProjectSidebar
+            project={project}
+            runs={recentRuns}
+            activeRunId={runId}
+            newTaskDisabled={runIsActive}
+            navigationLocked={runIsActive || runIsPrepared}
+            loading={recentRunsBusy}
+            onNewTask={startNewTask}
+            onChangeProject={changeProject}
+            onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
+            onOpenHistory={() => openHistory()}
+            onRefresh={() => void loadProjectRuns()}
+          />
+          <div className="productContent">
+      {!runId ? (
         <div className="guidedStage taskStage">
           {error ? <ErrorBanner message={error} /> : null}
           <TaskSetup
-            project={project}
             task={task}
             mode={mode}
             busy={busy}
@@ -640,7 +695,6 @@ export function Workbench() {
             onModeChange={setMode}
             onStart={() => prepareRun(true)}
             onReviewSettings={() => prepareRun(false)}
-            onChangeProject={changeProject}
             onConfigureModel={() => setModelSetupOpen(true)}
           />
         </div>
@@ -763,7 +817,6 @@ export function Workbench() {
         </section>
 
         {!runIsPrepared && runtimeDetailsOpen ? <RuntimePanels
-          plan={displayPlan}
           contract={displayContract}
           context={contextPack}
           contextBusy={contextBusy}
@@ -791,7 +844,19 @@ export function Workbench() {
         /> : null}
         </div>
       )}
-      <RunCenter open={historyOpen} onClose={() => setHistoryOpen(false)} />
+          </div>
+        </div>
+      )}
+      <RunCenter
+        open={historyOpen}
+        initialRunId={historyRunId}
+        initialProjectId={project?.project_id}
+        onClose={() => {
+          setHistoryOpen(false);
+          setHistoryRunId(undefined);
+          void loadProjectRuns();
+        }}
+      />
       <ModelSetupDialog
         open={modelSetupOpen}
         desktop={isDesktopHost()}

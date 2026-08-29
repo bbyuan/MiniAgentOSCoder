@@ -1,5 +1,5 @@
 import { Ban, Check, Circle, CircleAlert, LoaderCircle, Minus } from "lucide-react";
-import type { PlanItem } from "./PlanPanel";
+import type { PlanStep } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -12,7 +12,7 @@ function StepIcon({ state }: { state: string }) {
   return <Circle size={15} />;
 }
 
-export function RunProgress({ items }: { items: PlanItem[] }) {
+export function RunProgress({ items }: { items: PlanStep[] }) {
   const { locale, t } = usePreferences();
   const completed = items.filter((item) => item.state === "done").length;
 

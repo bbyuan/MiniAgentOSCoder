@@ -8,9 +8,10 @@ interface TopBarProps {
   model: string;
   modelConfigured: boolean | undefined;
   onOpenHistory: () => void;
+  onConfigureModel: () => void;
 }
 
-export function TopBar({ project, status, model, modelConfigured, onOpenHistory }: TopBarProps) {
+export function TopBar({ project, status, model, modelConfigured, onOpenHistory, onConfigureModel }: TopBarProps) {
   const { locale, setLocale, theme, toggleTheme, t } = usePreferences();
   const themeLabel = theme === "light" ? t("top.themeDark") : t("top.themeLight");
 
@@ -37,13 +38,15 @@ export function TopBar({ project, status, model, modelConfigured, onOpenHistory 
           >
             <History size={17} />
           </button>
-          <div
+          <button
+            type="button"
             className={`statusChip modelChip ${modelConfigured === false ? "warning" : ""}`}
             title={t("top.modelStatus")}
+            onClick={onConfigureModel}
           >
             <Bot size={15} />
             <span>{model}</span>
-          </div>
+          </button>
           <div className={`statusChip runtimeChip tone-${status}`} title={t("top.runtimeStatus")}>
             <span className="statusDot" aria-hidden="true" />
             <span>{translateStatus(locale, status)}</span>

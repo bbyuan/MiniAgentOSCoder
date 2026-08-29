@@ -25,6 +25,8 @@ import { CompletionEvidence } from "./CompletionEvidence";
 
 interface RunCenterProps {
   open: boolean;
+  initialRunId?: string;
+  initialProjectId?: string;
   onClose: () => void;
 }
 
@@ -40,7 +42,7 @@ const metricKeys: Record<string, TranslationKey> = {
   repair_attempts: "history.metric.repairs",
 };
 
-export function RunCenter({ open, onClose }: RunCenterProps) {
+export function RunCenter({ open, initialRunId, initialProjectId, onClose }: RunCenterProps) {
   const { locale, t } = usePreferences();
   const [projects, setProjects] = useState<HistoryProject[]>([]);
   const [runs, setRuns] = useState<HistoryRun[]>([]);
@@ -63,13 +65,15 @@ export function RunCenter({ open, onClose }: RunCenterProps) {
 
   useEffect(() => {
     if (!open) return;
-    void refresh(true);
+    setProjectId(initialProjectId ?? "");
+    void refresh(true, initialProjectId);
+    if (initialRunId) void inspectRun(initialRunId);
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
+  }, [open, initialRunId, initialProjectId]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,14 +81,14 @@ export function RunCenter({ open, onClose }: RunCenterProps) {
     return () => window.clearInterval(interval);
   }, [open, projectId, status, query, includeArchived]);
 
-  async function refresh(loadProjects = false) {
+  async function refresh(loadProjects = false, projectOverride?: string) {
     setLoading(true);
     setError(undefined);
     try {
       const [projectResponse, runResponse] = await Promise.all([
         loadProjects ? daemonApi.getHistoryProjects() : Promise.resolve(undefined),
         daemonApi.getHistoryRuns({
-          project_id: projectId || undefined,
+          project_id: projectOverride ?? (projectId || undefined),
           status: status || undefined,
           query: query.trim() || undefined,
           include_archived: includeArchived,

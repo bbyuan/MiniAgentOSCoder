@@ -1,10 +1,9 @@
-import { ArrowUp, FolderGit2, KeyRound, SlidersHorizontal, Sparkles } from "lucide-react";
-import type { ModelProviderStatus, OpenProjectResponse, RunMode } from "../api/client";
+import { ArrowUp, KeyRound, SlidersHorizontal, Sparkles } from "lucide-react";
+import type { ModelProviderStatus, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface TaskSetupProps {
-  project: OpenProjectResponse;
   task: string;
   mode: RunMode;
   busy: boolean;
@@ -13,7 +12,6 @@ interface TaskSetupProps {
   onModeChange: (mode: RunMode) => void;
   onStart: () => void;
   onReviewSettings: () => void;
-  onChangeProject: () => void;
   onConfigureModel: () => void;
 }
 
@@ -28,7 +26,6 @@ const examples: Record<RunMode, "task.example.bugfix" | "task.example.feature" |
 };
 
 export function TaskSetup({
-  project,
   task,
   mode,
   busy,
@@ -37,7 +34,6 @@ export function TaskSetup({
   onModeChange,
   onStart,
   onReviewSettings,
-  onChangeProject,
   onConfigureModel,
 }: TaskSetupProps) {
   const { locale, t } = usePreferences();
@@ -45,15 +41,6 @@ export function TaskSetup({
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
-      <div className="activeProjectBar productProjectBar">
-        <FolderGit2 size={18} />
-        <div>
-          <strong>{basename(project.path)}</strong>
-          <small>{project.path}</small>
-        </div>
-        <button type="button" onClick={onChangeProject}>{t("task.changeProject")}</button>
-      </div>
-
       <header className="taskIntro productTaskIntro">
         <h1 id="task-setup-title">{t("task.title")}</h1>
         <p>{t("task.description")}</p>
@@ -130,8 +117,4 @@ export function TaskSetup({
       </div>
     </section>
   );
-}
-
-function basename(path: string): string {
-  return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path;
 }

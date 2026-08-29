@@ -16,7 +16,6 @@ import type {
 } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
-import { PlanPanel, type PlanItem } from "./PlanPanel";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { RunReportPanel } from "./RunReportPanel";
 import { TraceReplayPanel } from "./TraceReplayPanel";
@@ -29,7 +28,6 @@ type InspectorTab = "overview" | "changes" | "diagnostics";
 type DiagnosticView = "context" | "memory" | "extensions" | "governance" | "trace";
 
 interface RuntimePanelsProps {
-  plan: PlanItem[];
   contract: {
     effects: string[];
     policies: string[];
@@ -70,7 +68,6 @@ interface RuntimePanelsProps {
 }
 
 export function RuntimePanels({
-  plan,
   contract,
   context,
   contextBusy,
@@ -138,7 +135,6 @@ export function RuntimePanels({
       >
         {activeTab === "overview" ? (
           <>
-            <PlanPanel items={plan} />
             <section className="inspectorSection">
               <div className="sectionHeader">
                 <h3>{t("contract.title")}</h3>

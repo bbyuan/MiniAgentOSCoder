@@ -4,6 +4,7 @@ import {
   Box,
   BrainCircuit,
   CheckCircle2,
+  ChevronDown,
   CircleAlert,
   CornerDownRight,
   FileDiff,
@@ -17,6 +18,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 import type { TraceEvent } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -81,29 +83,41 @@ function eventDetail(event: TraceEvent, t: ReturnType<typeof usePreferences>["t"
 
 export function ActivityFeed({ events, status }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
+  const [expanded, setExpanded] = useState(false);
   const visibleEvents = events.slice(-10);
   const state = activityState(status);
+  const latestEvent = events[events.length - 1];
+  const latestPresentation = latestEvent ? eventPresentation(latestEvent.event) : null;
+  const LatestIcon = latestPresentation?.icon ?? Activity;
 
   return (
     <section className="activityPanel" aria-live="polite">
-      <div className="sectionHeader activityHeader">
-        <div>
-          <h2>{t("activity.title")}</h2>
-          <span>{t("activity.eventCount", { count: events.length })}</span>
-        </div>
+      <div className="activityHeader">
+        <button type="button" className="activityToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
+          <ChevronDown className={expanded ? "expanded" : ""} size={15} />
+          <span><strong>{t("activity.title")}</strong><small>{t("activity.eventCount", { count: events.length })}</small></span>
+        </button>
         <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
           {t(state.key)}
         </div>
       </div>
 
-      {visibleEvents.length === 0 ? (
+      {!expanded && latestEvent ? (
+        <div className="activityPreview">
+          <div className={`eventIcon tone-${latestPresentation?.tone ?? "runtime"}`}><LatestIcon size={15} /></div>
+          <div><strong>{translateKnownText(locale, latestEvent.event)}</strong><span>{eventDetail(latestEvent, t)}</span></div>
+          <time dateTime={latestEvent.time}>{eventTime(latestEvent.time)}</time>
+        </div>
+      ) : null}
+
+      {expanded && visibleEvents.length === 0 ? (
         <div className="activityEmpty">
           <div className="emptyGlyph"><Activity size={20} /></div>
           <strong>{t("activity.emptyTitle")}</strong>
           <span>{t("activity.emptyDescription")}</span>
         </div>
-      ) : (
+      ) : expanded ? (
         <div className="activityList">
           {visibleEvents.map((event, index) => {
             const presentation = eventPresentation(event.event);
@@ -122,7 +136,7 @@ export function ActivityFeed({ events, status }: ActivityFeedProps) {
             );
           })}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
