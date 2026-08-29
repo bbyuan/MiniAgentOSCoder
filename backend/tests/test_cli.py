@@ -76,3 +76,12 @@ def test_cli_resume_selects_checkpoint_and_workspace_restore() -> None:
             {"checkpoint_id": "checkpoint-2", "restore_workspace": True},
         )
     ]
+
+
+def test_cli_metrics_supports_project_scope() -> None:
+    client = FakeClient()
+    args = build_parser().parse_args(["metrics", "--project", "project-1"])
+
+    execute(args, client)
+
+    assert client.calls == [("GET", "/evaluation/summary?project_id=project-1", None)]

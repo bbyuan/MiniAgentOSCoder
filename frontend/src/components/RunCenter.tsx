@@ -3,6 +3,7 @@ import {
   Archive,
   ArchiveRestore,
   ArrowLeft,
+  BarChart3,
   Check,
   Clock3,
   FileText,
@@ -15,6 +16,7 @@ import {
 import {
   daemonApi,
   type HistoryComparison,
+  type EvaluationSummary,
   type HistoryProject,
   type HistoryRun,
   type HistoryRunDetail,
@@ -23,6 +25,7 @@ import { translateKnownText, translateMode, translateStatus, type TranslationKey
 import { usePreferences } from "../preferences";
 import { localizeRunReport } from "../reportLocalization";
 import { CompletionEvidence } from "./CompletionEvidence";
+import { EvaluationOverview } from "./EvaluationOverview";
 
 
 interface RunCenterProps {
@@ -57,6 +60,8 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
   const [detail, setDetail] = useState<HistoryRunDetail>();
   const [selected, setSelected] = useState<string[]>([]);
   const [comparison, setComparison] = useState<HistoryComparison>();
+  const [evaluation, setEvaluation] = useState<EvaluationSummary>();
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -118,6 +123,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
   async function inspectRun(runId: string) {
     setDetailLoading(true);
     setComparison(undefined);
+    setEvaluationOpen(false);
     setError(undefined);
     try {
       setDetail(await daemonApi.getHistoryRun(runId));
@@ -143,6 +149,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
     try {
       setComparison(await daemonApi.compareHistoryRuns(selected as [string, string]));
       setDetail(undefined);
+      setEvaluationOpen(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("history.compareError"));
     } finally {
@@ -178,6 +185,22 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
     }
   }
 
+  async function showEvaluation() {
+    setDetailLoading(true);
+    setError(undefined);
+    setDetail(undefined);
+    setComparison(undefined);
+    setEvaluationOpen(true);
+    try {
+      setEvaluation(await daemonApi.getEvaluationSummary(projectId || undefined));
+    } catch (caught) {
+      setEvaluation(undefined);
+      setError(caught instanceof Error ? caught.message : t("evaluation.loadError"));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   if (!open) return null;
 
   return (
@@ -192,6 +215,9 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
           </div>
           <div className="runCenterHeaderActions">
             <span>{t("history.total", { count: total })}</span>
+            <button className={`historyInsightsButton ${evaluationOpen ? "active" : ""}`} type="button" onClick={() => void showEvaluation()}>
+              <BarChart3 size={15} />{t("evaluation.action")}
+            </button>
             <button className="iconButton" type="button" title={t("history.refresh")} aria-label={t("history.refresh")} onClick={() => void refresh(true)}>
               <RefreshCw size={16} className={loading ? "spin" : ""} />
             </button>
@@ -266,7 +292,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
           </div>
 
           <div className="historyDetail" aria-busy={detailLoading}>
-            {comparison ? <ComparisonView comparison={comparison} onBack={() => setComparison(undefined)} /> : detail ? (
+            {evaluationOpen && evaluation ? <EvaluationOverview summary={evaluation} /> : comparison ? <ComparisonView comparison={comparison} onBack={() => setComparison(undefined)} /> : detail ? (
               <RunDetail
                 detail={detail}
                 busy={detailLoading}
@@ -274,9 +300,9 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
                 onResume={() => void resumeRun()}
                 onBack={() => setDetail(undefined)}
               />
-            ) : (
+            ) : !evaluationOpen ? (
               <div className="historyEmpty historyDetailEmpty"><FileText size={25} /><strong>{t("history.chooseRun")}</strong><span>{t("history.chooseRunHint")}</span></div>
-            )}
+            ) : null}
           </div>
         </div>
       </section>

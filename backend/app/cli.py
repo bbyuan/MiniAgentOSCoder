@@ -79,6 +79,9 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("run_id")
     resume.add_argument("--checkpoint")
     resume.add_argument("--restore-workspace", action="store_true")
+
+    metrics = commands.add_parser("metrics", help="Show aggregate local run evidence")
+    metrics.add_argument("--project")
     return parser
 
 
@@ -126,6 +129,9 @@ def execute(args: argparse.Namespace, client: DaemonClient) -> dict[str, Any]:
                 "restore_workspace": args.restore_workspace,
             },
         )
+    if command == "metrics":
+        suffix = f"?project_id={args.project}" if args.project else ""
+        return client.request("GET", f"/evaluation/summary{suffix}")
     raise RuntimeError(f"Unsupported command: {command}")
 
 

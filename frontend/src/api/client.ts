@@ -502,6 +502,39 @@ export interface HistoryRunFilters {
   offset?: number;
 }
 
+export interface EvaluationSummary {
+  scope: { project_id?: string; local_only: boolean };
+  runs: {
+    total: number;
+    terminal: number;
+    active: number;
+    status: Record<string, number>;
+  };
+  rates: {
+    completion: number | null;
+    test_pass: number | null;
+    patch_acceptance: number | null;
+  };
+  averages: {
+    steps: number | null;
+    model_calls: number | null;
+    tool_calls: number | null;
+    total_tokens: number | null;
+    repair_attempts: number | null;
+    duration_ms: number | null;
+  };
+  governance: {
+    approval_requests: number;
+    approvals_granted: number;
+    guard_blocks: number;
+    context_compactions: number;
+    resumes: number;
+  };
+  failures: Array<{ category: string; count: number; share: number | null }>;
+  evidence: { trace_runs: number; evidence_gaps: number };
+  privacy: { content_collected: false; fields_excluded: string[] };
+}
+
 let apiBase = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
 
 export function configureDesktopDaemon(url: string): void {
@@ -649,6 +682,8 @@ export const daemonApi = {
       method: "PUT",
       body: JSON.stringify({ archived }),
     }),
+  getEvaluationSummary: (projectId?: string) =>
+    request<EvaluationSummary>(`/evaluation/summary${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
   streamRunEvents: (
     runId: string,
     after: number,
