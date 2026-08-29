@@ -1,6 +1,7 @@
 import {
   BrainCircuit,
   Check,
+  CircleAlert,
   CircleGauge,
   FileCheck2,
   Gauge,
@@ -32,6 +33,7 @@ interface AgentOSControlPlaneProps {
   governance?: GovernanceResponse;
   extensions?: ExtensionResponse;
   recovery?: RecoveryResponse;
+  runStatus?: string;
   activeTarget?: ControlPlaneTarget;
   onOpen?: (target: ControlPlaneTarget) => void;
 }
@@ -56,6 +58,7 @@ export function AgentOSControlPlane({
   governance,
   extensions,
   recovery,
+  runStatus,
   activeTarget,
   onOpen,
 }: AgentOSControlPlaneProps) {
@@ -159,6 +162,8 @@ export function AgentOSControlPlane({
     },
   ];
   const signals = variant === "manifest" ? manifestSignals : runtimeSignals;
+  const runtimeState = controlPlaneRuntimeState(runStatus);
+  const StateIcon = variant === "manifest" ? Check : runtimeState.icon;
 
   return (
     <section className={`agentControlPlane variant-${variant}`} aria-label={t(variant === "manifest" ? "control.manifestTitle" : "control.runtimeTitle")}>
@@ -170,7 +175,10 @@ export function AgentOSControlPlane({
             <span>{t(variant === "manifest" ? "control.manifestDescription" : "control.runtimeDescription")}</span>
           </div>
         </div>
-        <span className="controlPlaneState"><Check size={13} />{t(variant === "manifest" ? "control.compiled" : "control.enforced")}</span>
+        <span className={`controlPlaneState ${variant === "runtime" ? `tone-${runtimeState.tone}` : ""}`}>
+          <StateIcon size={13} />
+          {t(variant === "manifest" ? "control.compiled" : runtimeState.label)}
+        </span>
       </header>
 
       <div className="controlPlaneSignals">
@@ -206,4 +214,14 @@ export function AgentOSControlPlane({
       </div>
     </section>
   );
+}
+
+function controlPlaneRuntimeState(status?: string): { label: TranslationKey; tone: string; icon: typeof Check } {
+  if (status === "waiting_approval") return { label: "control.state.waiting", tone: "warning", icon: CircleGauge };
+  if (status === "completed") return { label: "control.state.completed", tone: "success", icon: Check };
+  if (status === "failed") return { label: "control.state.failed", tone: "danger", icon: CircleAlert };
+  if (status === "cancelled" || status === "cancellation_requested") {
+    return { label: "control.state.stopped", tone: "muted", icon: CircleAlert };
+  }
+  return { label: "control.state.active", tone: "active", icon: ShieldCheck };
 }

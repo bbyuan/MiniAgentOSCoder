@@ -826,6 +826,7 @@ export function Workbench() {
             governance={governance}
             extensions={extensions}
             recovery={recovery}
+            runStatus={runStatus}
             activeTarget={runtimeDetailsOpen ? runtimePanelTarget : undefined}
             onOpen={openControlPlaneTarget}
           />

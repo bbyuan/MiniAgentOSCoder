@@ -33,6 +33,12 @@ def test_parse_action_ir_accepts_valid_json() -> None:
     assert action.role == "Orchestrator"
 
 
+def test_parse_action_ir_supplies_missing_rationale() -> None:
+    action = parse_action_ir('{"type":"search_code","params":{"query":"import unittest"}}')
+
+    assert action.rationale == "Execute search_code"
+
+
 def test_parse_action_ir_rejects_free_form_text() -> None:
     with pytest.raises(ActionParseError):
         parse_action_ir("please run pytest")
@@ -46,6 +52,14 @@ def test_run_state_machine_accepts_and_rejects_transitions() -> None:
 
     with pytest.raises(InvalidRunTransition):
         transition_run(state, RunPhase.COMPLETED)
+
+
+def test_testing_phase_can_pause_for_a_follow_up_patch_approval() -> None:
+    state = RunState(run_id="run-repair", task="repair", status=RunPhase.TESTING)
+
+    transition_run(state, RunPhase.WAITING_APPROVAL)
+
+    assert state.status == RunPhase.WAITING_APPROVAL
 
 
 def test_trace_writer_appends_jsonl(tmp_path: Path) -> None:

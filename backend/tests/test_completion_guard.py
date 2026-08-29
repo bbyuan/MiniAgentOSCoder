@@ -6,7 +6,7 @@ def observation(action_type: str, ok: bool = True, **metadata: object) -> Action
     return ActionObservation(step=1, action_type=action_type, ok=ok, metadata=metadata)
 
 
-def test_bugfix_requires_change_files_and_test_after_latest_patch() -> None:
+def test_bugfix_requires_a_verified_outcome() -> None:
     blocked = evaluate_completion(
         mode="Bugfix",
         final_message="Fixed",
@@ -24,12 +24,29 @@ def test_bugfix_requires_change_files_and_test_after_latest_patch() -> None:
 
     assert blocked.verdict == "blocked"
     assert {check.id for check in blocked.checks if not check.passed} == {
-        "applied_change",
-        "changed_files",
-        "tests_after_change",
+        "change_or_verified_existing",
+        "validation",
     }
     assert passed.verdict == "passed"
     assert passed.attempt == 2
+
+
+def test_bugfix_can_finish_without_a_patch_when_existing_behavior_is_verified() -> None:
+    assessment = evaluate_completion(
+        mode="Bugfix",
+        final_message="The requested behavior is already present and verified.",
+        observations=[
+            observation("read_file"),
+            observation("run_test"),
+        ],
+    )
+
+    assert assessment.verdict == "passed"
+    assert [check.id for check in assessment.checks] == [
+        "final_message",
+        "change_or_verified_existing",
+        "validation",
+    ]
 
 
 def test_test_before_latest_patch_does_not_satisfy_code_mode() -> None:
@@ -42,7 +59,7 @@ def test_test_before_latest_patch_does_not_satisfy_code_mode() -> None:
         ],
     )
 
-    check = next(item for item in assessment.checks if item.id == "tests_after_change")
+    check = next(item for item in assessment.checks if item.id == "validation")
     assert check.passed is False
     assert assessment.verdict == "blocked"
 
@@ -73,6 +90,6 @@ def test_chat_only_requires_answer_and_no_changes() -> None:
 
 
 def test_completion_expectations_are_mode_specific() -> None:
-    assert completion_expectations("Spec")[-1] == "tests_after_change"
+    assert completion_expectations("Spec") == ["final_message", "change_or_verified_existing", "validation"]
     assert completion_expectations("Review") == ["final_message", "no_workspace_changes", "workspace_inspected"]
     assert completion_expectations("Chat") == ["final_message", "no_workspace_changes"]

@@ -1,6 +1,6 @@
 import { ArrowRight, Ban, CheckCircle2, ChevronDown, CircleAlert, FileDiff, FlaskConical } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
-import { translateKnownText } from "../i18n";
+import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 import { CompletionEvidence } from "./CompletionEvidence";
 
@@ -31,6 +31,7 @@ export function CompletionSummary({
   const messagePreview = previewCompletionMessage(completionMessage);
   const hasMoreMessage = messagePreview !== completionMessage;
   const observationError = typeof lastObservation?.error === "string" ? lastObservation.error : "";
+  const displayedObservationError = localizeRuntimeError(observationError, locale);
   const knownReasons: Record<string, string> = {
     max_output_tokens: t("completion.reason.max_output_tokens"),
     max_input_tokens: t("completion.reason.max_input_tokens"),
@@ -57,7 +58,7 @@ export function CompletionSummary({
         <div className="completionFailureReason">
           <strong>{t("completion.failureReason")}</strong>
           {reason ? <p>{reason}</p> : null}
-          {observationError && observationError !== reason ? <code>{observationError}</code> : null}
+          {displayedObservationError && displayedObservationError !== reason ? <code>{displayedObservationError}</code> : null}
         </div>
       ) : null}
       <div className="completionSignals">
@@ -76,6 +77,14 @@ export function CompletionSummary({
       </button>
     </section>
   );
+}
+
+function localizeRuntimeError(error: string, locale: "zh" | "en"): string {
+  const transition = error.match(/^Cannot transition run .+ from (\w+) to (\w+)$/);
+  if (!transition) return translateKnownText(locale, error);
+  const from = translateStatus(locale, transition[1]);
+  const to = translateStatus(locale, transition[2]);
+  return locale === "zh" ? `运行阶段切换失败：${from} → ${to}` : `Run phase transition failed: ${from} → ${to}`;
 }
 
 function previewCompletionMessage(message: string, limit = 180): string {

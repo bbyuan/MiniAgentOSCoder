@@ -501,10 +501,11 @@ class RunWorker:
             if job.run.status in {RunPhase.RUNNING, RunPhase.REPAIRING}:
                 transition_run(job.run, RunPhase.TESTING)
             if job.artifacts is not None:
+                passed, failed = _test_counts(result.output, ok=result.ok)
                 job.artifacts.test_summary.status = "Passed" if result.ok else "Failed"
                 job.artifacts.test_summary.command = str(result.metadata.get("command", "Not selected"))
-                job.artifacts.test_summary.passed = _pytest_count(result.output, "passed")
-                job.artifacts.test_summary.failed = _pytest_count(result.output, "failed")
+                job.artifacts.test_summary.passed = passed
+                job.artifacts.test_summary.failed = failed
                 _set_plan_state(job.artifacts, "test", "done" if result.ok else "active")
             if not result.ok and job.run.status == RunPhase.TESTING:
                 transition_run(job.run, RunPhase.REPAIRING)
@@ -660,9 +661,17 @@ class RunWorker:
         )
 
 
-def _pytest_count(output: str, label: str) -> int:
-    match = re.search(rf"(\d+)\s+{label}", output)
-    return int(match.group(1)) if match else 0
+def _test_counts(output: str, *, ok: bool) -> tuple[int, int]:
+    passed_match = re.search(r"(\d+)\s+passed", output)
+    failed_match = re.search(r"(\d+)\s+failed", output)
+    passed = int(passed_match.group(1)) if passed_match else 0
+    failed = int(failed_match.group(1)) if failed_match else 0
+    if passed or failed:
+        return passed, failed
+
+    unittest_match = re.search(r"Ran\s+(\d+)\s+tests?", output)
+    total = int(unittest_match.group(1)) if unittest_match else 0
+    return (total, 0) if ok else (0, total)
 
 
 def _set_plan_state(artifacts: RunArtifacts, step_id: str, state: str, detail: str | None = None) -> None:

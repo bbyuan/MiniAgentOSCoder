@@ -172,6 +172,105 @@ def test_run_worker_waits_for_patch_approval_and_resumes_same_loop(tmp_path: Pat
     assert "patch.snapshot.created" in events
 
 
+def test_run_worker_accepts_a_patch_after_a_successful_preflight_test(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
+    patch = """--- a/app.py
++++ b/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+    run = RunState(run_id="run-worker-test-then-patch", task="fix", status=RunPhase.PLANNING)
+    approvals: list[ApprovalRequest] = []
+    results: list[RunLoopResult] = []
+    job = RunJob(
+        run=run,
+        workspace=tmp_path,
+        contract=compile_agent_contract(ROOT / ".agent" / "config.yaml"),
+        context_pack=ContextPack(run_id=run.run_id),
+        model_client=QueuedStaticModelClient([
+            json.dumps({
+                "type": "run_test",
+                "rationale": "establish baseline",
+                "params": {"command": "python3 -c \"assert open('app.py').read() == 'old\\n'\""},
+            }),
+            json.dumps({"type": "apply_patch", "rationale": "apply fix", "params": {"patch": patch}}),
+            json.dumps({
+                "type": "run_test",
+                "rationale": "verify fix",
+                "params": {"command": "python3 -c \"assert open('app.py').read() == 'new\\n'\""},
+            }),
+            json.dumps({"type": "finish", "rationale": "done", "params": {"message": "fixed"}}),
+        ]),
+        tracer=TraceWriter(tmp_path / "runs"),
+        on_result=results.append,
+        on_approval_requested=approvals.append,
+    )
+    worker = RunWorker()
+
+    worker.start(job)
+    wait_until(lambda: len(approvals) == 1)
+
+    assert run.status == RunPhase.WAITING_APPROVAL
+    assert worker.resolve_approval(run.run_id, approvals[0].approval_id, approved=True)
+    wait_until(lambda: len(results) == 1)
+
+    assert results[0].status == RunPhase.COMPLETED
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "new\n"
+
+
+def test_run_worker_completes_bugfix_when_existing_behavior_is_already_correct(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("correct\n", encoding="utf-8")
+    (tmp_path / "test_app.py").write_text(
+        "import unittest\n\n"
+        "class AppTest(unittest.TestCase):\n"
+        "    def test_existing_behavior(self):\n"
+        "        self.assertEqual(open('app.py').read(), 'correct\\n')\n",
+        encoding="utf-8",
+    )
+    run = RunState(
+        run_id="run-worker-already-correct",
+        task="verify existing fix",
+        status=RunPhase.PLANNING,
+        mode="Bugfix",
+    )
+    results: list[RunLoopResult] = []
+    job = RunJob(
+        run=run,
+        workspace=tmp_path,
+        contract=compile_agent_contract(ROOT / ".agent" / "config.yaml"),
+        context_pack=ContextPack(run_id=run.run_id),
+        model_client=QueuedStaticModelClient([
+            json.dumps({"type": "read_file", "rationale": "inspect", "params": {"path": "app.py"}}),
+            json.dumps({
+                "type": "run_test",
+                "rationale": "verify",
+                "params": {"command": "python3 -m unittest -v"},
+            }),
+            json.dumps({
+                "type": "finish",
+                "rationale": "already correct",
+                "params": {"message": "The requested behavior is already correct and verified."},
+            }),
+        ]),
+        tracer=TraceWriter(tmp_path / "runs"),
+        on_result=results.append,
+        artifacts=RunArtifacts(run_id=run.run_id),
+    )
+    worker = RunWorker()
+
+    worker.prepare(job)
+    result = worker.execute(job)
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.completion is not None
+    assert result.completion.verdict == "passed"
+    assert run.applied_patches == 0
+    assert job.artifacts is not None
+    assert job.artifacts.test_summary.passed == 1
+    assert (tmp_path / "app.py").read_text(encoding="utf-8") == "correct\n"
+
+
 def test_run_worker_does_not_accept_completion_after_denied_bugfix(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
     patch = """--- a/app.py
@@ -212,7 +311,7 @@ def test_run_worker_does_not_accept_completion_after_denied_bugfix(tmp_path: Pat
     assert results[0].termination_reason == "model_error"
     assert results[0].completion is not None
     assert results[0].completion.verdict == "blocked"
-    assert "applied_change" in results[0].completion.summary
+    assert "change_or_verified_existing" in results[0].completion.summary
     assert results[0].observations[0].metadata["approval_denied"] is True
     assert "change is too broad" in (results[0].observations[0].error or "")
     assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"

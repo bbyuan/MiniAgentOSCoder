@@ -18,8 +18,9 @@ import {
   type HistoryRun,
   type HistoryRunDetail,
 } from "../api/client";
-import { translateMode, translateStatus, type TranslationKey } from "../i18n";
+import { translateKnownText, translateMode, translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+import { localizeRunReport } from "../reportLocalization";
 import { CompletionEvidence } from "./CompletionEvidence";
 
 
@@ -284,7 +285,7 @@ function RunDetail({ detail, onArchive, onBack }: { detail: HistoryRunDetail; on
       </div>
       <DetailSection title={t("history.result")}>
         <p>{run.final_message || run.termination_reason || t("history.noResult")}</p>
-        <div className="historyEvidenceLine"><span>{t("history.tests")}</span><strong>{run.test_status}</strong><span>{t("history.traceEvents")}</span><strong>{detail.trace.event_count}</strong></div>
+        <div className="historyEvidenceLine"><span>{t("history.tests")}</span><strong>{translateKnownText(locale, run.test_status)}</strong><span>{t("history.traceEvents")}</span><strong>{detail.trace.event_count}</strong></div>
       </DetailSection>
       <section className="historyDetailSection">
         <CompletionEvidence assessment={run.completion} />
@@ -293,18 +294,18 @@ function RunDetail({ detail, onArchive, onBack }: { detail: HistoryRunDetail; on
         {run.changed_files.length ? <ul className="historyFileList">{run.changed_files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : <p>{t("history.noChangedFiles")}</p>}
       </DetailSection>
       <DetailSection title={t("history.report")}>
-        {detail.report.available ? <pre className="historyReport">{detail.report.content}</pre> : <p>{t("history.reportUnavailable")}</p>}
+        {detail.report.available ? <pre className="historyReport">{localizeRunReport(detail.report.content, locale)}</pre> : <p>{t("history.reportUnavailable")}</p>}
         {detail.report.truncated ? <span className="historyNote">{t("history.reportTruncated")}</span> : null}
       </DetailSection>
       <DetailSection title={t("history.recentTrace")}>
-        {detail.trace.recent_events.length ? <ol className="historyTrace">{detail.trace.recent_events.map((event, index) => <li key={`${event.time}-${index}`}><time>{formatTime(event.time)}</time><code>{event.event}</code></li>)}</ol> : <p>{t("history.traceUnavailable")}</p>}
+        {detail.trace.recent_events.length ? <ol className="historyTrace">{detail.trace.recent_events.map((event, index) => <li key={`${event.time}-${index}`}><time>{formatTime(event.time)}</time><code>{translateKnownText(locale, event.event)}</code></li>)}</ol> : <p>{t("history.traceUnavailable")}</p>}
       </DetailSection>
     </div>
   );
 }
 
 function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison; onBack: () => void }) {
-  const { t } = usePreferences();
+  const { locale, t } = usePreferences();
   const [left, right] = comparison.runs;
   return (
     <div className="historyDetailContent">
@@ -314,7 +315,7 @@ function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison;
         <div className="comparisonRow comparisonLabels"><span>{t("history.metric")}</span><span>{t("history.baseline")}</span><span>{t("history.candidate")}</span><span>{t("history.delta")}</span></div>
         {comparison.metrics.map((metric) => <div className="comparisonRow" key={metric.key}><strong>{t(metricKeys[metric.key] ?? "history.metric")}</strong><span>{metric.left.toLocaleString()}</span><span>{metric.right.toLocaleString()}</span><span className={metric.delta === 0 ? "neutral" : metric.delta < 0 ? "lower" : "higher"}>{metric.delta > 0 ? "+" : ""}{metric.delta.toLocaleString()}</span></div>)}
       </div>
-      <div className="comparisonOutcome"><div><span>{t("history.tests")}</span><strong>{left.test_status}</strong><span>{t("history.files")}</span><strong>{left.changed_files.length}</strong></div><div><span>{t("history.tests")}</span><strong>{right.test_status}</strong><span>{t("history.files")}</span><strong>{right.changed_files.length}</strong></div></div>
+      <div className="comparisonOutcome"><div><span>{t("history.tests")}</span><strong>{translateKnownText(locale, left.test_status)}</strong><span>{t("history.files")}</span><strong>{left.changed_files.length}</strong></div><div><span>{t("history.tests")}</span><strong>{translateKnownText(locale, right.test_status)}</strong><span>{t("history.files")}</span><strong>{right.changed_files.length}</strong></div></div>
     </div>
   );
 }

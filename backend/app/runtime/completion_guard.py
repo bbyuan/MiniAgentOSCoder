@@ -18,6 +18,7 @@ def evaluate_completion(
     mode_key = normalized_mode.lower()
     applied = [item for item in observations if item.action_type == "apply_patch" and item.ok]
     changed_files = _changed_files(applied)
+    inspections = [item for item in observations if item.action_type in READ_ACTIONS and item.ok]
     checks = [
         CompletionCheck(
             id="final_message",
@@ -30,16 +31,17 @@ def evaluate_completion(
         checks.extend(
             [
                 CompletionCheck(
-                    id="applied_change",
-                    passed=bool(applied),
-                    evidence=f"{len(applied)} patch(es) applied" if applied else "No patch was applied",
+                    id="change_or_verified_existing",
+                    passed=bool(changed_files) if applied else bool(inspections),
+                    evidence=(
+                        f"Changed files: {', '.join(changed_files)}"
+                        if changed_files
+                        else f"Existing behavior verified after {len(inspections)} successful inspection(s)"
+                        if inspections
+                        else "No project change or successful source inspection was recorded"
+                    ),
                 ),
-                CompletionCheck(
-                    id="changed_files",
-                    passed=bool(changed_files),
-                    evidence=f"Changed files: {', '.join(changed_files)}" if changed_files else "No changed-file evidence was recorded",
-                ),
-                _verified_after_latest_patch(observations),
+                _validated_outcome(observations, has_patch=bool(applied)),
             ]
         )
     elif mode_key in {"review", "chat"}:
@@ -51,7 +53,6 @@ def evaluate_completion(
             )
         )
         if mode_key == "review":
-            inspections = [item for item in observations if item.action_type in READ_ACTIONS and item.ok]
             checks.append(
                 CompletionCheck(
                     id="workspace_inspected",
@@ -81,7 +82,7 @@ def evaluate_completion(
 def completion_expectations(mode: str) -> list[str]:
     mode_key = mode.strip().lower()
     if mode_key in CODE_MODES:
-        return ["final_message", "applied_change", "changed_files", "tests_after_change"]
+        return ["final_message", "change_or_verified_existing", "validation"]
     if mode_key == "review":
         return ["final_message", "no_workspace_changes", "workspace_inspected"]
     if mode_key == "chat":
@@ -117,3 +118,28 @@ def _verified_after_latest_patch(observations: list[ActionObservation]) -> Compl
             else "No successful test was recorded after the latest patch"
         ),
     )
+
+
+def _validated_outcome(observations: list[ActionObservation], *, has_patch: bool) -> CompletionCheck:
+    if has_patch:
+        latest_patch = max(
+            (index for index, item in enumerate(observations) if item.action_type == "apply_patch" and item.ok),
+            default=-1,
+        )
+        passing_tests = [
+            item for item in observations[latest_patch + 1 :]
+            if item.action_type == "run_test" and item.ok
+        ]
+        evidence = (
+            f"{len(passing_tests)} successful test run(s) after the latest patch"
+            if passing_tests
+            else "No successful test was recorded after the latest patch"
+        )
+    else:
+        passing_tests = [item for item in observations if item.action_type == "run_test" and item.ok]
+        evidence = (
+            f"{len(passing_tests)} successful test run(s) verified the existing behavior"
+            if passing_tests
+            else "No successful test was recorded for the existing behavior"
+        )
+    return CompletionCheck(id="validation", passed=bool(passing_tests), evidence=evidence)

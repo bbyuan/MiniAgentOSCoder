@@ -26,10 +26,13 @@ def parse_action_ir(raw: str | dict[str, Any]) -> ActionIR:
     rationale = payload.get("rationale")
     params = payload.get("params", {})
 
-    if not isinstance(action_type, str) or not action_type:
+    if not isinstance(action_type, str) or not action_type.strip():
         raise ActionParseError("Action IR requires non-empty string field: type")
-    if not isinstance(rationale, str) or not rationale:
-        raise ActionParseError("Action IR requires non-empty string field: rationale")
+    action_type = action_type.strip()
+    if rationale is None or (isinstance(rationale, str) and not rationale.strip()):
+        rationale = f"Execute {action_type}"
+    elif not isinstance(rationale, str):
+        raise ActionParseError("Action IR field rationale must be a string")
     if not isinstance(params, dict):
         raise ActionParseError("Action IR field params must be an object")
 
@@ -48,4 +51,3 @@ def parse_action_ir(raw: str | dict[str, Any]) -> ActionIR:
         role=role,
         action_id=action_id,
     )
-

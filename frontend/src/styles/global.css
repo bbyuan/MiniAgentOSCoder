@@ -4133,6 +4133,26 @@ button.statusChip:hover {
   white-space: nowrap;
 }
 
+.controlPlaneState.tone-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.controlPlaneState.tone-warning {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.controlPlaneState.tone-danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.controlPlaneState.tone-muted {
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
 .controlPlaneSignals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5916,6 +5936,7 @@ button.controlSignal:focus-visible {
 
 .completionSummary > .secondaryTextAction {
   grid-column: 2;
+  grid-row: 1;
   align-self: start;
   white-space: nowrap;
 }
@@ -5968,7 +5989,7 @@ button.controlSignal:focus-visible {
   grid-column: 1 / -1;
   padding-top: 13px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 180px));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 24px;
   border-top: 1px solid var(--border);
@@ -5979,6 +6000,11 @@ button.controlSignal:focus-visible {
   display: grid;
   grid-template-columns: 18px auto;
   column-gap: 5px;
+}
+
+.completionSignals > div + div {
+  padding-left: 24px;
+  border-left: 1px solid var(--border);
 }
 
 .completionSignals svg {
@@ -6469,7 +6495,12 @@ button.controlSignal:focus-visible {
     gap: 16px;
   }
 
+  .completionSignals > div + div {
+    padding-left: 16px;
+  }
+
   .completionSummary > button {
+    grid-row: auto;
     width: 100%;
     justify-content: center;
   }

@@ -22,7 +22,13 @@ ALLOWED_TRANSITIONS: dict[RunPhase, set[RunPhase]] = {
     },
     RunPhase.WAITING_APPROVAL: {RunPhase.RUNNING, RunPhase.APPLYING_PATCH, RunPhase.REPAIRING, RunPhase.CANCELLED},
     RunPhase.APPLYING_PATCH: {RunPhase.TESTING, RunPhase.REPAIRING, RunPhase.FAILED},
-    RunPhase.TESTING: {RunPhase.REPAIRING, RunPhase.COMPLETED, RunPhase.FAILED},
+    RunPhase.TESTING: {
+        RunPhase.WAITING_APPROVAL,
+        RunPhase.REPAIRING,
+        RunPhase.COMPLETED,
+        RunPhase.CANCELLED,
+        RunPhase.FAILED,
+    },
     RunPhase.REPAIRING: {
         RunPhase.RUNNING,
         RunPhase.WAITING_APPROVAL,
