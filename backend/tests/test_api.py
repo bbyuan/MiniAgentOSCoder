@@ -250,6 +250,18 @@ def test_governance_api_updates_pre_run_controls(tmp_path: Path) -> None:
     assert initial.status_code == 200
     assert initial.json()["capabilities"]["backend"] == "portable-process"
     assert initial.json()["editable"] is True
+    assert {tool["name"] for tool in initial.json()["tools"]} == {
+        "read_file",
+        "search_code",
+        "list_files",
+        "run_test",
+        "run_lint",
+        "git_status",
+        "git_diff",
+        "run_command",
+        "apply_patch",
+    }
+    assert next(tool for tool in initial.json()["tools"] if tool["name"] == "run_command")["effective_policy"] == "approval_required"
     assert updated.json()["settings"]["sandbox_profile"] == "strict"
     assert next(tool for tool in updated.json()["tools"] if tool["name"] == "run_test")["effective_policy"] == "approval_required"
     assert invalid.status_code == 422

@@ -1270,6 +1270,8 @@ const knownText: Record<Locale, Record<string, string>> = {
     "run_test": "运行测试",
     "run_lint": "运行代码检查",
     "run_command": "运行命令",
+    "git_status": "查看 Git 状态",
+    "git_diff": "查看 Git 变更",
     "mcp_call": "调用 MCP 工具",
     "write_memory": "写入记忆",
     "confirm_if_long_term": "写入长期记忆时确认",

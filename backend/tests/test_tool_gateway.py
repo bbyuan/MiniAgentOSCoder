@@ -23,7 +23,17 @@ def make_gateway(workspace: Path) -> ToolGateway:
 def test_registers_builtin_tools(tmp_path: Path) -> None:
     gateway = make_gateway(tmp_path)
 
-    assert [tool.name for tool in gateway.list_tools()] == ["read_file", "search_code", "run_test", "apply_patch"]
+    assert [tool.name for tool in gateway.list_tools()] == [
+        "read_file",
+        "search_code",
+        "list_files",
+        "run_test",
+        "run_lint",
+        "git_status",
+        "git_diff",
+        "run_command",
+        "apply_patch",
+    ]
 
 
 def test_read_file_tool_redacts_secrets(tmp_path: Path) -> None:
@@ -62,6 +72,28 @@ def test_search_code_excludes_runtime_and_agent_metadata(tmp_path: Path) -> None
     assert result.metadata["matches"] == ["src/service.py"]
 
 
+def test_list_files_is_sorted_scoped_and_excludes_runtime_data(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "z.py").write_text("pass\n", encoding="utf-8")
+    (tmp_path / "src" / "a.py").write_text("pass\n", encoding="utf-8")
+    (tmp_path / ".agent").mkdir()
+    (tmp_path / ".agent" / "private.txt").write_text("hidden\n", encoding="utf-8")
+    gateway = make_gateway(tmp_path)
+
+    result = gateway.call(ActionIR(type="list_files", rationale="inspect tree", params={"path": "."}))
+
+    assert result.ok is True
+    assert result.output.splitlines() == ["src/", "src/a.py", "src/z.py"]
+    assert ".agent" not in result.output
+
+
+def test_list_files_blocks_workspace_escape(tmp_path: Path) -> None:
+    gateway = make_gateway(tmp_path)
+
+    with pytest.raises(PathEscape):
+        gateway.call(ActionIR(type="list_files", rationale="escape", params={"path": ".."}))
+
+
 def test_run_test_tool_executes_allowed_command(tmp_path: Path) -> None:
     gateway = make_gateway(tmp_path)
 
@@ -69,6 +101,62 @@ def test_run_test_tool_executes_allowed_command(tmp_path: Path) -> None:
 
     assert result.ok is True
     assert "ok" in result.output
+
+
+def test_run_lint_executes_allowed_development_command(tmp_path: Path) -> None:
+    gateway = make_gateway(tmp_path)
+
+    result = gateway.call(ActionIR(type="run_lint", rationale="lint", params={"command": "python3 -c \"print('clean')\""}))
+
+    assert result.ok is True
+    assert "clean" in result.output
+
+
+def test_run_command_requires_approval_and_executes_exact_argv(tmp_path: Path) -> None:
+    gateway = make_gateway(tmp_path)
+    approvals: list[str] = []
+    gateway.approval_handler = lambda action, descriptor, preview: (
+        approvals.append(str(action.params["command"]))
+        or ToolApprovalDecision(approved=True, metadata={"approval_id": "appr-command"})
+    )
+
+    result = gateway.call(
+        ActionIR(type="run_command", rationale="inspect runtime", params={"command": "python3 -c \"print('approved')\""})
+    )
+
+    assert result.ok is True
+    assert approvals == ["python3 -c \"print('approved')\""]
+    assert result.metadata["approval_id"] == "appr-command"
+    assert "approved" in result.output
+
+
+def test_run_command_rejects_dangerous_command_before_approval(tmp_path: Path) -> None:
+    gateway = make_gateway(tmp_path)
+    gateway.approval_handler = lambda action, descriptor, preview: pytest.fail("approval must not be requested")
+
+    with pytest.raises(DangerousCommand):
+        gateway.call(ActionIR(type="run_command", rationale="unsafe", params={"command": "rm -rf ."}))
+
+
+def test_git_tools_use_fixed_read_only_commands(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
+    subprocess.run(["git", "add", "app.py"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "initial"],
+        cwd=tmp_path,
+        check=True,
+    )
+    (tmp_path / "app.py").write_text("print('changed')\n", encoding="utf-8")
+    gateway = make_gateway(tmp_path)
+
+    status = gateway.call(ActionIR(type="git_status", rationale="inspect status", params={}))
+    diff = gateway.call(ActionIR(type="git_diff", rationale="inspect diff", params={}))
+
+    assert status.ok is True
+    assert "app.py" in status.output
+    assert diff.ok is True
+    assert "+print('changed')" in diff.output
 
 
 def test_path_guard_blocks_workspace_escape(tmp_path: Path) -> None:

@@ -52,6 +52,19 @@ def create_builtin_tool_registry(
         ),
         (
             ToolDescriptor(
+                name="list_files",
+                description="List workspace files below a directory while excluding generated runtime data.",
+                effect="fs.read",
+                risk=RiskLevel.LOW,
+                approval_policy=ApprovalPolicy.AUTO,
+                input_schema={"path": "string"},
+                metadata={"path_params": ["path"], "sandbox": "workspace_read", "max_entries": 500},
+            ),
+            lambda params: list_files(workspace, params["path"]),
+            None,
+        ),
+        (
+            ToolDescriptor(
                 name="run_test",
                 description="Run an allowed test command inside the workspace.",
                 effect="test.run",
@@ -66,6 +79,72 @@ def create_builtin_tool_registry(
                 },
             ),
             lambda params: run_test(workspace, params["command"], sandbox_executor),
+            None,
+        ),
+        (
+            ToolDescriptor(
+                name="run_lint",
+                description="Run an allowed lint or formatting check inside the workspace.",
+                effect="shell.exec",
+                risk=RiskLevel.MEDIUM,
+                approval_policy=ApprovalPolicy.AUTO,
+                input_schema={"command": "string"},
+                timeout_seconds=60,
+                metadata={
+                    "command_param": "command",
+                    "allowed_prefixes": ["ruff", "python", "python3", "npm", "npx", "pnpm", "yarn"],
+                    "sandbox": "process",
+                },
+            ),
+            lambda params: run_lint(workspace, params["command"], sandbox_executor),
+            None,
+        ),
+        (
+            ToolDescriptor(
+                name="git_status",
+                description="Inspect the current Git branch and working tree status with fixed read-only arguments.",
+                effect="fs.read",
+                risk=RiskLevel.LOW,
+                approval_policy=ApprovalPolicy.AUTO,
+                input_schema={},
+                metadata={"sandbox": "process", "fixed_argv": ["git", "status", "--short", "--branch"]},
+            ),
+            lambda params: run_fixed_command(
+                "git_status",
+                sandbox_executor,
+                ["git", "status", "--short", "--branch"],
+            ),
+            None,
+        ),
+        (
+            ToolDescriptor(
+                name="git_diff",
+                description="Inspect unstaged workspace changes with fixed read-only Git arguments.",
+                effect="fs.read",
+                risk=RiskLevel.LOW,
+                approval_policy=ApprovalPolicy.AUTO,
+                input_schema={},
+                metadata={"sandbox": "process", "fixed_argv": ["git", "diff", "--no-ext-diff", "--unified=3"]},
+            ),
+            lambda params: run_fixed_command(
+                "git_diff",
+                sandbox_executor,
+                ["git", "diff", "--no-ext-diff", "--unified=3"],
+            ),
+            None,
+        ),
+        (
+            ToolDescriptor(
+                name="run_command",
+                description="Run a guarded argv command only after explicit one-time user approval.",
+                effect="shell.exec",
+                risk=RiskLevel.HIGH,
+                approval_policy=ApprovalPolicy.APPROVAL_REQUIRED,
+                input_schema={"command": "string"},
+                timeout_seconds=60,
+                metadata={"command_param": "command", "sandbox": "process"},
+            ),
+            lambda params: run_command(workspace, params["command"], sandbox_executor),
             None,
         ),
         (
@@ -110,12 +189,58 @@ def search_code(workspace_root: Path, query: str) -> ToolResult:
     return ToolResult(ok=True, tool="search_code", output="\n".join(matches), metadata={"matches": matches})
 
 
+def list_files(workspace_root: Path, path: str, *, max_entries: int = 500) -> ToolResult:
+    resolved = resolve_workspace_path(workspace_root, path or ".")
+    if not resolved.exists() or not resolved.is_dir():
+        return ToolResult(ok=False, tool="list_files", error=f"Directory not found: {path}")
+    entries: list[str] = []
+    for item in sorted(resolved.rglob("*")):
+        relative = item.relative_to(workspace_root)
+        if any(part in IGNORED_DIRS for part in relative.parts):
+            continue
+        entries.append(f"{relative}/" if item.is_dir() else str(relative))
+        if len(entries) >= max_entries:
+            break
+    return ToolResult(
+        ok=True,
+        tool="list_files",
+        output="\n".join(entries),
+        metadata={"path": str(resolved), "entries": len(entries), "truncated": len(entries) >= max_entries},
+    )
+
+
 def run_test(workspace_root: Path, command: str, sandbox: SandboxExecutor) -> ToolResult:
     tokens = check_command(command, allowed_prefixes=["python", "python3", "pytest", "npm"])
+    return _run_process_tool("run_test", command, tokens, sandbox)
+
+
+def run_lint(workspace_root: Path, command: str, sandbox: SandboxExecutor) -> ToolResult:
+    tokens = check_command(
+        command,
+        allowed_prefixes=["ruff", "python", "python3", "npm", "npx", "pnpm", "yarn"],
+    )
+    return _run_process_tool("run_lint", command, tokens, sandbox)
+
+
+def run_command(workspace_root: Path, command: str, sandbox: SandboxExecutor) -> ToolResult:
+    tokens = check_command(command)
+    return _run_process_tool("run_command", command, tokens, sandbox)
+
+
+def run_fixed_command(tool: str, sandbox: SandboxExecutor, argv: list[str]) -> ToolResult:
+    return _run_process_tool(tool, " ".join(argv), argv, sandbox)
+
+
+def _run_process_tool(
+    tool: str,
+    command: str,
+    tokens: list[str],
+    sandbox: SandboxExecutor,
+) -> ToolResult:
     execution, output = sandbox.run(tokens, timeout_seconds=60)
     return ToolResult(
         ok=execution.returncode == 0 and not execution.timed_out,
-        tool="run_test",
+        tool=tool,
         output=output,
         error="Sandbox command timed out" if execution.timed_out else None,
         metadata={

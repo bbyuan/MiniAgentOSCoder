@@ -262,6 +262,17 @@ class ToolGateway:
     ) -> list[str]:
         command_param = descriptor.metadata.get("command_param")
         if not isinstance(command_param, str):
+            fixed_argv = descriptor.metadata.get("fixed_argv")
+            if isinstance(fixed_argv, list) and fixed_argv and all(isinstance(item, str) for item in fixed_argv):
+                evaluation.decisions.append(
+                    GuardDecision(
+                        guard="command_guard",
+                        status=DecisionStatus.ALLOW,
+                        reason="Command arguments are fixed by the runtime descriptor",
+                        rule="descriptor.fixed_argv",
+                    )
+                )
+                return list(fixed_argv)
             evaluation.decisions.append(skipped_guard("command_guard", "allowed_prefixes", "Tool has no command parameter"))
             return []
         argv: list[str] = []
