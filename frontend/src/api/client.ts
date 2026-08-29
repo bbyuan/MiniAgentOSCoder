@@ -97,6 +97,16 @@ export interface ContextPack {
     priority: number;
     state: string;
     summary: string;
+    metadata?: {
+      path?: string;
+      start_line?: number;
+      end_line?: number;
+      score?: number;
+      matched_terms?: string[];
+      trusted?: boolean;
+      bounded?: boolean;
+      [key: string]: unknown;
+    };
   }>;
   budget_report: {
     max_tokens: number;

@@ -22,7 +22,7 @@ def build_workspace_index(workspace_root: str | Path, output_dir: str | Path | N
     root = Path(workspace_root).resolve()
     index = WorkspaceIndex()
 
-    for path in root.rglob("*"):
+    for path in sorted(root.rglob("*")):
         if any(part in IGNORED_DIRS for part in path.parts):
             continue
         if not path.is_file():
@@ -48,9 +48,28 @@ def build_workspace_index(workspace_root: str | Path, output_dir: str | Path | N
         index.relations.extend(_extract_relations(relative, text, language))
         index.snippets.extend(_extract_snippets(relative, text))
 
+    index.relations.extend(_infer_test_relations(index.files))
+
     if output_dir is not None:
         write_workspace_index(index, output_dir)
     return index
+
+
+def load_workspace_index(output_dir: str | Path) -> WorkspaceIndex:
+    source = Path(output_dir)
+    files = _read_json_list(source / "files.json")
+    symbols = _read_json_list(source / "symbols.json")
+    relations = _read_json_list(source / "relations.json")
+    snippets: list[dict[str, object]] = []
+    with (source / "snippets.jsonl").open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            value = json.loads(line)
+            if not isinstance(value, dict):
+                raise ValueError("Workspace snippet index must contain JSON objects")
+            snippets.append(value)
+    return WorkspaceIndex(files=files, symbols=symbols, relations=relations, snippets=snippets)
 
 
 def write_workspace_index(index: WorkspaceIndex, output_dir: str | Path) -> None:
@@ -128,3 +147,40 @@ def _extract_snippets(path: Path, text: str) -> list[dict[str, object]]:
         )
     return snippets
 
+
+def _infer_test_relations(files: list[dict[str, object]]) -> list[dict[str, object]]:
+    source_paths = [str(item.get("path", "")) for item in files if not bool(item.get("is_test"))]
+    relations: list[dict[str, object]] = []
+    for item in files:
+        if not bool(item.get("is_test")):
+            continue
+        test_path = str(item.get("path", ""))
+        test_stem = _normalized_test_stem(Path(test_path).stem)
+        if not test_stem:
+            continue
+        matches = [
+            source_path
+            for source_path in source_paths
+            if Path(source_path).stem.lower() == test_stem
+        ]
+        for source_path in matches:
+            relations.append({"path": test_path, "type": "test_of", "target": source_path})
+    return relations
+
+
+def _normalized_test_stem(stem: str) -> str:
+    normalized = stem.lower()
+    for prefix in ("test_", "spec_"):
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix) :]
+    for suffix in ("_test", "_spec", ".test", ".spec"):
+        if normalized.endswith(suffix):
+            normalized = normalized[: -len(suffix)]
+    return normalized
+
+
+def _read_json_list(path: Path) -> list[dict[str, object]]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise ValueError(f"Workspace index file must contain a list of objects: {path.name}")
+    return value

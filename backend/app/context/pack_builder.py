@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from app.models import ContextItem, ContextPack, ContextPackBudget
 
@@ -13,6 +14,7 @@ class ContextCandidate:
     reason: str
     content: str
     priority: float
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def tokens(self) -> int:
@@ -83,6 +85,7 @@ def explain_context_items(items: list[ContextItem], pack: ContextPack) -> list[d
             "priority": item.priority,
             "state": states.get(item.id, "unknown"),
             "summary": _display_summary(item.content),
+            "metadata": item.metadata,
         }
         for item in items
     ]
@@ -97,6 +100,7 @@ def _to_item(candidate: ContextCandidate) -> ContextItem:
         tokens=candidate.tokens,
         priority=candidate.priority,
         content=candidate.content,
+        metadata=dict(candidate.metadata),
     )
 
 

@@ -14,6 +14,7 @@ from app.context import (
     compact_context_pack,
     consolidate_run_memory,
     explain_context_items,
+    set_current_diff_item,
 )
 from app.guards import redact_secrets
 from app.models import (
@@ -467,14 +468,25 @@ class RunWorker:
                 job.run.changed_files = files
                 job.run.applied_patches += 1
                 try:
+                    normalized_patch = PatchPipeline(job.workspace).normalize(str(action.params.get("patch", "")))
                     patch_path = RunArtifactWriter(job.workspace, job.run.run_id).append_patch(
-                        PatchPipeline(job.workspace).normalize(str(action.params.get("patch", ""))),
+                        normalized_patch,
                         job.run.applied_patches,
+                    )
+                    diff_item = set_current_diff_item(
+                        job.context_pack,
+                        step=job.run.current_step,
+                        content=redact_secrets(normalized_patch),
                     )
                     job.tracer.event(
                         job.run.run_id,
                         "patch.artifact.saved",
                         {"path": str(patch_path), "sequence": job.run.applied_patches},
+                    )
+                    job.tracer.event(
+                        job.run.run_id,
+                        "context.diff_updated",
+                        {"item_id": diff_item.id, "tokens": diff_item.tokens, "step": job.run.current_step},
                     )
                 except (OSError, ValueError) as exc:
                     job.tracer.event(

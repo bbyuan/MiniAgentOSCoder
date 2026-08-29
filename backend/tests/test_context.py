@@ -7,7 +7,11 @@ from app.context import (
     ContextCandidate,
     build_context_pack,
     build_workspace_index,
+    discover_project_rules,
+    load_workspace_index,
+    retrieve_workspace_context,
     scan_workspace,
+    set_current_diff_item,
     write_project_profile,
 )
 from app.context.pack_builder import explain_context_items
@@ -44,6 +48,24 @@ def test_workspace_index_extracts_symbols_relations_and_snippets(tmp_path: Path)
     assert any(relation["target"] == "json" for relation in index.relations)
     assert (tmp_path / ".agent" / "index" / "files.json").exists()
     assert (tmp_path / ".agent" / "index" / "snippets.jsonl").exists()
+
+
+def test_workspace_index_persists_test_relations(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text("def run():\n    return True\n", encoding="utf-8")
+    (tmp_path / "test_service.py").write_text(
+        "from service import run\n\ndef test_run():\n    assert run()\n",
+        encoding="utf-8",
+    )
+
+    build_workspace_index(tmp_path, tmp_path / ".agent" / "index")
+    loaded = load_workspace_index(tmp_path / ".agent" / "index")
+
+    assert any(
+        relation["type"] == "test_of"
+        and relation["path"] == "test_service.py"
+        and relation["target"] == "service.py"
+        for relation in loaded.relations
+    )
 
 
 def test_workspace_index_excludes_generated_agent_and_run_files(tmp_path: Path) -> None:
@@ -98,6 +120,76 @@ def test_context_pack_selects_required_and_prioritized_items() -> None:
     assert any(item["id"] == "long-log" and item["state"] == "compressed" for item in explanation)
 
 
+def test_project_rules_are_redacted_bounded_and_protected(tmp_path: Path) -> None:
+    (tmp_path / "AGENTS.md").write_text(
+        "Run focused tests first.\napi_key=unsafe-value\n" + "x" * 14000,
+        encoding="utf-8",
+    )
+
+    rules = discover_project_rules(tmp_path)
+    pack, _ = build_context_pack("run-rules", rules, [], max_tokens=5000)
+
+    assert len(rules) == 1
+    assert rules[0].type == "project_rules"
+    assert "unsafe-value" not in rules[0].content
+    assert "[REDACTED_SECRET]" in rules[0].content
+    assert rules[0].metadata["bounded"] is True
+    assert rules[0].id in pack.required_items
+
+
+def test_task_aware_retrieval_ranks_source_and_related_test(tmp_path: Path) -> None:
+    (tmp_path / "calculator.py").write_text(
+        "class Calculator:\n"
+        "    def add(self, left, right):\n"
+        "        return left - right\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "test_calculator.py").write_text(
+        "from calculator import Calculator\n\n"
+        "def test_add():\n"
+        "    assert Calculator().add(2, 3) == 5\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "unrelated.py").write_text("def heartbeat():\n    return 'ok'\n", encoding="utf-8")
+    build_workspace_index(tmp_path, tmp_path / ".agent" / "index")
+
+    candidates = retrieve_workspace_context(tmp_path, "修复 Calculator.add 并运行测试", {"entrypoints": []})
+
+    sources = [candidate.source for candidate in candidates]
+    assert sources[0] == "calculator.py"
+    assert "test_calculator.py" in sources
+    assert "unrelated.py" not in sources
+    assert candidates[0].metadata["matched_terms"]
+    assert candidates[0].metadata["start_line"] == 1
+
+
+def test_task_aware_retrieval_limits_snippets_per_file(tmp_path: Path) -> None:
+    repeated = "\n".join(f"def parser_{index}(): return 'parser'" for index in range(100))
+    (tmp_path / "parser.py").write_text(repeated, encoding="utf-8")
+    (tmp_path / "test_parser.py").write_text("def test_parser(): pass\n", encoding="utf-8")
+    build_workspace_index(tmp_path, tmp_path / ".agent" / "index")
+
+    candidates = retrieve_workspace_context(tmp_path, "repair parser", max_snippets=10, max_per_file=2)
+
+    assert sum(candidate.source == "parser.py" for candidate in candidates) == 2
+
+
+def test_task_aware_retrieval_rebuilds_a_corrupt_index(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("def render(): return 'ready'\n", encoding="utf-8")
+    index_dir = tmp_path / ".agent" / "index"
+    index_dir.mkdir(parents=True)
+    (index_dir / "files.json").write_text("not-json", encoding="utf-8")
+
+    candidates = retrieve_workspace_context(
+        tmp_path,
+        "explain behavior",
+        {"entrypoints": ["app.py"]},
+    )
+
+    assert candidates[0].source == "app.py"
+    assert load_workspace_index(index_dir).files[0]["path"] == "app.py"
+
+
 def test_compaction_preserves_protected_context_and_compresses_history() -> None:
     required = [
         ContextCandidate("task", "user_task", "user", "original task", "fix bug", 1.0),
@@ -114,6 +206,21 @@ def test_compaction_preserves_protected_context_and_compresses_history() -> None
     assert "task" in pack.selected_items
     assert "history" in pack.compressed_items
     assert pack.compaction_count == 1
+
+
+def test_current_diff_replaces_previous_diff_and_survives_compaction() -> None:
+    required = [ContextCandidate("task", "user_task", "user", "task", "fix", 1.0)]
+    candidates = [ContextCandidate("history", "tool_history", "tool", "history", "x" * 380, 0.1)]
+    pack, _ = build_context_pack("run-diff", required, candidates, max_tokens=150)
+
+    set_current_diff_item(pack, step=1, content="--- a/app.py\n+++ b/app.py\n-old\n+new\n")
+    latest = set_current_diff_item(pack, step=2, content="--- a/app.py\n+++ b/app.py\n-new\n+fixed\n")
+    compact_context_pack(pack, confirmed=True)
+
+    diff_items = [item for item in pack.items if item.type == "current_diff"]
+    assert diff_items == [latest]
+    assert latest.id in pack.selected_items
+    assert "+fixed" in latest.content
 
 
 def test_critical_compaction_requires_confirmation() -> None:

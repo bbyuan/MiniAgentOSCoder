@@ -112,6 +112,22 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
               <small>{translateKnownText(locale, item.type)} · {item.tokens}</small>
             </div>
             <p>{translateKnownText(locale, item.summary || item.reason)}</p>
+            {item.metadata?.score !== undefined || item.metadata?.start_line !== undefined ? (
+              <div className="contextItemMetadata">
+                {item.metadata?.score !== undefined ? (
+                  <span>{t("context.relevance", { score: item.metadata.score.toFixed(2) })}</span>
+                ) : null}
+                {item.metadata?.start_line !== undefined ? (
+                  <span>{t("context.lines", {
+                    start: item.metadata.start_line,
+                    end: item.metadata.end_line ?? item.metadata.start_line,
+                  })}</span>
+                ) : null}
+                {item.metadata?.matched_terms?.length ? (
+                  <span title={item.metadata.matched_terms.join(", ")}>{t("context.matches", { count: item.metadata.matched_terms.length })}</span>
+                ) : null}
+              </div>
+            ) : null}
             <code title={item.source}>{item.source}</code>
           </article>
         ))}

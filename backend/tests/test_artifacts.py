@@ -29,7 +29,7 @@ def test_build_run_artifacts_includes_context_and_trace_summary() -> None:
     assert artifacts.run_id == "run-001"
     assert artifacts.context_explanation[0]["id"] == "user_task"
     assert artifacts.trace_summary == ["run.created", "contract.compiled"]
-    assert context_pack.required_items == ["user_task", "project_profile"]
+    assert context_pack.required_items == ["user_task", "project_profile", "current_plan"]
 
 
 def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) -> None:

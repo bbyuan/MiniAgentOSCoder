@@ -67,7 +67,13 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         memories = []
         tracer.event(run.run_id, "memory.load_failed", {"error": redact_secrets(str(exc))})
     run.memory_refs = [memory.memory_id for memory in memories]
-    artifacts, context_pack = build_run_artifacts(run, project.profile, trace_events, memories)
+    artifacts, context_pack = build_run_artifacts(
+        run,
+        project.profile,
+        trace_events,
+        memories,
+        workspace_root=project.path,
+    )
     store.runs[run.run_id] = run
     store.contracts[run.run_id] = contract
     store.contexts[run.run_id] = context_pack
@@ -81,6 +87,16 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         run.run_id,
         "memory.loaded",
         {"count": len(memories), "memory_ids": [memory.memory_id for memory in memories]},
+    )
+    tracer.event(
+        run.run_id,
+        "context.built",
+        {
+            "required_items": context_pack.required_items,
+            "selected_items": context_pack.selected_items,
+            "omitted_items": context_pack.omitted_items,
+            "composition": context_pack.composition,
+        },
     )
     tracer.event(
         run.run_id,

@@ -13,6 +13,7 @@ PROTECTED_TYPES = {
     "latest_observation",
     "current_diff",
     "runtime_budget",
+    "project_rules",
 }
 
 
@@ -126,6 +127,32 @@ def add_observation_item(pack: ContextPack, *, step: int, action_type: str, cont
         priority=0.98,
         content=safe_content,
         metadata={"ok": ok, "step": step},
+    )
+    pack.items.append(item)
+    pack.selected_items.append(item.id)
+    refresh_context_pack(pack)
+    return item
+
+
+def set_current_diff_item(pack: ContextPack, *, step: int, content: str) -> ContextItem:
+    previous_ids = {item.id for item in pack.items if item.type == "current_diff"}
+    if previous_ids:
+        pack.items = [item for item in pack.items if item.id not in previous_ids]
+        pack.required_items = [item_id for item_id in pack.required_items if item_id not in previous_ids]
+        pack.selected_items = [item_id for item_id in pack.selected_items if item_id not in previous_ids]
+        pack.compressed_items = [item_id for item_id in pack.compressed_items if item_id not in previous_ids]
+        pack.omitted_items = [item_id for item_id in pack.omitted_items if item_id not in previous_ids]
+
+    safe_content = content.strip() or "No patch content"
+    item = ContextItem(
+        id=f"current-diff-{step}",
+        type="current_diff",
+        source="patch.diff",
+        reason="latest applied workspace change",
+        tokens=max(1, len(safe_content) // 4),
+        priority=0.99,
+        content=safe_content,
+        metadata={"step": step},
     )
     pack.items.append(item)
     pack.selected_items.append(item.id)

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from app.context import discover_project_rules, retrieve_workspace_context
 from app.context.pack_builder import ContextCandidate, build_context_pack, explain_context_items
 from app.models import ContextPack, DiffSummary, MemoryEntry, PlanStep, RunArtifacts, RunState, TestSummary, TraceEvent
 
@@ -23,6 +26,7 @@ def build_initial_context(
     project_profile: dict[str, object],
     plan: list[PlanStep] | None = None,
     memories: list[MemoryEntry] | None = None,
+    workspace_root: str | Path | None = None,
 ) -> tuple[ContextPack, list[dict[str, object]]]:
     required = [
         ContextCandidate(
@@ -41,8 +45,6 @@ def build_initial_context(
             content=str(project_profile),
             priority=0.9,
         ),
-    ]
-    candidates = [
         ContextCandidate(
             id="current_plan",
             type="current_plan",
@@ -50,8 +52,12 @@ def build_initial_context(
             reason="current execution plan",
             content="\n".join(f"{step.id}: {step.title} [{step.state}] - {step.detail}" for step in plan or []),
             priority=0.99,
-        )
+        ),
     ]
+    candidates: list[ContextCandidate] = []
+    if workspace_root is not None:
+        required.extend(discover_project_rules(workspace_root))
+        candidates.extend(retrieve_workspace_context(workspace_root, run.task, project_profile))
     candidates.extend(
         ContextCandidate(
             id=memory.memory_id,
@@ -72,9 +78,16 @@ def build_run_artifacts(
     project_profile: dict[str, object],
     trace_events: list[TraceEvent] | list[dict[str, object]],
     memories: list[MemoryEntry] | None = None,
+    workspace_root: str | Path | None = None,
 ) -> tuple[RunArtifacts, ContextPack]:
     plan = build_initial_plan(run.mode, project_profile)
-    context_pack, context_explanation = build_initial_context(run, project_profile, plan, memories)
+    context_pack, context_explanation = build_initial_context(
+        run,
+        project_profile,
+        plan,
+        memories,
+        workspace_root,
+    )
     for step in plan:
         if step.id == "context":
             step.state = "done"

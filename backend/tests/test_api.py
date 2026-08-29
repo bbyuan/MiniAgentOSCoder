@@ -130,7 +130,7 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["contract"]["effects"]["allow"]
     assert run["artifacts"]["plan"][0]["title"] == "Scan workspace"
     assert trace["events"][0]["event"] == "run.created"
-    assert context["required_items"] == ["user_task", "project_profile"]
+    assert context["required_items"] == ["user_task", "project_profile", "current_plan"]
     assert context["explanation"][0]["id"] == "user_task"
     assert artifacts["test_summary"]["command"] in ["pytest", "Not selected"]
 

@@ -2213,6 +2213,23 @@ button.statusChip:hover {
   display: block;
 }
 
+.contextItems .contextItemMetadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 7px;
+}
+
+.contextItemMetadata span {
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 8px;
+  line-height: 1.2;
+}
+
 .contextState {
   padding: 3px 5px;
   border-radius: 4px;
