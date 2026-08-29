@@ -1,5 +1,5 @@
-import { AlertTriangle, CheckCircle2, GitBranch, ShieldAlert } from "lucide-react";
-import type { ModelRoutePlan } from "../api/client";
+import { AlertTriangle, CheckCircle2, Database, GitBranch, ShieldAlert } from "lucide-react";
+import type { ModelRoutePlan, ModelRouteSelection } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -36,19 +36,43 @@ export function ModelRouteSummary({ plan }: ModelRouteSummaryProps) {
         {phases.map((phase, index) => {
           const route = plan.routes[phase];
           return (
-            <div key={phase} className={`modelRoutePhase ${route?.configured ? "" : "blocked"}`}>
+            <div key={phase} className={`modelRoutePhase ${route?.configured ? "" : "blocked"} ${route?.fallback ? "fallback" : ""}`}>
               <span className="routeStep">{index + 1}</span>
               <div>
                 <small>{t(`modelRoute.phase.${phase}` as TranslationKey)}</small>
                 <strong>{route?.model || t("modelRoute.unavailable")}</strong>
                 <span>{route ? t("modelRoute.profile", { profile: route.profile_id }) : t("modelRoute.noProfile")}</span>
               </div>
-              {route?.fallback ? <em>{t("modelRoute.fallback")}</em> : null}
+              {route ? <RouteReason route={route} /> : null}
               {!route?.configured ? <em>{t("modelRoute.blocked")}</em> : null}
             </div>
           );
         })}
       </div>
+
+      {plan.profiles.length ? (
+        <div className="modelRouteProfiles">
+          <div className="modelRouteProfilesHeader">
+            <Database size={15} />
+            <strong>{t("modelRoute.profileRegistry")}</strong>
+            <span>{t("modelRoute.profileRegistryHint", { count: plan.profiles.length })}</span>
+          </div>
+          <div className="modelRouteProfileList">
+            {plan.profiles.map((profile) => (
+              <article className={profile.configured ? "ready" : "blocked"} key={profile.profile_id}>
+                <span>{profile.configured ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}</span>
+                <div>
+                  <strong>{profile.profile_id}</strong>
+                  <small title={profile.model}>{profile.provider} · {profile.model}</small>
+                </div>
+                <em>{profile.context_window
+                  ? t("modelRoute.contextWindow", { count: profile.context_window })
+                  : t("modelRoute.contextUnknown")}</em>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <footer className="modelRouteFootnote">
         {plan.enabled
@@ -56,5 +80,14 @@ export function ModelRouteSummary({ plan }: ModelRouteSummaryProps) {
           : t("modelRoute.compatibilityHint")}
       </footer>
     </section>
+  );
+}
+
+function RouteReason({ route }: { route: ModelRouteSelection }) {
+  const { t } = usePreferences();
+  return (
+    <em className={route.fallback ? "fallback" : ""}>
+      {t(`modelRoute.reason.${route.reason}` as TranslationKey)}
+    </em>
   );
 }

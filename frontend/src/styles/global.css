@@ -8443,13 +8443,21 @@ button.controlSignal:focus-visible {
 
 .modelRoutePhase {
   min-width: 0;
-  min-height: 92px;
+  min-height: 116px;
   padding: 13px 12px;
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
   align-content: start;
   gap: 8px;
   border-right: 1px solid var(--border);
+}
+
+.modelRoutePhase.fallback {
+  background: color-mix(in srgb, var(--warning-soft) 36%, transparent);
+}
+
+.modelRoutePhase.blocked {
+  background: color-mix(in srgb, var(--danger-soft) 44%, transparent);
 }
 
 .modelRoutePhase:last-child {
@@ -8497,20 +8505,124 @@ button.controlSignal:focus-visible {
 
 .modelRoutePhase em {
   grid-column: 2;
-  width: max-content;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 5px;
   padding: 2px 5px;
   border-radius: 4px;
-  color: var(--warning);
-  background: var(--warning-soft);
+  overflow: hidden;
+  color: var(--accent);
+  background: var(--accent-soft);
   font-size: 9px;
   font-style: normal;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelRoutePhase em.fallback {
+  color: var(--warning);
+  background: var(--warning-soft);
 }
 
 .modelRoutePhase.blocked em {
   color: var(--danger);
   background: var(--danger-soft);
+}
+
+.modelRouteProfiles {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-subtle) 62%, var(--surface));
+}
+
+.modelRouteProfilesHeader {
+  min-height: 26px;
+  display: grid;
+  grid-template-columns: 20px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.modelRouteProfilesHeader svg {
+  color: var(--accent);
+}
+
+.modelRouteProfilesHeader strong {
+  font-size: 12px;
+}
+
+.modelRouteProfilesHeader span {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelRouteProfileList {
+  margin-top: 9px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.modelRouteProfileList article {
+  min-width: 0;
+  min-height: 60px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.modelRouteProfileList article > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.modelRouteProfileList article.blocked > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.modelRouteProfileList div,
+.modelRouteProfileList strong,
+.modelRouteProfileList small {
+  min-width: 0;
+  display: block;
+}
+
+.modelRouteProfileList strong {
+  font-size: 12px;
+}
+
+.modelRouteProfileList small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelRouteProfileList em {
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 10px;
+  font-style: normal;
+  white-space: nowrap;
 }
 
 .modelRouteFootnote {
@@ -8633,6 +8745,10 @@ button.controlSignal:focus-visible {
   .modelRoutePhase:nth-child(-n + 2) {
     border-bottom: 1px solid var(--border);
   }
+
+  .modelRouteProfileList {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -8719,6 +8835,20 @@ button.controlSignal:focus-visible {
 
   .modelRoutePhase:last-child {
     border-bottom: 0;
+  }
+
+  .modelRouteProfilesHeader,
+  .modelRouteProfileList article {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .modelRouteProfilesHeader span,
+  .modelRouteProfileList em {
+    grid-column: 2;
+  }
+
+  .modelRouteProfileList em {
+    justify-self: start;
   }
 
   .admissionMetric {
