@@ -15,6 +15,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Sparkles,
+  UserRound,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -29,6 +30,7 @@ interface ActivityFeedProps {
 }
 
 function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
+  if (event.startsWith("user.guidance.")) return { icon: UserRound, tone: "action" };
   if (event.startsWith("model.")) return { icon: Sparkles, tone: "model" };
   if (event.startsWith("tool.")) return { icon: Wrench, tone: "tool" };
   if (event.startsWith("action.")) return { icon: CornerDownRight, tone: "action" };
@@ -67,11 +69,16 @@ function activityState(status: string): { key: "activity.live" | "activity.compl
   return { key: "activity.paused", tone: "paused" };
 }
 
-function eventDetail(event: TraceEvent, t: ReturnType<typeof usePreferences>["t"]): string {
+function eventDetail(
+  event: TraceEvent,
+  locale: ReturnType<typeof usePreferences>["locale"],
+  t: ReturnType<typeof usePreferences>["t"],
+): string {
   const error = event.payload.error;
-  if (typeof error === "string" && error.trim()) return error;
+  if (typeof error === "string" && error.trim()) return translateKnownText(locale, error);
   const reason = event.payload.termination_reason;
-  if (typeof reason === "string" && reason.trim()) return reason;
+  if (typeof reason === "string" && reason.trim()) return translateKnownText(locale, reason);
+  if (event.event.startsWith("user.guidance.")) return t("activity.detail.guidance");
   if (event.event.startsWith("model.")) return t("activity.detail.model");
   if (event.event.startsWith("tool.")) return t("activity.detail.tool");
   if (event.event.startsWith("approval.")) return t("activity.detail.approval");
@@ -106,7 +113,7 @@ export function ActivityFeed({ events, status }: ActivityFeedProps) {
       {!expanded && latestEvent ? (
         <div className="activityPreview">
           <div className={`eventIcon tone-${latestPresentation?.tone ?? "runtime"}`}><LatestIcon size={15} /></div>
-          <div><strong>{translateKnownText(locale, latestEvent.event)}</strong><span>{eventDetail(latestEvent, t)}</span></div>
+          <div><strong>{translateKnownText(locale, latestEvent.event)}</strong><span>{eventDetail(latestEvent, locale, t)}</span></div>
           <time dateTime={latestEvent.time}>{eventTime(latestEvent.time)}</time>
         </div>
       ) : null}
@@ -129,7 +136,7 @@ export function ActivityFeed({ events, status }: ActivityFeedProps) {
                 </div>
                 <div className="eventCopy">
                   <strong>{translateKnownText(locale, event.event)}</strong>
-                  <span>{eventDetail(event, t)}</span>
+                  <span>{eventDetail(event, locale, t)}</span>
                 </div>
                 <time dateTime={event.time}>{eventTime(event.time)}</time>
               </article>

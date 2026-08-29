@@ -67,7 +67,7 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
         <div className="subsectionLabel">{t("context.composition")}</div>
         {composition.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : composition.map(([type, tokens], index) => (
           <div className={`compositionRow tone-${index % 5}`} key={type}>
-            <span><i />{type.split("_").join(" ")}</span>
+            <span><i />{translateKnownText(locale, type)}</span>
             <strong>{t("context.tokens", { count: tokens })}</strong>
           </div>
         ))}
@@ -109,9 +109,9 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
             <div>
               <span className={`contextState state-${item.state}`}>{t(`context.itemState.${item.state}` as TranslationKey)}</span>
               <strong title={item.id}>{item.id}</strong>
-              <small>{item.type.split("_").join(" ")} · {item.tokens}</small>
+              <small>{translateKnownText(locale, item.type)} · {item.tokens}</small>
             </div>
-            <p>{item.summary || translateKnownText(locale, item.reason)}</p>
+            <p>{translateKnownText(locale, item.summary || item.reason)}</p>
             <code title={item.source}>{item.source}</code>
           </article>
         ))}

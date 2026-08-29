@@ -36,6 +36,13 @@ const en = {
   "run.safeStopHint": "The agent will stop before the next guarded effect.",
   "run.showDetails": "Open control plane",
   "run.hideDetails": "Close control plane",
+  "steering.title": "Guide this run",
+  "steering.placeholder": "Add a requirement, correct the direction, or ask the agent to inspect something else...",
+  "steering.safeBoundary": "Applies before the next guarded action",
+  "steering.replacesApproval": "Replaces the action currently awaiting approval",
+  "steering.send": "Send guidance",
+  "steering.queued": "Queued for the next safe boundary",
+  "steering.applied": "Applied to the agent's current plan",
   "metric.modelCalls": "Model calls",
   "metric.toolCalls": "Tool calls",
   "metric.context": "Context",
@@ -53,6 +60,7 @@ const en = {
   "activity.detail.approval": "A guarded action was reviewed",
   "activity.detail.context": "The task context was updated",
   "activity.detail.patch": "Code changes were processed",
+  "activity.detail.guidance": "Your guidance was added to this run",
   "activity.detail.runtime": "The runtime state changed",
   "activity.detail.system": "The agent runtime recorded an event",
   "activity.emptyTitle": "No runtime activity yet",
@@ -329,6 +337,7 @@ const en = {
   "error.startRun": "Failed to start run",
   "error.prepareRun": "Failed to prepare run",
   "error.cancelRun": "Failed to cancel run",
+  "error.steerRun": "Failed to update the running task",
   "error.approveAction": "Failed to approve action",
   "error.denyAction": "Failed to deny action",
   "error.rollback": "Failed to restore checkpoint",
@@ -597,6 +606,13 @@ const zh: Record<TranslationKey, string> = {
   "run.safeStopHint": "智能体会在下一个受治理动作前安全停止。",
   "run.showDetails": "打开控制平面",
   "run.hideDetails": "关闭控制平面",
+  "steering.title": "调整当前任务",
+  "steering.placeholder": "补充要求、纠正方向，或让智能体先检查其他内容……",
+  "steering.safeBoundary": "将在下一个受治理动作前生效",
+  "steering.replacesApproval": "将撤回当前待审批动作并重新规划",
+  "steering.send": "发送补充要求",
+  "steering.queued": "已加入当前任务，等待安全边界应用",
+  "steering.applied": "已应用到智能体的当前计划",
   "metric.modelCalls": "模型调用",
   "metric.toolCalls": "工具调用",
   "metric.context": "上下文",
@@ -614,6 +630,7 @@ const zh: Record<TranslationKey, string> = {
   "activity.detail.approval": "已处理受保护操作",
   "activity.detail.context": "已更新任务上下文",
   "activity.detail.patch": "已处理代码变更",
+  "activity.detail.guidance": "你的补充要求已加入当前运行",
   "activity.detail.runtime": "运行状态已变化",
   "activity.detail.system": "智能体运行时记录了事件",
   "activity.emptyTitle": "暂无运行活动",
@@ -890,6 +907,7 @@ const zh: Record<TranslationKey, string> = {
   "error.startRun": "启动运行失败",
   "error.prepareRun": "准备运行失败",
   "error.cancelRun": "取消运行失败",
+  "error.steerRun": "无法更新当前运行任务",
   "error.approveAction": "批准操作失败",
   "error.denyAction": "拒绝操作失败",
   "error.rollback": "恢复检查点失败",
@@ -1155,6 +1173,21 @@ const knownText: Record<Locale, Record<string, string>> = {
     "No patch proposed": "暂无变更",
     "Not run": "未运行",
     "Not selected": "未选择",
+    "Unavailable": "不可用",
+    "none": "无",
+    "not available": "不可用",
+    "normal": "正常",
+    "warning": "警告",
+    "critical": "临界",
+    "passed": "已通过",
+    "blocked": "未通过",
+    "allowed": "已允许",
+    "denied": "已拒绝",
+    "approval_denied": "审批未通过",
+    "finish": "正常完成",
+    "user_cancelled": "用户已取消",
+    "cancelled_before_start": "启动前已取消",
+    "not_started": "尚未开始",
     "max_output_tokens": "模型输出预算已用尽",
     "max_input_tokens": "上下文输入预算已用尽",
     "max_model_calls": "模型调用次数已用尽",
@@ -1182,6 +1215,9 @@ const knownText: Record<Locale, Record<string, string>> = {
     "model.failed": "模型调用失败",
     "action.parsed": "动作已解析",
     "action.rejected": "动作已拒绝",
+    "action.superseded": "旧动作已由新要求替代",
+    "user.guidance.queued": "用户补充要求已排队",
+    "user.guidance.applied": "用户补充要求已生效",
     "tool.executed": "工具执行完成",
     "tool.failed": "工具执行失败",
     "observation.recorded": "观察结果已记录",
@@ -1197,6 +1233,44 @@ const knownText: Record<Locale, Record<string, string>> = {
     "fs.write": "写入文件",
     "test.run": "运行测试",
     "mcp.call": "调用 MCP 服务",
+    "shell.exec": "执行本地命令",
+    "state.memory": "读写智能体记忆",
+    "workspace.escape": "访问工作区外路径",
+    "secret.read": "读取敏感凭据",
+    "net.public": "访问公共网络",
+    "read_file": "读取文件",
+    "search_code": "搜索代码",
+    "list_files": "列出文件",
+    "write_patch": "生成补丁",
+    "apply_patch": "应用补丁",
+    "run_test": "运行测试",
+    "run_lint": "运行代码检查",
+    "run_command": "运行命令",
+    "mcp_call": "调用 MCP 工具",
+    "write_memory": "写入记忆",
+    "confirm_if_long_term": "写入长期记忆时确认",
+    "budget_guard": "预算检查",
+    "schema_guard": "参数检查",
+    "path_guard": "路径边界检查",
+    "command_guard": "命令安全检查",
+    "tool_policy_guard": "工具策略检查",
+    "preflight_guard": "工具预检",
+    "approval_guard": "用户审批",
+    "sandbox_guard": "Sandbox 边界检查",
+    "user_task": "用户任务",
+    "project_profile": "项目画像",
+    "current_plan": "当前计划",
+    "project_memory": "项目记忆",
+    "long_term_memory": "长期记忆",
+    "tool_observation": "工具观察",
+    "note": "备注",
+    "preference": "偏好",
+    "command": "命令",
+    "convention": "开发约定",
+    "protected_path": "受保护路径",
+    "business_rule": "业务规则",
+    "assistant": "智能体",
+    "user": "用户",
     "run.before": "运行开始前",
     "run.after": "运行结束后",
     "tool.before": "工具调用前",
@@ -1256,6 +1330,12 @@ const knownText: Record<Locale, Record<string, string>> = {
     "Effective policy is automatic": "生效策略为自动执行",
     "Tool preflight passed": "工具预检通过",
     "User approved this action once": "用户已批准本次动作",
+    "Superseded by user guidance": "已由用户的新要求替代",
+    "Fix failing behavior, failing tests, runtime errors, regressions, or bug reports.": "修复行为错误、测试失败、运行时错误、回归问题或缺陷报告。",
+    "Add or change product behavior while following existing project patterns.": "遵循现有项目模式，新增或调整产品行为。",
+    "Review changed or target files for correctness, security, regressions, and test gaps.": "检查目标代码的正确性、安全性、回归风险与测试缺口。",
+    "Implement an OpenSpec change by reading proposal, design, tasks, and change specs.": "依据 OpenSpec 的提案、设计、任务与变更规格完成实现。",
+    "Repair code based on failing test output and validation observations.": "根据失败测试输出和验证观察修复代码。",
     "repair.started": "已进入新一轮修复",
     "repair.completed": "修复验证已通过",
     "rollback.started": "正在恢复工作区",
@@ -1278,7 +1358,22 @@ export function translate(
 }
 
 export function translateKnownText(locale: Locale, value: string): string {
-  return knownText[locale][value] ?? value;
+  const exact = knownText[locale][value];
+  if (exact || locale !== "zh") return exact ?? value;
+  if (value.startsWith("available ") && value.endsWith(" memory")) {
+    const scope = value.slice("available ".length, -" memory".length);
+    return `可用的${scope === "long_term" ? "长期" : scope === "project" ? "项目" : scope}记忆`;
+  }
+  if (value.startsWith("Tool requires approval before execution: ")) {
+    return `工具执行前需要审批：${translateKnownText(locale, value.slice(41))}`;
+  }
+  if (value.startsWith("Tool uses ") && value.endsWith(" boundary")) {
+    return `工具使用 ${value.slice(10, -9)} 边界`;
+  }
+  if (value.startsWith("Command is accepted by the ") && value.endsWith(" sandbox profile")) {
+    return `命令已通过 ${value.slice(27, -16)} Sandbox 配置检查`;
+  }
+  return value;
 }
 
 export function translateExtensionDiagnostic(locale: Locale, value: string): string {

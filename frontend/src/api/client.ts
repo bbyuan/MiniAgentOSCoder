@@ -6,6 +6,12 @@ export interface CreateRunRequest {
   mode: RunMode;
 }
 
+export interface SteerRunResponse {
+  run_id: string;
+  status: "queued";
+  applies_at: "next_safe_boundary";
+}
+
 export interface OpenProjectResponse {
   project_id: string;
   path: string;
@@ -523,6 +529,11 @@ export const daemonApi = {
     request<StartRunResponse>(`/runs/${runId}/start`, { method: "POST" }),
   cancelRun: (runId: string) =>
     request<{ run_id: string; status: string }>(`/runs/${runId}/cancel`, { method: "POST" }),
+  steerRun: (runId: string, message: string) =>
+    request<SteerRunResponse>(`/runs/${runId}/steer`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),

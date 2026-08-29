@@ -421,6 +421,46 @@ def test_cancel_run(tmp_path: Path) -> None:
     assert "Status: `cancelled`" in report["content"]
 
 
+def test_steer_run_requires_an_active_worker(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect", "mode": "Chat"},
+    ).json()
+
+    response = client.post(f"/runs/{run['run_id']}/steer", json={"message": "Focus on the parser"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Run is not active"
+
+
+def test_steer_run_queues_guidance_and_records_trace(tmp_path: Path, monkeypatch) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect", "mode": "Chat"},
+    ).json()
+    captured: list[tuple[str, str]] = []
+
+    def steer(run_id: str, message: str, *, on_queued) -> bool:
+        on_queued()
+        captured.append((run_id, message))
+        return True
+
+    monkeypatch.setattr(store.worker, "steer", steer)
+
+    response = client.post(f"/runs/{run['run_id']}/steer", json={"message": "  Focus on the parser  "})
+    trace = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
+
+    assert response.status_code == 202
+    assert response.json()["applies_at"] == "next_safe_boundary"
+    assert captured == [(run["run_id"], "Focus on the parser")]
+    assert trace[-1]["event"] == "user.guidance.queued"
+    assert trace[-1]["payload"]["message"] == "Focus on the parser"
+
+
 def test_events_and_replay_follow_trace_contract(tmp_path: Path) -> None:
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.store import store
 from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory
@@ -35,6 +35,10 @@ class CreateRunRequest(BaseModel):
 
 class RollbackRequest(BaseModel):
     checkpoint_id: str
+
+
+class SteerRunRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
 
 
 @router.post("")
@@ -330,6 +334,34 @@ def cancel_run(run_id: str) -> dict[str, object]:
             _regenerate_report(run_id, tracer)
         _persist_run_snapshot(run, store.run_results.get(run_id))
     return {"run_id": run.run_id, "status": run.status.value}
+
+
+@router.post("/{run_id}/steer", status_code=202)
+def steer_run(run_id: str, request: SteerRunRequest) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    if run is None or project is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="Guidance cannot be empty")
+    tracer = TraceWriter(project.path / "runs")
+    if not store.worker.steer(
+        run_id,
+        message,
+        on_queued=lambda: tracer.event(
+            run_id,
+            "user.guidance.queued",
+            {"message": message, "applies_at": "next_safe_boundary"},
+            role="user",
+        ),
+    ):
+        raise HTTPException(status_code=409, detail="Run is not active")
+    return {
+        "run_id": run_id,
+        "status": "queued",
+        "applies_at": "next_safe_boundary",
+    }
 
 
 def _find_config_path(project_path: Path) -> Path:

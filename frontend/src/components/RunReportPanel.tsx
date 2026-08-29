@@ -1,13 +1,15 @@
 import { Download, FileCheck2, FileText } from "lucide-react";
 import type { RunReportResponse } from "../api/client";
 import { usePreferences } from "../preferences";
+import { localizeRunReport } from "../reportLocalization";
 
 interface RunReportPanelProps {
   report?: RunReportResponse;
 }
 
 export function RunReportPanel({ report }: RunReportPanelProps) {
-  const { t } = usePreferences();
+  const { locale, t } = usePreferences();
+  const displayedContent = report?.available ? localizeRunReport(report.content, locale) : "";
 
   function downloadReport() {
     if (!report?.available) return;
@@ -27,7 +29,7 @@ export function RunReportPanel({ report }: RunReportPanelProps) {
       <div className="sectionHeader">
         <div>
           <h3>{t("report.title")}</h3>
-          <span>{report?.generated_at ? formatGeneratedAt(report.generated_at) : t("report.notGenerated")}</span>
+          <span>{report?.generated_at ? formatGeneratedAt(report.generated_at, locale) : t("report.notGenerated")}</span>
         </div>
         <FileText size={15} />
       </div>
@@ -62,14 +64,14 @@ export function RunReportPanel({ report }: RunReportPanelProps) {
               <Download size={14} />
             </button>
           </div>
-          <pre className="reportDocument">{report.content}</pre>
+          <pre className="reportDocument">{displayedContent}</pre>
         </>
       )}
     </section>
   );
 }
 
-function formatGeneratedAt(value: string): string {
+function formatGeneratedAt(value: string, locale: "zh" | "en"): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(locale === "zh" ? "zh-CN" : "en-US");
 }

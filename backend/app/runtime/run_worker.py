@@ -81,6 +81,7 @@ class ApprovalWaiter:
 @dataclass
 class RunWorker:
     _cancel_events: dict[str, Event] = field(default_factory=dict)
+    _steering_messages: dict[str, list[str]] = field(default_factory=dict)
     _approval_waiters: dict[str, ApprovalWaiter] = field(default_factory=dict)
     _threads: dict[str, Thread] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
@@ -92,6 +93,7 @@ class RunWorker:
             if job.run.status != RunPhase.PLANNING:
                 raise RunWorkerConflict(f"Run cannot start from status: {job.run.status.value}")
             self._cancel_events[job.run.run_id] = Event()
+            self._steering_messages[job.run.run_id] = []
 
         transition_run(job.run, RunPhase.RUNNING)
         if job.artifacts is not None:
@@ -199,6 +201,7 @@ class RunWorker:
                     model_client=job.model_client,
                     tracer=job.tracer,
                     should_cancel=cancel_event.is_set,
+                    take_steering=lambda: self.take_steering(job.run.run_id),
                     on_step=lambda step: setattr(job.run, "current_step", step),
                 ).run(
                     task=job.run.task,
@@ -240,7 +243,39 @@ class RunWorker:
         finally:
             with self._lock:
                 self._cancel_events.pop(job.run.run_id, None)
+                self._steering_messages.pop(job.run.run_id, None)
                 self._threads.pop(job.run.run_id, None)
+
+    def steer(
+        self,
+        run_id: str,
+        message: str,
+        *,
+        on_queued: Callable[[], None] = lambda: None,
+    ) -> bool:
+        guidance = message.strip()
+        if not guidance:
+            return False
+        with self._lock:
+            if run_id not in self._cancel_events:
+                return False
+            on_queued()
+            self._steering_messages.setdefault(run_id, []).append(guidance)
+            for waiter in self._approval_waiters.values():
+                if waiter.run_id == run_id and not waiter.event.is_set():
+                    waiter.approved = False
+                    waiter.reason = "Superseded by user guidance"
+                    waiter.event.set()
+            return True
+
+    def take_steering(self, run_id: str) -> list[str]:
+        with self._lock:
+            messages = self._steering_messages.get(run_id)
+            if not messages:
+                return []
+            pending = list(messages)
+            messages.clear()
+            return pending
 
     def cancel(self, run_id: str) -> bool:
         with self._lock:
@@ -285,6 +320,7 @@ class RunWorker:
                 waiter.reason = "Runtime reset"
                 waiter.event.set()
             self._cancel_events.clear()
+            self._steering_messages.clear()
             self._approval_waiters.clear()
             self._threads.clear()
 

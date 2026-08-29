@@ -166,7 +166,7 @@ export function RuntimePanels({
               <ul>
                 {contract.policies.map((policy) => (
                   <li key={policy.name}>
-                    <span>{policy.name.split("_").join(" ")}</span>
+                    <span>{translateKnownText(locale, policy.name)}</span>
                     <strong>{translateKnownText(locale, policy.value)}</strong>
                   </li>
                 ))}

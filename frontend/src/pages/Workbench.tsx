@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, Square, UserRound } from "lucide-react";
+import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, UserRound } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -36,6 +36,7 @@ import { ProjectSidebar } from "../components/ProjectSidebar";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { RunProgress } from "../components/RunProgress";
+import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
@@ -85,6 +86,7 @@ export function Workbench() {
   const [terminationReason, setTerminationReason] = useState("");
   const [lastObservation, setLastObservation] = useState<Record<string, unknown>>({});
   const [followUpTask, setFollowUpTask] = useState("");
+  const [steeringBusy, setSteeringBusy] = useState(false);
   const [completion, setCompletion] = useState<CompletionAssessment | null>();
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
@@ -139,6 +141,18 @@ export function Workbench() {
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
+  const steeringMessages = useMemo(() => {
+    const applied = new Set(traceEvents.flatMap((event) => {
+      const message = event.payload.message;
+      return event.event === "user.guidance.applied" && typeof message === "string" ? [message] : [];
+    }));
+    return traceEvents.flatMap((event) => {
+      const message = event.payload.message;
+      return event.event === "user.guidance.queued" && typeof message === "string"
+        ? [{ message, applied: applied.has(message) }]
+        : [];
+    });
+  }, [traceEvents]);
 
   async function openWorkspace(path: string) {
     if (!path.trim()) return;
@@ -420,6 +434,24 @@ export function Workbench() {
     }
   }
 
+  async function steerRun(message: string) {
+    if (!runId) return;
+    setSteeringBusy(true);
+    setError(null);
+    try {
+      await daemonApi.steerRun(runId, message);
+      if (approval) {
+        setApproval(null);
+        setRunStatus("repairing");
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.steerRun"));
+      throw caught;
+    } finally {
+      setSteeringBusy(false);
+    }
+  }
+
   async function discardPreparedRun() {
     if (!runId) return;
     setBusy(true);
@@ -451,6 +483,7 @@ export function Workbench() {
     setTerminationReason("");
     setLastObservation({});
     setFollowUpTask("");
+    setSteeringBusy(false);
     setCompletion(undefined);
     setApproval(null);
     setRecovery(undefined);
@@ -799,6 +832,17 @@ export function Workbench() {
 
           {displayPlan.length ? <RunProgress items={displayPlan} /> : null}
 
+          {steeringMessages.map((guidance, index) => (
+            <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>
+              <div className="turnAvatar"><UserRound size={16} /></div>
+              <div className="turnBody">
+                <span>{t("session.you")}</span>
+                <p>{guidance.message}</p>
+                <small>{t(guidance.applied ? "steering.applied" : "steering.queued")}</small>
+              </div>
+            </section>
+          ))}
+
           {approval ? (
             <div className="inlineApproval">
               <ApprovalPanel approval={approval} busy={approvalBusy} onApprove={approveAction} onDeny={denyAction} />
@@ -821,12 +865,13 @@ export function Workbench() {
           {error ? <ErrorBanner message={error} /> : null}
 
           {runIsActive ? (
-            <div className="activeRunControls">
-              <span>{t("run.safeStopHint")}</span>
-              <button type="button" disabled={busy || runStatus === "cancellation_requested"} onClick={cancelRun}>
-                <Square size={12} fill="currentColor" />{t("composer.cancel")}
-              </button>
-            </div>
+            <RunSteeringComposer
+              status={runStatus}
+              busy={steeringBusy}
+              stopping={runStatus === "cancellation_requested"}
+              onSend={steerRun}
+              onStop={() => void cancelRun()}
+            />
           ) : null}
 
           {terminal ? (

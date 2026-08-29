@@ -93,7 +93,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
             <span className="extensionToggle" aria-hidden="true" />
             <span className="extensionMain">
               <strong>{skill.name}</strong>
-              <small>{skill.description}</small>
+              <small>{translateKnownText(locale, skill.description)}</small>
               <span className="extensionMeta">
                 <code>{skill.id}</code>
                 <em>{translateKnownText(locale, skill.risk)}</em>
@@ -213,6 +213,7 @@ function ExtensionGroup({
 }
 
 function EvidenceRow({ event }: { event: TraceEvent }) {
+  const { locale } = usePreferences();
   const payload = event.payload;
   const identity = String(
     payload.skill_id ?? payload.server_id ?? payload.hook_id ?? payload.tool ?? "runtime",
@@ -222,7 +223,7 @@ function EvidenceRow({ event }: { event: TraceEvent }) {
     <div>
       {ok === false ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
       <span>
-        <strong>{event.event}</strong>
+        <strong>{translateKnownText(locale, event.event)}</strong>
         <code>{identity}</code>
       </span>
     </div>

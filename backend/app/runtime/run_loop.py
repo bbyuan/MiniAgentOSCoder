@@ -31,6 +31,7 @@ class AgentRunLoop:
         tracer: TraceWriter,
         clock: Callable[[], float] = time.monotonic,
         should_cancel: Callable[[], bool] = lambda: False,
+        take_steering: Callable[[], list[str]] = lambda: [],
         on_step: Callable[[int], None] = lambda step: None,
     ) -> None:
         self.run_id = run_id
@@ -39,6 +40,7 @@ class AgentRunLoop:
         self.tracer = tracer
         self.clock = clock
         self.should_cancel = should_cancel
+        self.take_steering = take_steering
         self.on_step = on_step
 
     def run(
@@ -59,6 +61,7 @@ class AgentRunLoop:
         completion_attempts = 0
         last_completion: CompletionAssessment | None = None
         active_mode = mode or contract.program.mode
+        active_task = task
 
         self.tracer.event(
             self.run_id,
@@ -81,6 +84,7 @@ class AgentRunLoop:
                     observations=observations,
                     completion=last_completion,
                 )
+            active_task, _ = self._apply_steering(active_task, observations, step)
             budget_reason = self._preflight_budget_reason(
                 contract=contract,
                 model_calls=model_calls,
@@ -106,7 +110,7 @@ class AgentRunLoop:
             try:
                 decision = plan_next_action(
                     run_id=self.run_id,
-                    task=task,
+                    task=active_task,
                     contract=contract,
                     tools=self.gateway.list_tools(),
                     model_client=self.model_client,
@@ -148,6 +152,15 @@ class AgentRunLoop:
                     observations=observations,
                     completion=last_completion,
                 )
+            active_task, superseded = self._apply_steering(active_task, observations, step)
+            if superseded:
+                self.tracer.event(
+                    self.run_id,
+                    "action.superseded",
+                    {"action": decision.action.to_dict(), "reason": "user_guidance"},
+                    role="user",
+                )
+                continue
             token_reason = _token_budget_reason(contract, token_usage)
             if token_reason is not None:
                 return self._budget_result(
@@ -183,6 +196,15 @@ class AgentRunLoop:
                     {"assessment": last_completion.to_dict()},
                     role=decision.action.role,
                 )
+                active_task, superseded = self._apply_steering(active_task, observations, step)
+                if superseded:
+                    self.tracer.event(
+                        self.run_id,
+                        "action.superseded",
+                        {"action": decision.action.to_dict(), "reason": "user_guidance"},
+                        role="user",
+                    )
+                    continue
                 if last_completion.verdict != "passed":
                     failed_checks = [check.id for check in last_completion.checks if check.required and not check.passed]
                     observation = ActionObservation(
@@ -285,6 +307,33 @@ class AgentRunLoop:
             observations=observations,
             completion=last_completion,
         )
+
+    def _apply_steering(
+        self,
+        active_task: str,
+        observations: list[ActionObservation],
+        step: int,
+    ) -> tuple[str, bool]:
+        messages = self.take_steering()
+        if not messages:
+            return active_task, False
+        for message in messages:
+            active_task = f"{active_task}\n\nLatest user guidance:\n{message}"
+            observation = ActionObservation(
+                step=step,
+                action_type="user_guidance",
+                ok=True,
+                output=message,
+                metadata={"source": "user", "applied_at": "safe_boundary"},
+            )
+            observations.append(observation)
+            self.tracer.event(
+                self.run_id,
+                "user.guidance.applied",
+                {"message": message, "step": step, "applied_at": "safe_boundary"},
+                role="user",
+            )
+        return active_task, True
 
     def _cancelled_result(
         self,

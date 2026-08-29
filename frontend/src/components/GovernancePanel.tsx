@@ -98,7 +98,7 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
           {(governance?.tools ?? []).map((tool) => (
             <article key={tool.name}>
               <div>
-                <strong>{tool.name}</strong>
+                <strong>{translateKnownText(locale, tool.name)}</strong>
                 <span className={`riskLabel risk-${tool.risk}`}>{translateKnownText(locale, tool.risk)}</span>
               </div>
               <p>{translateKnownText(locale, tool.effect)} · {t("governance.effective", { policy: translateKnownText(locale, tool.effective_policy) })}</p>
@@ -137,14 +137,14 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
             {latestEvaluations.map((evaluation) => (
               <article key={evaluation.evaluation_id}>
                 <header>
-                  <strong>{evaluation.tool}</strong>
+                  <strong>{translateKnownText(locale, evaluation.tool)}</strong>
                   <code>{evaluation.action_id.slice(-8)}</code>
-                  <span className={`outcome outcome-${evaluation.outcome}`}>{evaluation.outcome}</span>
+                  <span className={`outcome outcome-${evaluation.outcome}`}>{translateKnownText(locale, evaluation.outcome)}</span>
                 </header>
                 {evaluation.decisions.map((decision) => (
                   <div className="guardDecision" key={`${evaluation.evaluation_id}-${decision.guard}`}>
                     <i className={`decisionDot status-${decision.status}`} />
-                    <strong>{decision.guard}</strong>
+                    <strong>{translateKnownText(locale, decision.guard)}</strong>
                     <span>{translateKnownText(locale, decision.reason)}</span>
                     <small>{decision.duration_ms.toFixed(2)} ms</small>
                   </div>

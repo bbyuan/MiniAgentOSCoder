@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { MemoryEntry, MemoryInput, MemoryResponse, MemoryScope } from "../api/client";
-import type { TranslationKey } from "../i18n";
+import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface MemoryPanelProps {
@@ -15,7 +15,7 @@ interface MemoryPanelProps {
 const scopes: MemoryScope[] = ["short_term", "project", "long_term"];
 
 export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: MemoryPanelProps) {
-  const { t } = usePreferences();
+  const { locale, t } = usePreferences();
   const [scope, setScope] = useState<MemoryScope>("short_term");
   const [kind, setKind] = useState("note");
   const [content, setContent] = useState("");
@@ -104,7 +104,7 @@ export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: Memo
         {entries.length === 0 ? <p className="emptyText">{t("memory.empty")}</p> : entries.map((entry) => (
           <article key={entry.memory_id}>
             <div className="memoryEntryHeader">
-              <span>{entry.kind.split("_").join(" ")}</span>
+              <span>{translateKnownText(locale, entry.kind)}</span>
               <div>
                 {scope !== "short_term" ? (
                   <button type="button" title={t("memory.edit")} onClick={() => edit(entry)} disabled={busy}>
