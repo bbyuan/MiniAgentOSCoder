@@ -71,13 +71,13 @@ cd frontend
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/` and prepare a run. Before launch, the Governance view lets you choose the sandbox profile and tighten any tool to approval-required or denied. Launching locks those settings, starts the local Run Worker, and incrementally renders model, policy, sandbox, tool, budget, and terminal events from the SSE Trace stream.
+Open `http://127.0.0.1:5173/`, choose a project, describe the requested result, and select **Start task**. The workbench prepares and launches the governed Run as one action. Use the secondary **Run settings** action only when a task needs a different Sandbox profile, tool policy, Skill, MCP Server, or Hook.
 
 The guided workbench follows one primary path:
 
 ```text
-open project -> describe task -> analyze without edits -> review preflight
--> start execution -> approve guarded effects -> inspect result and replay
+open project -> describe task -> start task
+-> approve only when required -> inspect result
 ```
 
 Inactive runtime panels stay hidden until a Run exists. The desktop app uses the system folder picker; browser development retains an absolute-path field. Recently opened projects come from the local Run Center.
@@ -90,7 +90,7 @@ automatic: Sandbox + Context + Completion Guard
 optional: Skills + MCP Servers + Hooks
 ```
 
-The full Inspector stays hidden during initial preflight. **Optional settings** opens a focused, wide configuration surface with only two choices: Safety and permissions for Sandbox/tool policy changes, and Extension capabilities for Skills, MCP Servers, and Hooks. Context, Memory, checkpoints, reports, traces, and execution evidence appear in the full Inspector only after execution starts. Default settings are sufficient for a normal run.
+The full Inspector is hidden by default before and during execution. **Run settings** opens a focused, wide configuration surface before launch with only two choices: Safety and permissions for Sandbox/tool policy changes, and Extension capabilities for Skills, MCP Servers, and Hooks. **Run details** reveals Context, Memory, checkpoints, reports, traces, and execution evidence after launch. An approval request opens those details automatically so a blocking decision is never hidden. Default settings are sufficient for a normal run.
 
 Before execution, the workbench shows the completion contract for the selected mode. Bugfix, Feature, and Spec Runs require a recorded change plus a successful test after the latest patch. Review Runs require read-only inspection and forbid applied patches; Chat Runs require an answer and a read-only workspace. A model `finish` action is only a completion request: the runtime rejects it with structured missing checks and lets the same Agent Loop continue while budget remains. The final assessment is visible in the result view, Run Center, `report.md`, `trace.jsonl`, and the Run API.
 

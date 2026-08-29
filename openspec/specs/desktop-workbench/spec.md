@@ -215,12 +215,19 @@ The workbench SHALL guide the primary journey through project selection, task de
 - THEN the primary action SHALL open a local code project
 - AND recent projects SHALL be available without showing inactive Run panels
 
-#### Scenario: Prepare before execution
+#### Scenario: Start a normal task
 
 - GIVEN a project and non-empty task are selected
-- WHEN the user analyzes the task
+- WHEN the user starts the task
+- THEN the workbench SHALL prepare and launch the governed Run as one action
+- AND SHALL NOT require a separate preflight confirmation
+
+#### Scenario: Review optional settings
+
+- GIVEN a project and non-empty task are selected
+- WHEN the user opens Run settings
 - THEN the workbench SHALL create a planning Run without executing tools
-- AND SHALL show model, sandbox, context, effects, Skills, MCP Servers, and Hooks before offering execution
+- AND SHALL show only model readiness, safety permissions, and extension controls before launch
 
 #### Scenario: Finish a run
 
@@ -269,28 +276,34 @@ The workbench SHALL explain mode-specific completion expectations before executi
 
 The workbench SHALL distinguish required configuration, automatically managed runtime capabilities, and optional enhancements before launch, and SHALL separate editable preflight settings from runtime inspection.
 
-#### Scenario: User reaches preflight
+#### Scenario: User starts without reviewing settings
 
-- GIVEN a Run has been prepared
-- WHEN the workbench renders launch readiness
-- THEN the model Provider SHALL be the only required configuration
-- AND Sandbox, Context, and Completion Guard SHALL be identified as automatically managed
-- AND Skills, MCP Servers, and Hooks SHALL be identified as optional
-
-#### Scenario: User does not need advanced controls
-
-- GIVEN a prepared Run uses the default governance and extension settings
-- WHEN the user reviews preflight
-- THEN the full Inspector SHALL remain hidden
-- AND the user SHALL be able to launch without opening advanced settings
+- GIVEN a model Provider is configured and task text is present
+- WHEN the user selects Start task
+- THEN Sandbox, Context, Completion Guard, Skills, MCP Servers, and Hooks SHALL NOT become mandatory intermediate decisions
+- AND the Run SHALL proceed with its effective defaults
 
 #### Scenario: User opens advanced settings
 
-- GIVEN a prepared Run is displayed
-- WHEN the user explicitly opens advanced settings
+- GIVEN task text is present
+- WHEN the user explicitly opens Run settings
 - THEN a wide preflight settings surface SHALL show only Safety and permissions plus Extension capabilities
 - AND runtime Context operations, Memory, checkpoints, reports, traces, and execution evidence SHALL remain hidden
 - AND the user SHALL be able to close optional settings without discarding the Run
+
+#### Scenario: User follows a running task
+
+- GIVEN a Run has started
+- WHEN no approval is waiting
+- THEN the full Inspector SHALL remain closed by default
+- AND the user SHALL be able to reveal it with the Run details action
+
+#### Scenario: Approval blocks execution
+
+- GIVEN a guarded effect requires user approval
+- WHEN the approval request is received
+- THEN Run details SHALL open automatically
+- AND the approval decision SHALL be visible in the default Inspector tab
 
 #### Scenario: Chinese optional settings are displayed
 
