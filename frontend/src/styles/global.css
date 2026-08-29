@@ -432,7 +432,7 @@ button.statusChip:hover {
   min-height: calc(100vh - 68px);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(350px, 390px);
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 430px);
   background: var(--surface);
   border-inline: 1px solid var(--border);
 }
@@ -853,17 +853,95 @@ button.statusChip:hover {
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border);
-  background: var(--surface-subtle);
+  background: var(--surface);
   overflow: hidden;
 }
 
 .inspectorTop {
-  min-height: 106px;
-  padding: 16px 18px 12px;
+  min-height: 140px;
+  padding: 18px;
   align-items: flex-start;
   flex-direction: column;
+  gap: 15px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+
+.inspectorTitleRow {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inspectorRunState {
+  min-height: 24px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inspectorRunState.tone-running,
+.inspectorRunState.tone-applying_patch,
+.inspectorRunState.tone-testing,
+.inspectorRunState.tone-repairing {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.inspectorRunState.tone-completed {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.inspectorRunState.tone-waiting_approval {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.inspectorRunState.tone-failed {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.controlViewPicker {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.controlViewPicker > span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.controlViewPicker select {
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface-subtle);
+  font-size: 12px;
+  font-weight: 630;
+}
+
+.controlViewPicker select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .inspectorTop > div:first-child {
@@ -879,46 +957,190 @@ button.statusChip:hover {
   white-space: nowrap;
 }
 
-.inspectorTabs {
-  width: 100%;
-  display: flex;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  scrollbar-width: none;
-}
-
-.inspectorTabs::-webkit-scrollbar { display: none; }
-
-.inspectorTabs button {
-  min-width: max-content;
-  flex: 1 0 auto;
-  height: 34px;
-  padding: 0 9px;
-  margin-bottom: -1px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--text-tertiary);
-  background: transparent;
-  font-size: 12px;
-  font-weight: 620;
-}
-
-.inspectorTabs button.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-
 .inspectorBody {
   min-height: 0;
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background: var(--surface-subtle);
 }
 
 .inspectorSection {
-  padding: 17px 18px;
+  padding: 20px 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-subtle);
+}
+
+.controlOverviewHeader {
+  align-items: flex-start;
+}
+
+.controlOverviewHeader h3,
+.controlOverviewHeader span {
+  display: block;
+}
+
+.controlOverviewHeader h3 {
+  font-size: 15px;
+}
+
+.controlOverviewHeader span {
+  max-width: 270px;
+  margin-top: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.contractAssurance {
+  margin: 16px 0 20px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 7px;
+  background: var(--success-soft);
+}
+
+.contractAssurance > span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--success);
+  background: var(--surface);
+}
+
+.contractAssurance strong,
+.contractAssurance p {
+  display: block;
+}
+
+.contractAssurance strong {
+  font-size: 12px;
+}
+
+.contractAssurance p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.capabilityList {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  list-style: none;
+  border-block: 1px solid var(--border);
+}
+
+.capabilityList li {
+  min-height: 38px;
+  padding: 8px 2px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.capabilityList li:last-child {
+  border-bottom: 0;
+}
+
+.capabilityList svg {
+  color: var(--success);
+}
+
+.controlBudgetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid var(--border);
+}
+
+.controlBudgetGrid > div {
+  min-width: 0;
+  padding: 12px 8px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 4px;
+  border-right: 1px solid var(--border);
+}
+
+.controlBudgetGrid > div:last-child {
+  border-right: 0;
+}
+
+.controlBudgetGrid svg {
+  grid-row: 1 / 3;
+  color: var(--text-tertiary);
+}
+
+.controlBudgetGrid span,
+.controlBudgetGrid strong {
+  display: block;
+}
+
+.controlBudgetGrid span {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controlBudgetGrid strong {
+  font-size: 13px;
+}
+
+.policyDisclosure {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.policyDisclosure summary {
+  padding: 13px 0 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.policyDisclosure ul {
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  list-style: none;
+}
+
+.policyDisclosure li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.policyDisclosure li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.policyDisclosure li strong {
+  color: var(--text-secondary);
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .sectionHeader {
@@ -2770,6 +2992,31 @@ button.statusChip:hover {
   font-size: 11px;
 }
 
+/* Keep control-plane content readable without enlarging compact icon controls. */
+.inspector .inspectorSection span,
+.inspector .inspectorSection small,
+.inspector .inspectorSection p,
+.inspector .inspectorSection label,
+.inspector .inspectorSection em {
+  font-size: 11px;
+}
+
+.inspector .inspectorSection code,
+.inspector .inspectorSection pre {
+  font-size: 10px;
+}
+
+.inspector .inspectorSection button:not(.iconButton) {
+  font-size: 11px;
+}
+
+.inspector .inspectorSection .contextState,
+.inspector .inspectorSection .extensionMeta code,
+.inspector .inspectorSection .extensionMeta em,
+.inspector .inspectorSection .extensionMeta b {
+  font-size: 9px;
+}
+
 @media (max-width: 1180px) {
   .workbenchLayout {
     grid-template-columns: minmax(0, 1fr);
@@ -3717,22 +3964,22 @@ button.statusChip:hover {
 
 /* Session-first coding workspace */
 .runSimpleLayout .runCanvas {
-  width: min(100%, 980px);
+  width: min(100%, 1040px);
   margin: 0 auto;
-  padding-block: 26px 42px;
-  gap: 16px;
+  padding: 32px 38px 56px;
+  gap: 18px;
 }
 
 .sessionRunHeader {
-  min-height: 66px;
-  padding-bottom: 16px;
+  min-height: 76px;
+  padding-bottom: 20px;
   align-items: center;
   border-bottom: 1px solid var(--border);
 }
 
 .sessionRunHeader .runHeading h1 {
-  margin: 5px 0 3px;
-  font-size: 20px;
+  margin: 6px 0 4px;
+  font-size: 22px;
 }
 
 .sessionRunHeader .runHeading p {
@@ -3758,10 +4005,11 @@ button.statusChip:hover {
 }
 
 .userTurn {
-  padding: 18px;
+  padding: 20px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(18, 23, 31, 0.04);
 }
 
 .userTurn .turnAvatar {
@@ -3818,6 +4066,7 @@ button.statusChip:hover {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-raised);
+  box-shadow: var(--shadow-soft);
 }
 
 .agentControlPlane.variant-manifest {
@@ -3826,8 +4075,8 @@ button.statusChip:hover {
 }
 
 .controlPlaneHeader {
-  min-height: 50px;
-  padding: 8px 12px;
+  min-height: 58px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3843,8 +4092,8 @@ button.statusChip:hover {
 }
 
 .controlPlaneMark {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
@@ -3860,33 +4109,33 @@ button.statusChip:hover {
 }
 
 .controlPlaneIdentity strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 720;
 }
 
 .controlPlaneIdentity div > span {
-  margin-top: 2px;
+  margin-top: 3px;
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .controlPlaneState {
-  min-height: 24px;
-  padding: 0 7px;
+  min-height: 26px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   border-radius: 5px;
   color: var(--success);
   background: var(--success-soft);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .controlPlaneSignals {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   border-top: 1px solid var(--border);
   background: var(--border);
@@ -3894,8 +4143,8 @@ button.statusChip:hover {
 
 .controlSignal {
   min-width: 0;
-  min-height: 64px;
-  padding: 10px 11px;
+  min-height: 88px;
+  padding: 13px 14px;
   display: grid;
   grid-template-columns: 19px minmax(0, 1fr);
   align-content: center;
@@ -3939,7 +4188,8 @@ button.controlSignal:focus-visible {
 }
 
 .controlSignal small,
-.controlSignal strong {
+.controlSignal strong,
+.controlSignal em {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3948,15 +4198,23 @@ button.controlSignal:focus-visible {
 
 .controlSignal small {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 620;
 }
 
 .controlSignal strong {
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--text);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 690;
+}
+
+.controlSignal em {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.35;
 }
 
 .controlSignal.tone-success > svg {
@@ -3976,7 +4234,7 @@ button.controlSignal:focus-visible {
 .controlSignalProgress {
   grid-column: 1 / -1;
   height: 2px;
-  margin-top: 8px;
+  margin-top: 10px;
   overflow: hidden;
   border-radius: 2px;
   background: var(--border);
@@ -4011,6 +4269,7 @@ button.controlSignal:focus-visible {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(18, 23, 31, 0.04), 0 10px 28px rgba(18, 23, 31, 0.035);
 }
 
 .runProgress > header {
@@ -4351,32 +4610,6 @@ button.controlSignal:focus-visible {
   font-size: 10px;
 }
 
-.diagnosticChooser {
-  height: 54px;
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.diagnosticChooser > svg {
-  color: var(--text-tertiary);
-}
-
-.diagnosticChooser select {
-  min-width: 0;
-  flex: 1;
-  height: 32px;
-  padding: 0 9px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  background: var(--surface-subtle);
-  font-size: 12px;
-}
-
 @media (max-width: 760px) {
   .sessionRunHeader {
     align-items: stretch;
@@ -4396,6 +4629,21 @@ button.controlSignal:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .controlPlaneSignals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 460px) {
+  .controlPlaneHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .controlPlaneSignals {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Guided workbench */

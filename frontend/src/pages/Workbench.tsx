@@ -113,10 +113,11 @@ export function Workbench() {
   }, []);
 
   const displayContract = useMemo(() => {
-    if (!contract) return { effects: [], policies: [] };
+    if (!contract) return { effects: [], policies: [], budget: undefined };
     return {
       effects: contract.effects.allow,
-      policies: Object.entries(contract.policies).map(([key, value]) => `${key}: ${value}`),
+      policies: Object.entries(contract.policies).map(([name, value]) => ({ name, value })),
+      budget: contract.cost_envelope,
     };
   }, [contract]);
 

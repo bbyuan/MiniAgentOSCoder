@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
+import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, ShieldCheck } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -14,7 +14,7 @@ import type {
   SandboxProfile,
   ToolOverride,
 } from "../api/client";
-import { translateKnownText } from "../i18n";
+import { translateKnownText, translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import type { ControlPlaneTarget } from "./AgentOSControlPlane";
 import { RecoveryPanel } from "./RecoveryPanel";
@@ -25,14 +25,19 @@ import { MemoryPanel } from "./MemoryPanel";
 import { GovernancePanel } from "./GovernancePanel";
 import { ExtensionPanel } from "./ExtensionPanel";
 
-type InspectorTab = "overview" | "changes" | "diagnostics";
-type DiagnosticView = "context" | "memory" | "extensions" | "governance" | "trace";
+type ControlView = ControlPlaneTarget | "trace";
 
 interface RuntimePanelsProps {
   initialTarget?: ControlPlaneTarget;
   contract: {
     effects: string[];
-    policies: string[];
+    policies: Array<{ name: string; value: string }>;
+    budget?: {
+      max_steps: number;
+      max_model_calls: number;
+      max_tool_calls: number;
+      max_wall_time_seconds: number;
+    };
   };
   context?: ContextPack;
   contextBusy: boolean;
@@ -96,71 +101,81 @@ export function RuntimePanels({
   onSaveGovernance,
   onSaveExtensions,
 }: RuntimePanelsProps) {
-  const [activeTab, setActiveTab] = useState<InspectorTab>(
-    initialTarget === "overview" || initialTarget === "changes" ? initialTarget : "diagnostics",
-  );
-  const [diagnosticView, setDiagnosticView] = useState<DiagnosticView>(
-    initialTarget === "overview" || initialTarget === "changes" ? "context" : initialTarget,
-  );
+  const [activeView, setActiveView] = useState<ControlView>(initialTarget);
   const { locale, t } = usePreferences();
-  const tabs: Array<{ id: InspectorTab; label: string }> = [
-    { id: "overview", label: t("inspector.overview") },
-    { id: "changes", label: t("inspector.changes") },
-    { id: "diagnostics", label: t("inspector.diagnostics") },
-  ];
 
   return (
     <aside className="inspector">
       <div className="inspectorTop">
-        <div>
-          <span className="inspectorEyebrow">{t("inspector.title")}</span>
-          <strong>{runId ? `${t("run.label")} ${runId.slice(-8)}` : "MiniAgentOS"}</strong>
+        <div className="inspectorTitleRow">
+          <div>
+            <span className="inspectorEyebrow">{t("control.runtimeTitle")}</span>
+            <strong>{runId ? `${t("run.label")} ${runId.slice(-8)}` : "MiniAgentOS"}</strong>
+          </div>
+          <span className={`inspectorRunState tone-${runStatus}`}>{translateStatus(locale, runStatus)}</span>
         </div>
-        <div className="inspectorTabs" role="tablist" aria-label={t("inspector.title")}>
-          {tabs.map((tab) => (
-            <button
-              type="button"
-              role="tab"
-              id={`inspector-tab-${tab.id}`}
-              aria-controls={`inspector-panel-${tab.id}`}
-              aria-selected={activeTab === tab.id}
-              className={activeTab === tab.id ? "active" : ""}
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <label className="controlViewPicker" htmlFor="control-plane-view">
+          <span>{t("inspector.view")}</span>
+          <select id="control-plane-view" value={activeView} onChange={(event) => setActiveView(event.target.value as ControlView)}>
+            <optgroup label={t("inspector.group.execution")}>
+              <option value="overview">{t("inspector.overview")}</option>
+              <option value="changes">{t("inspector.changes")}</option>
+            </optgroup>
+            <optgroup label={t("inspector.group.intelligence")}>
+              <option value="context">{t("inspector.context")}</option>
+              <option value="memory">{t("inspector.memory")}</option>
+            </optgroup>
+            <optgroup label={t("inspector.group.governance")}>
+              <option value="governance">{t("inspector.governance")}</option>
+              <option value="extensions">{t("inspector.extensions")}</option>
+              <option value="trace">{t("inspector.trace")}</option>
+            </optgroup>
+          </select>
+        </label>
       </div>
 
-      <div
-        className="inspectorBody"
-        role="tabpanel"
-        id={`inspector-panel-${activeTab}`}
-        aria-labelledby={`inspector-tab-${activeTab}`}
-      >
-        {activeTab === "overview" ? (
-          <>
-            <section className="inspectorSection">
-              <div className="sectionHeader">
-                <h3>{t("contract.title")}</h3>
-                <ShieldCheck size={15} />
-              </div>
-              <div className="subsectionLabel">{t("contract.effects")}</div>
-              <div className="tagGrid">
-                {contract.effects.map((effect) => <span key={effect}>{effect}</span>)}
-              </div>
-              <div className="subsectionLabel policyLabel">{t("contract.policies")}</div>
-              <div className="policyList">
-                {contract.policies.slice(0, 5).map((policy) => <span key={policy}>{policy}</span>)}
-              </div>
-            </section>
+      <div className="inspectorBody" id={`control-view-${activeView}`}>
+        {activeView === "overview" ? (
+          <section className="inspectorSection controlOverviewSection">
+            <div className="sectionHeader controlOverviewHeader">
+              <div><h3>{t("control.overviewTitle")}</h3><span>{t("control.overviewDescription")}</span></div>
+              <ShieldCheck size={17} />
+            </div>
 
-          </>
+            <div className="contractAssurance">
+              <span><Check size={16} /></span>
+              <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
+            </div>
+
+            <div className="subsectionLabel">{t("control.capabilitiesTitle")}</div>
+            <ul className="capabilityList">
+              {contract.effects.map((effect) => (
+                <li key={effect}><Check size={13} /><span>{effectLabel(effect, t)}</span></li>
+              ))}
+            </ul>
+
+            <div className="subsectionLabel policyLabel">{t("control.budgetTitle")}</div>
+            <div className="controlBudgetGrid">
+              <div><CircleGauge size={15} /><span>{t("control.maxSteps")}</span><strong>{contract.budget?.max_steps ?? 0}</strong></div>
+              <div><Gauge size={15} /><span>{t("control.maxTools")}</span><strong>{contract.budget?.max_tool_calls ?? 0}</strong></div>
+              <div><ShieldCheck size={15} /><span>{t("control.maxMinutes")}</span><strong>{Math.ceil((contract.budget?.max_wall_time_seconds ?? 0) / 60)}</strong></div>
+            </div>
+
+            <details className="policyDisclosure">
+              <summary>{t("control.policyDetails", { count: contract.policies.length })}</summary>
+              <ul>
+                {contract.policies.map((policy) => (
+                  <li key={policy.name}>
+                    <span>{policy.name.split("_").join(" ")}</span>
+                    <strong>{translateKnownText(locale, policy.value)}</strong>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
         ) : null}
 
-        {activeTab === "changes" ? (
+        {activeView === "changes" ? (
           <>
             <section className="inspectorSection signalGrid">
               <div className="signalItem">
@@ -179,26 +194,24 @@ export function RuntimePanels({
           </>
         ) : null}
 
-        {activeTab === "diagnostics" ? (
-          <>
-            <section className="diagnosticChooser">
-              <Activity size={15} />
-              <select value={diagnosticView} onChange={(event) => setDiagnosticView(event.target.value as DiagnosticView)}>
-                <option value="context">{t("inspector.context")}</option>
-                <option value="memory">{t("inspector.memory")}</option>
-                <option value="extensions">{t("inspector.extensions")}</option>
-                <option value="governance">{t("inspector.governance")}</option>
-                <option value="trace">{t("inspector.trace")}</option>
-              </select>
-            </section>
-            {diagnosticView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
-            {diagnosticView === "memory" ? <MemoryPanel memory={memory} busy={memoryBusy} onCreate={onCreateMemory} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} /> : null}
-            {diagnosticView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} /> : null}
-            {diagnosticView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
-            {diagnosticView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
-          </>
-        ) : null}
+        {activeView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
+        {activeView === "memory" ? <MemoryPanel memory={memory} busy={memoryBusy} onCreate={onCreateMemory} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} /> : null}
+        {activeView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} /> : null}
+        {activeView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
+        {activeView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
       </div>
     </aside>
   );
+}
+
+function effectLabel(effect: string, t: (key: TranslationKey, values?: Record<string, string | number>) => string): string {
+  const labels: Record<string, TranslationKey> = {
+    "fs.read": "effect.fs.read",
+    "fs.write": "effect.fs.write",
+    "shell.exec": "effect.shell.exec",
+    "test.run": "effect.test.run",
+    "state.memory": "effect.state.memory",
+    "mcp.call": "effect.mcp.call",
+  };
+  return labels[effect] ? t(labels[effect]) : effect;
 }

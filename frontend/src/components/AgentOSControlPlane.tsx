@@ -40,6 +40,7 @@ interface ControlSignal {
   id: string;
   label: TranslationKey;
   value: string;
+  hint: string;
   icon: typeof ShieldCheck;
   target: ControlPlaneTarget;
   tone?: string;
@@ -82,17 +83,15 @@ export function AgentOSControlPlane({
       id: "contract",
       label: "control.contract",
       value: t("control.effectCount", { count: contract?.effects.allow.length ?? 0 }),
+      hint: t("control.hint.contract"),
       icon: FileCheck2,
       target: "overview",
     },
     {
       id: "context",
       label: "control.context",
-      value: t("control.contextUsage", {
-        percent: contextPercent,
-        used: contextBudget?.used_tokens ?? 0,
-        max: contextBudget?.max_tokens ?? 0,
-      }),
+      value: t("control.contextPercent", { percent: contextPercent }),
+      hint: t("control.hint.context", { remaining: contextBudget?.remaining_tokens ?? 0 }),
       icon: Layers3,
       target: "context",
       tone: contextTone,
@@ -102,6 +101,7 @@ export function AgentOSControlPlane({
       id: "memory",
       label: "control.memory",
       value: t("control.memoryCount", { count: memoryCount }),
+      hint: t("control.hint.memory"),
       icon: BrainCircuit,
       target: "memory",
     },
@@ -109,6 +109,7 @@ export function AgentOSControlPlane({
       id: "sandbox",
       label: "control.sandbox",
       value: t(`control.sandbox.${sandbox}` as TranslationKey),
+      hint: t("control.hint.sandbox"),
       icon: ShieldCheck,
       target: "governance",
       tone: "success",
@@ -117,6 +118,7 @@ export function AgentOSControlPlane({
       id: "recovery",
       label: "control.recovery",
       value: t("control.recoveryCount", { count: recovery?.checkpoints.length ?? 0 }),
+      hint: t("control.hint.recovery"),
       icon: History,
       target: "changes",
     },
@@ -124,6 +126,7 @@ export function AgentOSControlPlane({
       id: "extensions",
       label: "control.extensions",
       value: t("control.extensionCount", { count: extensionCount }),
+      hint: t("control.hint.extensions"),
       icon: PlugZap,
       target: "extensions",
     },
@@ -138,6 +141,7 @@ export function AgentOSControlPlane({
         steps: contract?.cost_envelope.max_steps ?? 0,
         tools: contract?.cost_envelope.max_tool_calls ?? 0,
       }),
+      hint: t("control.hint.budget", { tools: contract?.cost_envelope.max_tool_calls ?? 0 }),
       icon: Gauge,
       target: "overview",
     },
@@ -148,6 +152,7 @@ export function AgentOSControlPlane({
       id: "verification",
       label: "control.verification",
       value: t("control.checkCount", { count: checkCount }),
+      hint: t("control.hint.verification"),
       icon: CircleGauge,
       target: "overview",
       tone: "success",
@@ -174,7 +179,11 @@ export function AgentOSControlPlane({
           const content = (
             <>
               <Icon size={16} />
-              <span><small>{t(signal.label)}</small><strong title={signal.value}>{signal.value}</strong></span>
+              <span>
+                <small>{t(signal.label)}</small>
+                <strong title={signal.value}>{signal.value}</strong>
+                <em>{signal.hint}</em>
+              </span>
               {typeof signal.progress === "number" ? (
                 <i className="controlSignalProgress" aria-hidden="true"><b style={{ width: `${signal.progress}%` }} /></i>
               ) : null}
