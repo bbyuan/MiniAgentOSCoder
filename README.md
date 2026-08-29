@@ -25,6 +25,8 @@ Shared daemon API contract:
 openspec/api-contract.md
 ```
 
+The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, replay, and reports.
+
 ## First Development Target
 
 P0 must deliver a real local coding-agent loop:

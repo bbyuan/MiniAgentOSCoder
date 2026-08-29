@@ -42,6 +42,7 @@ import { TopBar } from "../components/TopBar";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+import { parseTaskCommand } from "../taskCommands";
 
 const runCopy: Record<string, { title: TranslationKey; description: TranslationKey }> = {
   running: { title: "run.runningTitle", description: "run.runningDescription" },
@@ -223,6 +224,11 @@ export function Workbench() {
 
   async function prepareRun(startImmediately = false, requestedTask = task) {
     if (!project) return;
+    const parsedTask = parseTaskCommand(requestedTask, mode);
+    if (!parsedTask.task) {
+      setError(t("error.emptyTask"));
+      return;
+    }
     setBusy(true);
     setError(null);
     setFinalMessage("");
@@ -242,7 +248,7 @@ export function Workbench() {
     streamCleanup.current = null;
     try {
       const [run, providerStatus] = await Promise.all([
-        daemonApi.createRun({ project_id: project.project_id, task: requestedTask, mode }),
+        daemonApi.createRun({ project_id: project.project_id, task: parsedTask.task, mode: parsedTask.mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
       const [
@@ -265,6 +271,7 @@ export function Workbench() {
         daemonApi.getExtensions(run.run_id),
       ]);
       setRunId(run.run_id);
+      setMode(parsedTask.mode);
       setRunStatus(run.status);
       setContract(run.contract);
       setContextPack(contextResponse);
