@@ -36,6 +36,7 @@ import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { ModelRouteSummary } from "../components/ModelRouteSummary";
+import { PreflightControlDeck } from "../components/PreflightControlDeck";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
 import { ProjectSidebar } from "../components/ProjectSidebar";
@@ -890,6 +891,18 @@ export function Workbench() {
                   onLaunch={launchRun}
                   onConfigureModel={() => setModelSetupOpen(true)}
                 >
+                  <PreflightControlDeck
+                    mode={mode}
+                    task={task}
+                    model={modelStatus}
+                    admission={admission}
+                    modelRoute={modelRoute}
+                    contract={contract}
+                    context={contextPack}
+                    governance={governance}
+                    extensions={extensions}
+                    onConfigureModel={() => setModelSetupOpen(true)}
+                  />
                   <AdmissionSummary admission={admission} />
                   <ModelRouteSummary plan={modelRoute} />
                   <AgentOSControlPlane

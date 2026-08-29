@@ -6214,7 +6214,7 @@ button.controlSignal:focus-visible {
 }
 
 .preflightSummary {
-  width: min(100%, 900px);
+  width: min(100%, 1080px);
   margin: 0 auto;
 }
 
@@ -7815,6 +7815,353 @@ button.controlSignal:focus-visible {
   line-height: 1.55;
 }
 
+.preflightControlDeck {
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, var(--accent-soft)), var(--surface));
+  box-shadow: var(--shadow-soft);
+}
+
+.preflightControlDeck.tone-ready {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border-strong));
+}
+
+.preflightControlDeck.tone-setup,
+.preflightControlDeck.tone-blocked {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border-strong));
+}
+
+.preflightDeckHero {
+  min-height: 116px;
+  padding: 22px 24px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.preflightDeckHero > div {
+  min-width: 0;
+  max-width: 720px;
+}
+
+.preflightDeckHero h2 {
+  margin: 8px 0 8px;
+  color: var(--text);
+  font-size: 26px;
+  line-height: 1.18;
+}
+
+.preflightDeckHero p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.preflightDeckModel {
+  min-width: 210px;
+  min-height: 50px;
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.preflightDeckModel.ready {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+}
+
+.preflightDeckModel.missing {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+}
+
+.preflightDeckModel svg {
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border-radius: 7px;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.preflightDeckModel span,
+.preflightDeckModel strong,
+.preflightDeckModel small {
+  min-width: 0;
+  display: block;
+}
+
+.preflightDeckModel strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preflightDeckModel small {
+  margin-top: 3px;
+  color: currentColor;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.preflightDeckTask {
+  margin: 0 24px 20px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-subtle));
+}
+
+.preflightDeckTask span {
+  padding: 5px 8px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.preflightDeckTask p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.preflightDecisionGrid {
+  padding: 0 24px 22px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.preflightDecisionTile {
+  min-width: 0;
+  min-height: 112px;
+  padding: 14px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.preflightDecisionTile > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+}
+
+.preflightDecisionTile.tone-success > span {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.preflightDecisionTile.tone-warning > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.preflightDecisionTile.tone-danger > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.preflightDecisionTile.tone-muted {
+  opacity: 0.78;
+}
+
+.preflightDecisionTile div,
+.preflightDecisionTile small,
+.preflightDecisionTile strong,
+.preflightDecisionTile em {
+  min-width: 0;
+  display: block;
+}
+
+.preflightDecisionTile small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.preflightDecisionTile strong {
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preflightDecisionTile em {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.preflightDecisionTile > i {
+  height: 4px;
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  left: 54px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+}
+
+.preflightDecisionTile > i > b {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.preflightDecisionTile.tone-warning > i > b {
+  background: var(--warning);
+}
+
+.preflightDecisionTile.tone-danger > i > b {
+  background: var(--danger);
+}
+
+.preflightRouteDeck {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-subtle) 68%, var(--surface));
+}
+
+.preflightRouteHeader {
+  min-height: 58px;
+  padding: 13px 24px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+}
+
+.preflightRouteHeader > svg {
+  color: var(--accent);
+}
+
+.preflightRouteHeader strong,
+.preflightRouteHeader span {
+  display: block;
+}
+
+.preflightRouteHeader strong {
+  font-size: 13px;
+}
+
+.preflightRouteHeader span {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.preflightRouteRail {
+  padding: 0 24px 22px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.preflightRouteNode {
+  min-width: 0;
+  min-height: 78px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--success) 23%, var(--border));
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.preflightRouteNode > span {
+  width: 24px;
+  height: 24px;
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.preflightRouteNode.fallback {
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+}
+
+.preflightRouteNode.fallback > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.preflightRouteNode.blocked {
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+}
+
+.preflightRouteNode.blocked > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.preflightRouteNode small,
+.preflightRouteNode strong {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preflightRouteNode small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.preflightRouteNode strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
 .admissionSummary {
   margin-bottom: 18px;
   overflow: hidden;
@@ -8222,6 +8569,34 @@ button.controlSignal:focus-visible {
     width: min(100%, 260px);
   }
 
+  .preflightDeckHero,
+  .preflightDeckTask {
+    margin-inline: 18px;
+  }
+
+  .preflightDeckHero {
+    padding: 20px 0 18px;
+    flex-direction: column;
+  }
+
+  .preflightDeckModel {
+    width: 100%;
+  }
+
+  .preflightDecisionGrid {
+    padding-inline: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .preflightRouteHeader,
+  .preflightRouteRail {
+    padding-inline: 18px;
+  }
+
+  .preflightRouteRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .runSettingsFooter > div > span {
     flex: 1;
   }
@@ -8304,6 +8679,20 @@ button.controlSignal:focus-visible {
 
   .runSettingsTask {
     grid-template-columns: 1fr;
+  }
+
+  .preflightDeckHero h2 {
+    font-size: 22px;
+  }
+
+  .preflightDeckTask,
+  .preflightDecisionGrid,
+  .preflightRouteRail {
+    grid-template-columns: 1fr;
+  }
+
+  .preflightDecisionTile {
+    min-height: 104px;
   }
 
   .admissionHeader {
