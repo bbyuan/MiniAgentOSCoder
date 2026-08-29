@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, a governed Tool Registry with workspace, validation, read-only Git, approved command, and patch tools, task-aware Context Pack retrieval, protected workspace `AGENTS.md` instructions and current Diffs, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, repair and rollback, mode-aware Completion Guard, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, a governed Tool Registry with workspace, validation, read-only Git, approved command, and patch tools, task-aware Context Pack retrieval, protected workspace `AGENTS.md` instructions and current Diffs, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, repair and rollback, mode-aware Completion Guard, pre-execution resource admission, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -94,7 +94,7 @@ optional: Skills + MCP Servers + Hooks
 
 The full Inspector is hidden by default before and during execution. **Run settings** opens a focused, wide configuration surface before launch with only two choices: Safety and permissions for Sandbox/tool policy changes, and Extension capabilities for Skills, MCP Servers, and Hooks. **Run details** reveals Context, Memory, checkpoints, reports, traces, and execution evidence after launch. An approval request opens those details automatically so a blocking decision is never hidden. Default settings are sufficient for a normal run.
 
-Before execution, the workbench shows the completion contract for the selected mode. Bugfix, Feature, and Spec Runs require a recorded change plus a successful test after the latest patch. Review Runs require read-only inspection and forbid applied patches; Chat Runs require an answer and a read-only workspace. A model `finish` action is only a completion request: the runtime rejects it with structured missing checks and lets the same Agent Loop continue while budget remains. The final assessment is visible in the result view, Run Center, `report.md`, `trace.jsonl`, and the Run API.
+Before execution, the workbench shows a resource forecast for model calls, tool calls, tokens, wall time, and optional cost. Forecast ranges are estimates calibrated from numeric same-project history when available; AgentContract ceilings remain separate, enforced hard limits. Deterministic admission checks can warn about low headroom or missing validation, while impossible context or invalid hard limits block the model call before it is created. The workbench also shows the completion contract for the selected mode. Bugfix, Feature, and Spec Runs require a recorded change plus a successful test after the latest patch. Review Runs require read-only inspection and forbid applied patches; Chat Runs require an answer and a read-only workspace.
 
 Desktop development:
 
@@ -136,9 +136,19 @@ Use `deepseek-v4-flash` for lower-latency development runs or change `models.def
 
 Never put the API key in `frontend/`, `.agent/config.yaml`, or committed source files. Check readiness through `GET /models/status`; the Daemon reports only the configured environment-variable name and never returns the credential value.
 
+Optional current provider prices can be added to the `models` mapping for a preflight USD estimate. Values are per one million tokens and are deliberately not supplied by the repository because provider prices change:
+
+```yaml
+models:
+  input_price_per_million: 1.0   # replace with the provider's current rate
+  output_price_per_million: 1.0  # replace with the provider's current rate
+```
+
+Omit either field to display token forecasts without a monetary estimate. Pricing never affects admission and is not treated as billing reconciliation.
+
 In the desktop app, use **Configure model** when a project reports that its Provider is unavailable. The Rust host stores the key in the operating system credential manager (macOS Keychain, Windows Credential Manager, or Linux Secret Service), restarts the managed Daemon, and injects the credential only into that process environment. The Workbench never writes it to browser storage or a project file. Browser development continues to use the ignored root `.env` flow above.
 
-Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
+Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/admission` refreshes the forecast and deterministic launch checks; start repeats that assessment and returns `409` before model creation when a hard check is blocked. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
 
 The Context view shows prompt budget, token composition, selection state, and audited compaction. The Memory view separates read-only Run memory, editable project memory, and explicitly confirmed long-term memory. Persistent entries live under the opened workspace's `.agent/memory/`; secret-like content and path escapes are rejected by the Daemon.
 

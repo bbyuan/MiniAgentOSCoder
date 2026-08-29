@@ -7766,6 +7766,198 @@ button.controlSignal:focus-visible {
   line-height: 1.55;
 }
 
+.admissionSummary {
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.admissionSummary.decision-ready {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+}
+
+.admissionSummary.decision-warning {
+  border-color: color-mix(in srgb, var(--warning) 38%, var(--border));
+}
+
+.admissionSummary.decision-blocked {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.admissionHeader {
+  min-height: 76px;
+  padding: 15px 17px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.admissionHeader > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admissionIcon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.decision-warning .admissionIcon {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.decision-blocked .admissionIcon {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.admissionHeader h2 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.admissionHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admissionDecision {
+  padding: 5px 8px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.decision-warning .admissionDecision {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.decision-blocked .admissionDecision {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.admissionMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admissionMetric {
+  min-width: 0;
+  min-height: 126px;
+  padding: 15px 13px 13px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.admissionMetric:last-child {
+  border-right: 0;
+}
+
+.admissionMetric > span {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.admissionTokenIcon {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.admissionMetric strong {
+  margin-top: 9px;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.admissionMetric small,
+.admissionMetric em {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
+.admissionMetric small {
+  margin-top: 6px;
+  color: var(--text-secondary);
+}
+
+.admissionMetric em {
+  margin-top: auto;
+  padding-top: 5px;
+  color: var(--text-tertiary);
+}
+
+.admissionNotices {
+  padding: 10px 15px;
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.admissionNotices > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--warning);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.admissionNotices > div.blocked {
+  color: var(--danger);
+}
+
+.admissionNotices svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.admissionFootnote {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
 .runSettingsPage .advancedSetup {
   width: 100%;
   margin-top: 0;
@@ -7817,6 +8009,27 @@ button.controlSignal:focus-visible {
   .runSettingsFooter > div > span {
     flex: 1;
   }
+
+  .admissionMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admissionMetric {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .admissionMetric:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .admissionMetric:last-child {
+    border-bottom: 0;
+  }
+
+  .admissionFootnote {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -7863,5 +8076,18 @@ button.controlSignal:focus-visible {
 
   .runSettingsTask {
     grid-template-columns: 1fr;
+  }
+
+  .admissionHeader {
+    align-items: flex-start;
+  }
+
+  .admissionMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .admissionMetric {
+    min-height: 104px;
+    border-right: 0;
   }
 }

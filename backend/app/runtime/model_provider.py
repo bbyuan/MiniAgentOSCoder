@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -30,6 +31,8 @@ class ModelProviderConfig(Serializable):
     timeout_seconds: int = 60
     json_mode: bool = True
     max_tokens_field: str = "max_tokens"
+    input_price_per_million: float | None = None
+    output_price_per_million: float | None = None
 
 
 @dataclass(slots=True)
@@ -72,6 +75,14 @@ def load_model_provider_config(path: str | Path) -> ModelProviderConfig:
         timeout_seconds=timeout_seconds,
         json_mode=json_mode,
         max_tokens_field=max_tokens_field,
+        input_price_per_million=_optional_nonnegative_float(
+            models.get("input_price_per_million"),
+            "models.input_price_per_million",
+        ),
+        output_price_per_million=_optional_nonnegative_float(
+            models.get("output_price_per_million"),
+            "models.output_price_per_million",
+        ),
     )
 
 
@@ -177,4 +188,18 @@ def _positive_int(value: object, field_name: str) -> int:
         raise ModelConfigurationError(f"{field_name} must be a positive integer") from exc
     if parsed <= 0:
         raise ModelConfigurationError(f"{field_name} must be a positive integer")
+    return parsed
+
+
+def _optional_nonnegative_float(value: object, field_name: str) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ModelConfigurationError(f"{field_name} must be a non-negative number")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ModelConfigurationError(f"{field_name} must be a non-negative number") from exc
+    if not math.isfinite(parsed) or parsed < 0:
+        raise ModelConfigurationError(f"{field_name} must be a non-negative number")
     return parsed

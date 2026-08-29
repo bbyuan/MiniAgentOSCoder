@@ -9,6 +9,7 @@ interface PreflightSummaryProps {
   task: string;
   model?: ModelProviderStatus;
   busy: boolean;
+  launchAllowed?: boolean;
   children: ReactNode;
   onBack: () => void;
   onLaunch: () => void;
@@ -20,6 +21,7 @@ export function PreflightSummary({
   task,
   model,
   busy,
+  launchAllowed = true,
   children,
   onBack,
   onLaunch,
@@ -59,7 +61,7 @@ export function PreflightSummary({
         </button>
         <div>
           <span>{t("runSettings.defaultHint")}</span>
-          <button type="button" className="textPrimaryAction" disabled={busy || !ready} onClick={onLaunch}>
+          <button type="button" className="textPrimaryAction" disabled={busy || !ready || !launchAllowed} onClick={onLaunch}>
             {busy ? t("preflight.launching") : t("task.start")}
             <ArrowRight size={17} />
           </button>

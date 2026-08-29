@@ -39,4 +39,4 @@ Model configuration may declare `input_price_per_million` and `output_price_per_
 
 ## Lifecycle
 
-The Daemon snapshots an admission forecast during Run preparation and refreshes it before launch. Trace records only numeric estimates, checks, model identity, confidence, and sample size. Starting a Run with a blocked deterministic check returns a conflict instead of invoking the model.
+The Daemon snapshots an admission forecast during Run preparation and refreshes it before launch. Trace records only numeric estimates, check identifiers and states, confidence, and sample size. Starting a Run with a blocked deterministic check returns a conflict instead of invoking the model.

@@ -60,6 +60,15 @@ Response:
   "turn_index": 0,
   "status": "planning",
   "contract": {},
+  "admission": {
+    "decision": "ready",
+    "can_start": true,
+    "basis": "heuristic",
+    "confidence": "low",
+    "sample_size": 0,
+    "resources": {},
+    "checks": []
+  },
   "completion_expectations": [
     "final_message",
     "applied_change",
@@ -68,6 +77,10 @@ Response:
   ]
 }
 ```
+
+### `GET /runs/{run_id}/admission`
+
+Refresh and return the pre-execution resource forecast and deterministic admission checks. Resource forecasts contain separate `low`, `expected`, `high`, and enforced `ceiling` values for model calls, tool calls, input/output tokens, and wall time. Cost is returned only when both provider token prices are configured. History calibration reads bounded numeric metrics only.
 
 ### `GET /runs/{run_id}/conversation`
 
@@ -117,7 +130,7 @@ Return run status, active phase, budget, current plan, latest observation, mode-
 
 ### `POST /runs/{run_id}/start`
 
-Validate the active model Provider and schedule a prepared run on the local worker.
+Refresh admission, validate the active model Provider, and schedule a prepared run on the local worker.
 
 Response:
 
@@ -129,7 +142,7 @@ Response:
 }
 ```
 
-The endpoint returns `409` when model configuration is incomplete or the run is already active or terminal.
+The endpoint returns `409` when a deterministic admission check is blocked, model configuration is incomplete, or the run is already active or terminal. Admission blocking occurs before the model client is created.
 
 ### `POST /runs/{run_id}/cancel`
 

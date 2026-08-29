@@ -181,6 +181,31 @@ def test_model_provider_config_rejects_unsafe_token_field(tmp_path: Path) -> Non
         load_model_provider_config(config_path)
 
 
+def test_model_provider_config_accepts_optional_token_prices(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "models:\n  input_price_per_million: 0.14\n  output_price_per_million: 0.28\n",
+        encoding="utf-8",
+    )
+
+    config = load_model_provider_config(config_path)
+
+    assert config.input_price_per_million == 0.14
+    assert config.output_price_per_million == 0.28
+
+
+@pytest.mark.parametrize("value", ["invalid", -0.01, ".nan", True])
+def test_model_provider_config_rejects_invalid_token_prices(tmp_path: Path, value: object) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        f"models:\n  input_price_per_million: {value}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ModelConfigurationError, match="input_price_per_million"):
+        load_model_provider_config(config_path)
+
+
 def test_provider_client_completes_agent_loop_without_secret_in_trace(tmp_path: Path) -> None:
     secret = "test-secret-must-not-leak"
     transport = RecordingTransport(

@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 from app.api.store import ProjectRecord, store
 from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory, explain_context_items, refresh_context_pack
 from app.guards import redact_secrets
-from app.models import ContextItem, GovernanceSettings, MemoryScope, RunLoopResult, RunPhase, RunState
+from app.models import ContextItem, GovernanceSettings, MemoryScope, RunAdmission, RunLoopResult, RunPhase, RunState
+from app.runtime.admission import build_run_admission
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
@@ -18,7 +19,12 @@ from app.runtime.config import load_governance_settings
 from app.runtime.completion_guard import completion_expectations
 from app.runtime.extensions import load_extension_catalog
 from app.runtime.history_store import TERMINAL_STATUSES
-from app.runtime.model_provider import ModelConfigurationError, create_model_client
+from app.runtime.model_provider import (
+    ModelConfigurationError,
+    ModelProviderConfig,
+    create_model_client,
+    load_model_provider_config,
+)
 from app.runtime.paths import default_agent_dir
 from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_artifact_writer import RunArtifactWriter
@@ -104,6 +110,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     store.extension_catalogs[run.run_id] = extension_catalog
     store.extension_settings[run.run_id] = extension_settings
     store.skills_registries[run.run_id] = skills_registry
+    admission = _refresh_run_admission(run.run_id)
     tracer.event(
         run.run_id,
         "memory.loaded",
@@ -128,6 +135,11 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
             "hooks": len(extension_catalog.hooks),
             "diagnostics": extension_catalog.diagnostics,
         },
+    )
+    tracer.event(
+        run.run_id,
+        "run.admission.assessed",
+        {"trigger": "prepare", **_admission_trace_payload(admission)},
     )
     if parent_run is not None:
         tracer.event(
@@ -155,6 +167,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         "phase": run.status.value,
         "contract": contract.to_dict(),
         "artifacts": artifacts.to_dict(),
+        "admission": admission.to_dict(),
         "completion_expectations": completion_expectations(run.mode),
     }
 
@@ -194,6 +207,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "rolled_back_to": run.rolled_back_to,
         "applied_patches": run.applied_patches,
         "memory_refs": run.memory_refs,
+        "admission": store.admissions.get(run_id).to_dict() if run_id in store.admissions else None,
     }
 
 
@@ -209,6 +223,13 @@ def get_run_conversation(run_id: str) -> dict[str, object]:
     }
 
 
+@router.get("/{run_id}/admission")
+def get_run_admission(run_id: str) -> dict[str, object]:
+    if run_id not in store.runs:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return _refresh_run_admission(run_id).to_dict()
+
+
 @router.post("/{run_id}/start", status_code=202)
 def start_run(run_id: str) -> dict[str, object]:
     run = store.runs.get(run_id)
@@ -220,13 +241,23 @@ def start_run(run_id: str) -> dict[str, object]:
     if run.status != RunPhase.PLANNING:
         raise HTTPException(status_code=409, detail=f"Run cannot start from status: {run.status.value}")
 
+    admission = _refresh_run_admission(run_id)
+    tracer = TraceWriter(project.path / "runs")
+    tracer.event(
+        run_id,
+        "run.admission.assessed",
+        {"trigger": "launch", **_admission_trace_payload(admission)},
+    )
+    if not admission.can_start:
+        failed = [check.id for check in admission.checks if check.status == "blocked"]
+        raise HTTPException(status_code=409, detail=f"Run admission blocked: {', '.join(failed)}")
+
     config_path = _find_config_path(project.path)
     try:
         model_client = create_model_client(config_path)
     except ModelConfigurationError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    tracer = TraceWriter(project.path / "runs")
     job = RunJob(
         run=run,
         workspace=project.path,
@@ -425,6 +456,7 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
     store.extension_catalogs[run_id] = extension_catalog
     store.extension_settings[run_id] = extension_settings
     store.skills_registries[run_id] = skills_registry
+    _refresh_run_admission(run_id)
     store.run_results.pop(run_id, None)
     if not store.history.reopen_run(run, artifacts=artifacts):
         raise HTTPException(status_code=409, detail="Historical run could not be reopened")
@@ -465,6 +497,7 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
         },
         "contract": contract.to_dict(),
         "artifacts": artifacts.to_dict(),
+        "admission": store.admissions[run_id].to_dict(),
     }
 
 
@@ -585,6 +618,58 @@ def steer_run(run_id: str, request: SteerRunRequest) -> dict[str, object]:
         "run_id": run_id,
         "status": "queued",
         "applies_at": "next_safe_boundary",
+    }
+
+
+def _refresh_run_admission(run_id: str) -> RunAdmission:
+    run = store.runs.get(run_id)
+    contract = store.contracts.get(run_id)
+    context_pack = store.contexts.get(run_id)
+    project = _project_for_run(run_id)
+    if run is None or contract is None or context_pack is None or project is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    try:
+        model_config = load_model_provider_config(_find_config_path(project.path))
+    except ModelConfigurationError:
+        model_config = ModelProviderConfig()
+    settings = store.extension_settings.get(run_id)
+    enabled_extensions = 0
+    if settings is not None:
+        enabled_extensions = (
+            len(settings.active_skill_ids)
+            + len(settings.enabled_mcp_server_ids)
+            + len(settings.enabled_hook_ids)
+        )
+    admission = build_run_admission(
+        run=run,
+        contract=contract,
+        context_pack=context_pack,
+        project_profile=project.profile,
+        model_config=model_config,
+        history_samples=store.history.list_resource_samples(project.project_id, run.mode),
+        enabled_extensions=enabled_extensions,
+    )
+    store.admissions[run_id] = admission
+    return admission
+
+
+def _admission_trace_payload(admission: RunAdmission) -> dict[str, object]:
+    return {
+        "decision": admission.decision,
+        "can_start": admission.can_start,
+        "basis": admission.basis,
+        "confidence": admission.confidence,
+        "sample_size": admission.sample_size,
+        "resources": {
+            resource: forecast.to_dict()
+            for resource, forecast in admission.resources.items()
+        },
+        "cost": admission.cost.to_dict(),
+        "checks": [
+            {"id": check.id, "status": check.status}
+            for check in admission.checks
+        ],
     }
 
 

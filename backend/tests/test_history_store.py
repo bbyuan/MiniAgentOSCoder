@@ -76,6 +76,47 @@ def test_run_summary_updates_and_supports_filters_and_archive(tmp_path: Path) ->
     assert store.list_runs(include_archived=True)[1] == 1
 
 
+def test_resource_samples_are_mode_scoped_and_numeric_only(tmp_path: Path) -> None:
+    store = HistoryStore()
+    project = _project(store, tmp_path)
+    for index, mode in enumerate(("Bugfix", "Bugfix", "Review"), start=1):
+        run = RunState(
+            run_id=f"sample-{index}",
+            task=f"Sensitive task {index}",
+            mode=mode,
+            status=RunPhase.COMPLETED,
+        )
+        store.record_run(run, str(project["project_id"]), tmp_path)
+        store.update_run(
+            run,
+            result=RunLoopResult(
+                run_id=run.run_id,
+                status=RunPhase.COMPLETED,
+                termination_reason="finish",
+                steps=index,
+                model_calls=index,
+                tool_calls=index + 1,
+                token_usage={"input_tokens": index * 100, "output_tokens": index * 10},
+            ),
+        )
+
+    samples = store.list_resource_samples(str(project["project_id"]), "Bugfix")
+
+    assert len(samples) == 2
+    assert {sample["model_calls"] for sample in samples} == {1, 2}
+    assert set(samples[0]) == {
+        "steps",
+        "model_calls",
+        "tool_calls",
+        "input_tokens",
+        "output_tokens",
+        "created_at",
+        "completed_at",
+    }
+    assert "task" not in str(samples)
+    assert str(tmp_path) not in str(samples)
+
+
 def test_reopen_marks_non_terminal_runs_interrupted(tmp_path: Path) -> None:
     database = tmp_path / "runtime" / "state.db"
     first = HistoryStore(database)

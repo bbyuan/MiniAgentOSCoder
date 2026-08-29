@@ -19,6 +19,7 @@ import {
   type OpenProjectResponse,
   type RecoveryResponse,
   type RunArtifacts,
+  type RunAdmission,
   type RunMode,
   type RunReportResponse,
   type TraceEvent,
@@ -26,6 +27,7 @@ import {
   type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { ApprovalPanel } from "../components/ApprovalPanel";
@@ -74,6 +76,7 @@ export function Workbench() {
   const [runId, setRunId] = useState<string | undefined>();
   const [runStatus, setRunStatus] = useState("idle");
   const [contract, setContract] = useState<AgentContract | undefined>();
+  const [admission, setAdmission] = useState<RunAdmission | undefined>();
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
   const [contextBusy, setContextBusy] = useState(false);
   const [memory, setMemory] = useState<MemoryResponse>();
@@ -234,6 +237,7 @@ export function Workbench() {
       setRunId(resumed.run_id);
       setRunStatus(resumed.status);
       setContract(resumed.contract);
+      setAdmission(resumed.admission);
       setContextPack(contextResponse);
       setArtifacts(resumed.artifacts);
       setRecovery(recoveryResponse);
@@ -353,6 +357,7 @@ export function Workbench() {
       setMode(parsedTask.mode);
       setRunStatus(run.status);
       setContract(run.contract);
+      setAdmission(run.admission);
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
@@ -369,6 +374,9 @@ export function Workbench() {
         if (!providerStatus?.configured) {
           setModelSetupOpen(true);
           throw new Error(t("error.modelSetup", { issues: providerStatus?.issues.join(", ") || t("error.providerUnavailable") }));
+        }
+        if (run.admission?.can_start === false) {
+          throw new Error(t("admission.launchBlocked"));
         }
         const started = await daemonApi.startRun(run.run_id);
         setRunStatus(started.status);
@@ -393,8 +401,16 @@ export function Workbench() {
     setError(null);
     setRuntimeDetailsOpen(false);
     try {
-      const latestTrace = await daemonApi.getTrace(runId);
+      const [latestTrace, latestAdmission] = await Promise.all([
+        daemonApi.getTrace(runId),
+        daemonApi.getAdmission(runId),
+      ]);
       setTraceEvents(latestTrace.events);
+      setAdmission(latestAdmission);
+      if (!latestAdmission.can_start) {
+        setError(t("admission.launchBlocked"));
+        return;
+      }
       const started = await daemonApi.startRun(runId);
       setRunStatus(started.status);
       void loadProjectRuns();
@@ -565,6 +581,7 @@ export function Workbench() {
     setRunId(undefined);
     setRunStatus("idle");
     setContract(undefined);
+    setAdmission(undefined);
     setContextPack(undefined);
     setMemory(undefined);
     setGovernance(undefined);
@@ -664,12 +681,14 @@ export function Workbench() {
     setError(null);
     try {
       const result = await daemonApi.compactContext(runId, targetRatio, confirmed);
-      const [latestContext, latestRecovery] = await Promise.all([
+      const [latestContext, latestRecovery, latestAdmission] = await Promise.all([
         daemonApi.getContext(runId),
         daemonApi.getCheckpoints(runId),
+        daemonApi.getAdmission(runId),
       ]);
       setContextPack(latestContext);
       setRecovery(latestRecovery);
+      setAdmission(latestAdmission);
       return result;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.compactContext"));
@@ -756,9 +775,13 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.updateExtensions(runId, settings);
-      const latestTrace = await daemonApi.getTrace(runId);
+      const [latestTrace, latestAdmission] = await Promise.all([
+        daemonApi.getTrace(runId),
+        daemonApi.getAdmission(runId),
+      ]);
       setExtensions(latestExtensions);
       setTraceEvents(latestTrace.events);
+      setAdmission(latestAdmission);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
       throw caught;
@@ -846,10 +869,12 @@ export function Workbench() {
                   task={task}
                   model={modelStatus}
                   busy={busy}
+                  launchAllowed={admission?.can_start !== false}
                   onBack={discardPreparedRun}
                   onLaunch={launchRun}
                   onConfigureModel={() => setModelSetupOpen(true)}
                 >
+                  <AdmissionSummary admission={admission} />
                   <AgentOSControlPlane
                     variant="manifest"
                     mode={mode}

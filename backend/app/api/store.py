@@ -13,6 +13,7 @@ from app.models import (
     ExtensionSettings,
     GovernanceSettings,
     RunArtifacts,
+    RunAdmission,
     RunLoopResult,
     RunState,
 )
@@ -36,6 +37,7 @@ class RuntimeStore:
     contexts: dict[str, ContextPack] = field(default_factory=dict)
     approvals: dict[str, ApprovalRequest] = field(default_factory=dict)
     artifacts: dict[str, RunArtifacts] = field(default_factory=dict)
+    admissions: dict[str, RunAdmission] = field(default_factory=dict)
     run_results: dict[str, RunLoopResult] = field(default_factory=dict)
     run_projects: dict[str, str] = field(default_factory=dict)
     governance: dict[str, GovernanceSettings] = field(default_factory=dict)

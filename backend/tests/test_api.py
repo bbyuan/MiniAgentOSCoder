@@ -27,6 +27,7 @@ def make_client() -> TestClient:
     store.contexts.clear()
     store.approvals.clear()
     store.artifacts.clear()
+    store.admissions.clear()
     store.run_results.clear()
     store.run_projects.clear()
     store.governance.clear()
@@ -131,10 +132,22 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["contract"]["agent_id"] == "miniagent-coder"
     assert run["contract"]["effects"]["allow"]
     assert run["artifacts"]["plan"][0]["title"] == "Scan workspace"
+    assert run["admission"]["can_start"] is True
+    assert run["admission"]["basis"] in {"heuristic", "hybrid", "history"}
     assert trace["events"][0]["event"] == "run.created"
     assert context["required_items"] == ["user_task", "project_profile", "current_plan"]
     assert context["explanation"][0]["id"] == "user_task"
     assert artifacts["test_summary"]["command"] in ["pytest", "Not selected"]
+    admission = client.get(f"/runs/{run['run_id']}/admission").json()
+    assert admission["run_id"] == run["run_id"]
+    assert set(admission["resources"]) == {
+        "model_calls",
+        "tool_calls",
+        "input_tokens",
+        "output_tokens",
+        "wall_time_seconds",
+    }
+    assert any(event["event"] == "run.admission.assessed" for event in trace["events"])
 
 
 def test_follow_up_run_inherits_bounded_context_and_conversation_lineage(tmp_path: Path) -> None:
@@ -658,6 +671,32 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
 
     duplicate = client.post(f"/runs/{run['run_id']}/start")
     assert duplicate.status_code == 409
+
+
+def test_start_run_is_blocked_by_admission_before_model_creation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect context", "mode": "Chat"},
+    ).json()
+    store.contracts[run["run_id"]].cost_envelope.max_input_tokens = 1
+
+    def unexpected_model_creation(config_path):
+        raise AssertionError("model client must not be created for a blocked run")
+
+    monkeypatch.setattr("app.api.runs.create_model_client", unexpected_model_creation)
+
+    admission = client.get(f"/runs/{run['run_id']}/admission").json()
+    response = client.post(f"/runs/{run['run_id']}/start")
+
+    assert admission["can_start"] is False
+    assert admission["decision"] == "blocked"
+    assert response.status_code == 409
+    assert "context_fit" in response.json()["detail"]
 
 
 def test_patch_approval_api_resumes_run_and_updates_artifacts(

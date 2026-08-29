@@ -1,4 +1,5 @@
 from app.models.action import ActionIR, ActionObservation
+from app.models.admission import AdmissionCheck, CostForecast, ResourceForecast, RunAdmission
 from app.models.artifacts import DiffSummary, PlanStep, RunArtifacts, TestSummary
 from app.models.contract import AgentContract, CostEnvelope, EffectSet, PolicySet, ProgramSpec
 from app.models.context import ContextItem, ContextPack, ContextPackBudget
@@ -39,6 +40,7 @@ from app.models.trace import TraceEvent
 __all__ = [
     "ActionIR",
     "ActionObservation",
+    "AdmissionCheck",
     "ActiveSkill",
     "AgentContract",
     "ApprovalPolicy",
@@ -49,6 +51,7 @@ __all__ = [
     "ContextItem",
     "ContextPack",
     "ContextPackBudget",
+    "CostForecast",
     "CostEnvelope",
     "DiffSummary",
     "DecisionStatus",
@@ -68,6 +71,7 @@ __all__ = [
     "PlanStep",
     "ProgramSpec",
     "RecoveryPoint",
+    "ResourceForecast",
     "RiskLevel",
     "SandboxCapabilities",
     "SandboxExecution",
@@ -76,6 +80,7 @@ __all__ = [
     "RunPhase",
     "RunArtifacts",
     "RunLoopResult",
+    "RunAdmission",
     "RunState",
     "RunStatus",
     "TestSummary",

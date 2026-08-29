@@ -36,9 +36,45 @@ export interface AgentContract {
     max_steps: number;
     max_model_calls: number;
     max_tool_calls: number;
+    max_input_tokens: number;
+    max_output_tokens: number;
     max_wall_time_seconds: number;
   };
   policies: Record<string, string>;
+}
+
+export interface ResourceForecast {
+  low: number;
+  expected: number;
+  high: number;
+  ceiling: number;
+  unit: "calls" | "tokens" | "seconds";
+}
+
+export interface AdmissionCheck {
+  id: string;
+  status: "passed" | "warning" | "blocked" | "info";
+  summary: string;
+  evidence: string;
+}
+
+export interface RunAdmission {
+  run_id: string;
+  decision: "ready" | "warning" | "blocked";
+  can_start: boolean;
+  basis: "heuristic" | "hybrid" | "history";
+  confidence: "low" | "medium" | "high";
+  sample_size: number;
+  resources: Record<string, ResourceForecast>;
+  cost: {
+    configured: boolean;
+    currency: string;
+    expected?: number | null;
+    high?: number | null;
+    ceiling?: number | null;
+  };
+  checks: AdmissionCheck[];
+  assumptions: string[];
 }
 
 export interface RunSummary {
@@ -62,6 +98,7 @@ export interface RunSummary {
   rolled_back_to?: string;
   completion?: CompletionAssessment | null;
   completion_expectations?: string[];
+  admission?: RunAdmission;
 }
 
 export interface ConversationTurn {
@@ -395,6 +432,7 @@ export interface ResumeRunResponse {
   project: OpenProjectResponse;
   contract: AgentContract;
   artifacts: RunArtifacts;
+  admission: RunAdmission;
 }
 
 export interface ApprovalRequest {
@@ -636,6 +674,7 @@ export const daemonApi = {
       body: JSON.stringify({ message }),
     }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
+  getAdmission: (runId: string) => request<RunAdmission>(`/runs/${runId}/admission`),
   getConversation: (runId: string) => request<ConversationResponse>(`/runs/${runId}/conversation`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),

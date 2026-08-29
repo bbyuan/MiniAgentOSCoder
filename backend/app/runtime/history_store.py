@@ -305,6 +305,40 @@ class HistoryStore:
             ).fetchall()
         return [_run_row(row) for row in rows]
 
+    def list_resource_samples(
+        self,
+        project_id: str,
+        mode: str,
+        *,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT steps, model_calls, tool_calls, input_tokens, output_tokens,
+                       created_at, completed_at
+                FROM runs
+                WHERE project_id=? AND mode=?
+                  AND status IN ('completed', 'failed', 'cancelled', 'interrupted')
+                  AND model_calls > 0
+                ORDER BY updated_at DESC
+                LIMIT ?
+                """,
+                (project_id, mode, max(1, min(limit, 100))),
+            ).fetchall()
+        return [
+            {
+                "steps": int(row["steps"]),
+                "model_calls": int(row["model_calls"]),
+                "tool_calls": int(row["tool_calls"]),
+                "input_tokens": int(row["input_tokens"]),
+                "output_tokens": int(row["output_tokens"]),
+                "created_at": row["created_at"],
+                "completed_at": row["completed_at"],
+            }
+            for row in rows
+        ]
+
     def set_archived(self, run_id: str, archived: bool) -> bool:
         with self._transaction() as connection:
             cursor = connection.execute(
