@@ -87,6 +87,7 @@ export function Workbench() {
   const [modelSetupOpen, setModelSetupOpen] = useState(false);
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
+  const [preflightAdvancedOpen, setPreflightAdvancedOpen] = useState(false);
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -198,6 +199,7 @@ export function Workbench() {
     setGovernance(undefined);
     setExtensions(undefined);
     setRollbackBusy(undefined);
+    setPreflightAdvancedOpen(false);
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
@@ -414,6 +416,7 @@ export function Workbench() {
     setRecovery(undefined);
     setReport(undefined);
     setRollbackBusy(undefined);
+    setPreflightAdvancedOpen(false);
     setError(null);
     if (clearTask) setTask("");
   }
@@ -628,7 +631,7 @@ export function Workbench() {
           />
         </div>
       ) : (
-        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout" : ""}`}>
+        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout" : ""} ${runIsPrepared && !preflightAdvancedOpen ? "preflightSimpleLayout" : ""}`}>
           <section className={`runCanvas ${runIsPrepared ? "preflightCanvas" : ""}`}>
             {runIsPrepared ? (
               <>
@@ -643,9 +646,11 @@ export function Workbench() {
                   extensions={extensions}
                   completionExpectations={completionExpectations}
                   busy={busy}
+                  advancedOpen={preflightAdvancedOpen}
                   onBack={discardPreparedRun}
                   onLaunch={launchRun}
                   onConfigureModel={() => setModelSetupOpen(true)}
+                  onToggleAdvanced={() => setPreflightAdvancedOpen((current) => !current)}
                 />
               </>
             ) : (
@@ -688,7 +693,7 @@ export function Workbench() {
             )}
         </section>
 
-        <RuntimePanels
+        {!runIsPrepared || preflightAdvancedOpen ? <RuntimePanels
           plan={displayPlan}
           contract={displayContract}
           context={contextPack}
@@ -718,7 +723,7 @@ export function Workbench() {
           onDeleteMemory={deleteMemory}
           onSaveGovernance={saveGovernance}
           onSaveExtensions={saveExtensions}
-        />
+        /> : null}
         </div>
       )}
       <RunCenter open={historyOpen} onClose={() => setHistoryOpen(false)} />

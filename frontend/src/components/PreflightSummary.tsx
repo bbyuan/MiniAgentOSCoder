@@ -1,8 +1,21 @@
-import { ArrowLeft, ArrowRight, Bot, Boxes, Braces, CheckCircle2, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  Braces,
+  Check,
+  KeyRound,
+  ListChecks,
+  Network,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Workflow,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { AgentContract, ContextPack, ExtensionResponse, GovernanceResponse, ModelProviderStatus, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
-import { CompletionEvidence } from "./CompletionEvidence";
 
 interface PreflightSummaryProps {
   mode: RunMode;
@@ -14,32 +27,33 @@ interface PreflightSummaryProps {
   extensions?: ExtensionResponse;
   completionExpectations?: string[];
   busy: boolean;
+  advancedOpen: boolean;
   onBack: () => void;
   onLaunch: () => void;
   onConfigureModel: () => void;
+  onToggleAdvanced: () => void;
 }
 
 export function PreflightSummary({
   mode,
   task,
   model,
-  contract,
   context,
   governance,
   extensions,
   completionExpectations,
   busy,
+  advancedOpen,
   onBack,
   onLaunch,
   onConfigureModel,
+  onToggleAdvanced,
 }: PreflightSummaryProps) {
   const { locale, t } = usePreferences();
-  const extensionCount = extensions
-    ? extensions.settings.active_skill_ids.length
-      + extensions.settings.enabled_mcp_server_ids.length
-      + extensions.settings.enabled_hook_ids.length
-    : 0;
   const ready = model?.configured === true;
+  const skillCount = extensions?.settings.active_skill_ids.length || 0;
+  const mcpCount = extensions?.settings.enabled_mcp_server_ids.length || 0;
+  const hookCount = extensions?.settings.enabled_hook_ids.length || 0;
 
   return (
     <section className="preflightSummary" aria-labelledby="preflight-title">
@@ -49,7 +63,7 @@ export function PreflightSummary({
           <h1 id="preflight-title">{t("preflight.title")}</h1>
           <p>{t("preflight.description")}</p>
         </div>
-        <span className="preflightReady"><CheckCircle2 size={15} />{t("preflight.contextReady")}</span>
+        <span className="preflightReady"><Check size={16} />{t("preflight.contextReady")}</span>
       </header>
 
       <div className="preflightTask">
@@ -57,57 +71,68 @@ export function PreflightSummary({
         <p>{task}</p>
       </div>
 
-      <div className="preflightGrid">
-        <PreflightItem
-          icon={Bot}
-          label={t("preflight.model")}
+      <SetupGroup
+        title={t("preflight.required")}
+        badge={t("preflight.requiredBadge")}
+        tone={ready ? "ready" : "required"}
+      >
+        <SetupRow
+          icon={ready ? Bot : KeyRound}
+          title={t("preflight.model")}
           value={model?.model || t("top.modelUnchecked")}
-          detail={ready ? t("preflight.modelReady") : model?.issues.join(", ") || t("preflight.modelMissing")}
-          warning={!ready}
+          status={t(ready ? "preflight.ready" : "preflight.needsSetup")}
+          tone={ready ? "ready" : "required"}
+          action={!ready ? { label: t("task.configureModel"), onClick: onConfigureModel } : undefined}
         />
-        <PreflightItem
-          icon={ShieldCheck}
-          label={t("preflight.sandbox")}
-          value={governance?.settings.sandbox_profile || t("governance.profile.standard")}
-          detail={t("preflight.effects", { count: contract?.effects.allow.length || 0 })}
-        />
-        <PreflightItem
-          icon={Braces}
-          label={t("preflight.context")}
-          value={context ? `${context.budget_report.used_tokens} / ${context.budget_report.max_tokens}` : "0 / 0"}
-          detail={t("preflight.contextItems", { count: context?.selected_items.length || 0 })}
-        />
-        <PreflightItem
-          icon={Boxes}
-          label={t("preflight.extensions")}
-          value={t("preflight.extensionCount", { count: extensionCount })}
-          detail={t("preflight.extensionDetail", {
-            skills: extensions?.settings.active_skill_ids.length || 0,
-            mcp: extensions?.settings.enabled_mcp_server_ids.length || 0,
-            hooks: extensions?.settings.enabled_hook_ids.length || 0,
-          })}
-        />
-      </div>
+      </SetupGroup>
 
-      <CompletionEvidence expectations={completionExpectations} preflight />
-
-      {!ready ? (
-        <div className="preflightWarning" role="alert">
-          <TriangleAlert size={17} />
-          <span>{t("preflight.blocked")}</span>
-          <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button>
+      <SetupGroup title={t("preflight.automatic")} badge={t("preflight.noSetup")}>
+        <div className="setupRowGrid">
+          <SetupRow
+            icon={ShieldCheck}
+            title={t("preflight.sandbox")}
+            value={governance?.settings.sandbox_profile || t("governance.profile.standard")}
+            status={t("preflight.managed")}
+            compact
+          />
+          <SetupRow
+            icon={Braces}
+            title={t("preflight.context")}
+            value={t("preflight.contextItems", { count: context?.selected_items.length || 0 })}
+            status={t("preflight.managed")}
+            compact
+          />
+          <SetupRow
+            icon={ListChecks}
+            title={t("preflight.completionGuard")}
+            value={t("preflight.checkCount", { count: completionExpectations?.length || 0 })}
+            status={t("preflight.managed")}
+            compact
+          />
         </div>
-      ) : null}
+      </SetupGroup>
+
+      <SetupGroup title={t("preflight.optional")} badge={t("preflight.optionalBadge")}>
+        <div className="setupRowGrid optionalSetupGrid">
+          <SetupRow icon={Sparkles} title={t("preflight.skills")} value={extensionValue(skillCount, t)} status={t("preflight.optionalStatus")} compact />
+          <SetupRow icon={Network} title="MCP" value={extensionValue(mcpCount, t)} status={t("preflight.optionalStatus")} compact />
+          <SetupRow icon={Workflow} title="Hooks" value={extensionValue(hookCount, t)} status={t("preflight.optionalStatus")} compact />
+        </div>
+        <button type="button" className="advancedSettingsAction" onClick={onToggleAdvanced}>
+          <SlidersHorizontal size={16} />
+          {t(advancedOpen ? "preflight.hideAdvanced" : "preflight.showAdvanced")}
+        </button>
+      </SetupGroup>
 
       <footer className="preflightActions">
         <button type="button" className="secondaryTextAction" disabled={busy} onClick={onBack}>
-          <ArrowLeft size={15} />{t("preflight.back")}
+          <ArrowLeft size={16} />{t("preflight.back")}
         </button>
         <div>
-          <span>{t("preflight.launchHint")}</span>
+          <span>{t(ready ? "preflight.launchHint" : "preflight.launchBlocked")}</span>
           <button type="button" className="textPrimaryAction" disabled={busy || !ready} onClick={onLaunch}>
             {busy ? t("preflight.launching") : t("preflight.launch")}
-            <ArrowRight size={16} />
+            <ArrowRight size={17} />
           </button>
         </div>
       </footer>
@@ -115,25 +140,58 @@ export function PreflightSummary({
   );
 }
 
-function PreflightItem({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  warning,
+function SetupGroup({
+  title,
+  badge,
+  tone = "neutral",
+  children,
 }: {
-  icon: typeof Bot;
-  label: string;
-  value: string;
-  detail: string;
-  warning?: boolean;
+  title: string;
+  badge: string;
+  tone?: "neutral" | "ready" | "required";
+  children: React.ReactNode;
 }) {
   return (
-    <div className={`preflightItem ${warning ? "warning" : ""}`}>
-      <Icon size={17} />
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
+    <section className={`setupGroup tone-${tone}`}>
+      <header className="setupGroupHeader">
+        <h2>{title}</h2>
+        <span>{badge}</span>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function SetupRow({
+  icon: Icon,
+  title,
+  value,
+  status,
+  tone = "neutral",
+  compact = false,
+  action,
+}: {
+  icon: LucideIcon;
+  title: string;
+  value: string;
+  status: string;
+  tone?: "neutral" | "ready" | "required";
+  compact?: boolean;
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className={`setupRow tone-${tone} ${compact ? "compact" : ""}`}>
+      <span className="setupRowIcon"><Icon size={18} /></span>
+      <div className="setupRowCopy"><strong>{title}</strong><span>{value}</span></div>
+      <span className="setupRowStatus">{status}</span>
+      {action ? <button type="button" onClick={action.onClick}>{action.label}</button> : null}
     </div>
   );
+}
+
+function extensionValue(
+  count: number,
+  t: (key: "preflight.enabledCount" | "preflight.notEnabled", variables?: Record<string, string | number>) => string,
+): string {
+  return count ? t("preflight.enabledCount", { count }) : t("preflight.notEnabled");
 }
