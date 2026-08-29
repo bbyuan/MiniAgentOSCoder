@@ -313,3 +313,21 @@ The workbench SHALL distinguish required configuration, automatically managed ru
 - WHEN Safety, tool policy, Skills, MCP Servers, or Hooks are rendered
 - THEN ordinary risk, effect, approval, and failure-policy terminology SHALL be localized
 - AND protocol names, commands, paths, and project-defined identifiers SHALL preserve their technical identity
+
+### DW-021 Local Evaluation Insights
+
+The Run Center SHALL provide a localized overview of aggregate local Run quality, cost, governance, and failure evidence without exposing workspace content.
+
+#### Scenario: Review local insights
+
+- GIVEN one or more persisted Runs exist
+- WHEN the user opens Local Insights
+- THEN the Workbench SHALL show outcome rates, average budget usage, governance events, and failure categories
+- AND clearly state that the values remain local and contain no code
+
+#### Scenario: No evaluation data exists
+
+- GIVEN the selected scope has no persisted Runs
+- WHEN Local Insights is opened
+- THEN the Workbench SHALL present an empty state
+- AND SHALL NOT display invented zero-percent quality claims
