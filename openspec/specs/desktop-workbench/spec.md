@@ -267,7 +267,7 @@ The workbench SHALL explain mode-specific completion expectations before executi
 
 ### DW-020 Layered Run Configuration
 
-The workbench SHALL distinguish required configuration, automatically managed runtime capabilities, and optional enhancements before launch, and SHALL keep advanced Inspector controls progressive.
+The workbench SHALL distinguish required configuration, automatically managed runtime capabilities, and optional enhancements before launch, and SHALL separate editable preflight settings from runtime inspection.
 
 #### Scenario: User reaches preflight
 
@@ -288,5 +288,13 @@ The workbench SHALL distinguish required configuration, automatically managed ru
 
 - GIVEN a prepared Run is displayed
 - WHEN the user explicitly opens advanced settings
-- THEN the Inspector SHALL become available with goal-oriented localized labels
-- AND the user SHALL be able to close it without discarding the Run
+- THEN a wide preflight settings surface SHALL show only Safety and permissions plus Extension capabilities
+- AND runtime Context operations, Memory, checkpoints, reports, traces, and execution evidence SHALL remain hidden
+- AND the user SHALL be able to close optional settings without discarding the Run
+
+#### Scenario: Chinese optional settings are displayed
+
+- GIVEN the workbench locale is Chinese
+- WHEN Safety, tool policy, Skills, MCP Servers, or Hooks are rendered
+- THEN ordinary risk, effect, approval, and failure-policy terminology SHALL be localized
+- AND protocol names, commands, paths, and project-defined identifiers SHALL preserve their technical identity

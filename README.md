@@ -90,7 +90,7 @@ automatic: Sandbox + Context + Completion Guard
 optional: Skills + MCP Servers + Hooks
 ```
 
-The full Inspector stays hidden during initial preflight. Open **Advanced settings** only when you need to tighten safety rules, change extension selection, inspect Context, or manage Memory. Default settings are sufficient for a normal run.
+The full Inspector stays hidden during initial preflight. **Optional settings** opens a focused, wide configuration surface with only two choices: Safety and permissions for Sandbox/tool policy changes, and Extension capabilities for Skills, MCP Servers, and Hooks. Context, Memory, checkpoints, reports, traces, and execution evidence appear in the full Inspector only after execution starts. Default settings are sufficient for a normal run.
 
 Before execution, the workbench shows the completion contract for the selected mode. Bugfix, Feature, and Spec Runs require a recorded change plus a successful test after the latest patch. Review Runs require read-only inspection and forbid applied patches; Chat Runs require an answer and a read-only workspace. A model `finish` action is only a completion request: the runtime rejects it with structured missing checks and lets the same Agent Loop continue while budget remains. The final assessment is visible in the result view, Run Center, `report.md`, `trace.jsonl`, and the Run API.
 
