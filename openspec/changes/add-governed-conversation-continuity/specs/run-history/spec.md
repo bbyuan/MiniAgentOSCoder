@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### RH-006 Ordered Conversation History
+### RH-007 Ordered Conversation History
 
 The Run Center SHALL persist conversation lineage and return all available turns in deterministic order without reading raw Trace content.
 

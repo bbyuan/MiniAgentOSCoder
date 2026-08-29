@@ -137,6 +137,78 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert artifacts["test_summary"]["command"] in ["pytest", "Not selected"]
 
 
+def test_follow_up_run_inherits_bounded_context_and_conversation_lineage(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    root = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect parser", "mode": "Chat"},
+    ).json()
+    client.post(f"/runs/{root['run_id']}/cancel")
+
+    follow_up = client.post(
+        "/runs",
+        json={
+            "project_id": project["project_id"],
+            "task": "now explain the tests",
+            "mode": "Chat",
+            "parent_run_id": root["run_id"],
+        },
+    )
+    data = follow_up.json()
+    context = client.get(f"/runs/{data['run_id']}/context").json()
+    conversation = client.get(f"/runs/{data['run_id']}/conversation").json()
+    trace = client.get(f"/runs/{data['run_id']}/trace").json()["events"]
+
+    assert follow_up.status_code == 200
+    assert data["conversation_id"] == root["run_id"]
+    assert data["parent_run_id"] == root["run_id"]
+    assert data["turn_index"] == 1
+    assert [turn["run_id"] for turn in conversation["turns"]] == [root["run_id"], data["run_id"]]
+    assert context["required_items"][-1] == "prior_run_summary"
+    handoff = next(item for item in context["explanation"] if item["id"] == "prior_run_summary")
+    assert handoff["metadata"]["parent_run_id"] == root["run_id"]
+    assert any(event["event"] == "conversation.follow_up.created" for event in trace)
+
+
+def test_follow_up_rejects_non_terminal_cross_project_and_stale_parent(tmp_path: Path) -> None:
+    client = make_client()
+    first_root = tmp_path / "first"
+    second_root = tmp_path / "second"
+    first_root.mkdir()
+    second_root.mkdir()
+    first = client.post("/projects/open", json={"path": str(first_root)}).json()
+    second = client.post("/projects/open", json={"path": str(second_root)}).json()
+    root = client.post(
+        "/runs",
+        json={"project_id": first["project_id"], "task": "root", "mode": "Chat"},
+    ).json()
+
+    non_terminal = client.post(
+        "/runs",
+        json={"project_id": first["project_id"], "task": "too early", "mode": "Chat", "parent_run_id": root["run_id"]},
+    )
+    client.post(f"/runs/{root['run_id']}/cancel")
+    cross_project = client.post(
+        "/runs",
+        json={"project_id": second["project_id"], "task": "wrong project", "mode": "Chat", "parent_run_id": root["run_id"]},
+    )
+    child = client.post(
+        "/runs",
+        json={"project_id": first["project_id"], "task": "child", "mode": "Chat", "parent_run_id": root["run_id"]},
+    ).json()
+    client.post(f"/runs/{child['run_id']}/cancel")
+    stale_parent = client.post(
+        "/runs",
+        json={"project_id": first["project_id"], "task": "branch", "mode": "Chat", "parent_run_id": root["run_id"]},
+    )
+
+    assert non_terminal.status_code == 409
+    assert cross_project.status_code == 409
+    assert stale_parent.status_code == 409
+    assert stale_parent.json()["detail"] == "Parent run is not the latest conversation turn"
+
+
 def test_get_run_returns_plan(tmp_path: Path) -> None:
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()

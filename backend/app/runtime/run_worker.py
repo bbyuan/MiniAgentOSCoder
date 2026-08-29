@@ -253,10 +253,10 @@ class RunWorker:
             self._consolidate_memory(job, result)
             self._finalize_plan(job, result)
             self._write_final_report(job, result)
-            job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
             self._set_result_status(job.run, result.status)
-            job.on_state_changed(job.run, result)
             job.on_result(result)
+            job.on_state_changed(job.run, result)
+            job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
             return result
         finally:
             with self._lock:

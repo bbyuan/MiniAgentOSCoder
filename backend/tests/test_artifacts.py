@@ -32,6 +32,48 @@ def test_build_run_artifacts_includes_context_and_trace_summary() -> None:
     assert context_pack.required_items == ["user_task", "project_profile", "current_plan"]
 
 
+def test_follow_up_context_contains_one_bounded_prior_run_handoff() -> None:
+    run = RunState(run_id="run-child", task="Now add tests", mode="Feature")
+    prior_message = "Previous result " + "x" * 6000 + " api_key=unsafe-value"
+
+    artifacts, context_pack = build_run_artifacts(
+        run,
+        {"test_commands": ["pytest"]},
+        [],
+        prior_run={
+            "run_id": "run-parent",
+            "conversation_id": "run-parent",
+            "turn_index": 0,
+            "task": "Fix parser",
+            "mode": "Bugfix",
+            "status": "completed",
+            "final_message": prior_message,
+            "changed_files": ["parser.py"],
+            "test_status": "Passed",
+            "completion": {
+                "verdict": "passed",
+                "summary": "All checks passed",
+                "checks": [{"id": "validation", "passed": True, "evidence": "pytest passed"}],
+            },
+        },
+    )
+
+    handoffs = [item for item in context_pack.items if item.type == "prior_run_summary"]
+    assert context_pack.required_items[-1] == "prior_run_summary"
+    assert len(handoffs) == 1
+    assert handoffs[0].metadata == {
+        "parent_run_id": "run-parent",
+        "conversation_id": "run-parent",
+        "turn_index": 0,
+        "bounded": True,
+    }
+    assert "parser.py" in handoffs[0].content
+    assert "pytest passed" in handoffs[0].content
+    assert "unsafe-value" not in handoffs[0].content
+    assert len(handoffs[0].content) < 7000
+    assert artifacts.context_explanation[-1]["id"] == "prior_run_summary"
+
+
 def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) -> None:
     writer = RunArtifactWriter(
         tmp_path,

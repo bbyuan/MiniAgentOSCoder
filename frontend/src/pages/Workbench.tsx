@@ -6,6 +6,7 @@ import {
   type ApprovalRequest,
   type ContextPack,
   type CompletionAssessment,
+  type ConversationResponse,
   type ContextCompactionResponse,
   type ExtensionResponse,
   type ExtensionSettings,
@@ -29,6 +30,7 @@ import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/Agen
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { ApprovalPanel } from "../components/ApprovalPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
+import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
@@ -89,6 +91,7 @@ export function Workbench() {
   const [followUpTask, setFollowUpTask] = useState("");
   const [steeringBusy, setSteeringBusy] = useState(false);
   const [completion, setCompletion] = useState<CompletionAssessment | null>();
+  const [conversation, setConversation] = useState<ConversationResponse>();
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [recovery, setRecovery] = useState<RecoveryResponse>();
@@ -142,6 +145,7 @@ export function Workbench() {
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
+  const currentTurnIndex = conversation?.turns.find((turn) => turn.run_id === runId)?.turn_index ?? 0;
   const steeringMessages = useMemo(() => {
     const applied = new Set(traceEvents.flatMap((event) => {
       const message = event.payload.message;
@@ -210,6 +214,7 @@ export function Workbench() {
         governanceResponse,
         extensionResponse,
         providerStatus,
+        conversationResponse,
       ] = await Promise.all([
         daemonApi.getContext(resumed.run_id),
         daemonApi.getTrace(resumed.run_id),
@@ -219,6 +224,7 @@ export function Workbench() {
         daemonApi.getGovernance(resumed.run_id),
         daemonApi.getExtensions(resumed.run_id),
         daemonApi.getModelStatus(resumed.project.project_id).catch(() => undefined),
+        daemonApi.getConversation(resumed.run_id),
       ]);
 
       setProject(resumed.project);
@@ -241,6 +247,7 @@ export function Workbench() {
       setTerminationReason("");
       setLastObservation({});
       setCompletion(undefined);
+      setConversation(conversationResponse);
       setApproval(null);
       setRollbackBusy(undefined);
       setRuntimeDetailsOpen(false);
@@ -285,7 +292,7 @@ export function Workbench() {
     }
   }
 
-  async function prepareRun(startImmediately = false, requestedTask = task) {
+  async function prepareRun(startImmediately = false, requestedTask = task, parentRunId?: string) {
     if (!project) return;
     const parsedTask = parseTaskCommand(requestedTask, mode);
     if (!parsedTask.task) {
@@ -298,6 +305,7 @@ export function Workbench() {
     setTerminationReason("");
     setLastObservation({});
     setCompletion(undefined);
+    setConversation(undefined);
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
@@ -311,7 +319,12 @@ export function Workbench() {
     streamCleanup.current = null;
     try {
       const [run, providerStatus] = await Promise.all([
-        daemonApi.createRun({ project_id: project.project_id, task: parsedTask.task, mode: parsedTask.mode }),
+        daemonApi.createRun({
+          project_id: project.project_id,
+          task: parsedTask.task,
+          mode: parsedTask.mode,
+          parent_run_id: parentRunId,
+        }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
       const [
@@ -323,6 +336,7 @@ export function Workbench() {
         memoryResponse,
         governanceResponse,
         extensionResponse,
+        conversationResponse,
       ] = await Promise.all([
         daemonApi.getContext(run.run_id),
         daemonApi.getTrace(run.run_id),
@@ -332,8 +346,10 @@ export function Workbench() {
         daemonApi.getMemory(run.run_id),
         daemonApi.getGovernance(run.run_id),
         daemonApi.getExtensions(run.run_id),
+        daemonApi.getConversation(run.run_id),
       ]);
       setRunId(run.run_id);
+      setTask(parsedTask.task);
       setMode(parsedTask.mode);
       setRunStatus(run.status);
       setContract(run.contract);
@@ -344,6 +360,7 @@ export function Workbench() {
       setMemory(memoryResponse);
       setGovernance(governanceResponse);
       setExtensions(extensionResponse);
+      setConversation(conversationResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
@@ -452,6 +469,7 @@ export function Workbench() {
             daemonApi.getMemory(activeRunId),
             daemonApi.getGovernance(activeRunId),
             daemonApi.getExtensions(activeRunId),
+            daemonApi.getConversation(activeRunId),
           ]).then(([
             summary,
             latestArtifacts,
@@ -461,6 +479,7 @@ export function Workbench() {
             latestMemory,
             latestGovernance,
             latestExtensions,
+            latestConversation,
           ]) => {
             setRunStatus(summary.status);
             setFinalMessage(summary.final_message || "");
@@ -474,6 +493,7 @@ export function Workbench() {
             setMemory(latestMemory);
             setGovernance(latestGovernance);
             setExtensions(latestExtensions);
+            setConversation(latestConversation);
             void loadProjectRuns();
           }).catch(() => undefined);
         }
@@ -488,16 +508,18 @@ export function Workbench() {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
       if (cancelled.status === "cancelled") {
-        const [latestReport, latestGovernance, latestExtensions, latestTrace] = await Promise.all([
+        const [latestReport, latestGovernance, latestExtensions, latestTrace, latestConversation] = await Promise.all([
           daemonApi.getReport(runId),
           daemonApi.getGovernance(runId),
           daemonApi.getExtensions(runId),
           daemonApi.getTrace(runId),
+          daemonApi.getConversation(runId),
         ]);
         setReport(latestReport);
         setGovernance(latestGovernance);
         setExtensions(latestExtensions);
         setTraceEvents(latestTrace.events);
+        setConversation(latestConversation);
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
@@ -555,6 +577,7 @@ export function Workbench() {
     setFollowUpTask("");
     setSteeringBusy(false);
     setCompletion(undefined);
+    setConversation(undefined);
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
@@ -746,10 +769,10 @@ export function Workbench() {
 
   async function startFollowUp() {
     const nextTask = followUpTask.trim();
-    if (!nextTask) return;
-    setTask(nextTask);
+    const parentRunId = runId;
+    if (!nextTask || !parentRunId) return;
     setFollowUpTask("");
-    await prepareRun(true, nextTask);
+    await prepareRun(true, nextTask, parentRunId);
   }
 
   function openControlPlaneTarget(target: ControlPlaneTarget) {
@@ -852,7 +875,9 @@ export function Workbench() {
             <div className="runHeading">
               <span className="eyebrow">{t("session.currentTask")}</span>
               <h1>{t("session.title")}</h1>
-              <p>{basename(project.path)} · {translateMode(locale, mode)}</p>
+              <p>
+                {basename(project.path)} · {translateMode(locale, mode)} · {t("conversation.turn", { count: currentTurnIndex + 1 })}
+              </p>
             </div>
             <div className="runHeaderControls">
               <button
@@ -868,6 +893,8 @@ export function Workbench() {
               </button>
             </div>
           </header>
+
+          <ConversationHistory conversation={conversation} currentRunId={runId} />
 
           <section className="conversationTurn userTurn">
             <div className="turnAvatar"><UserRound size={16} /></div>

@@ -16,10 +16,36 @@ from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
 
 
-def create_runtime_run(task: str, workspace: str | Path, config_path: str | Path, runs_dir: str | Path = "runs") -> RunState:
-    run = RunState(run_id=f"run-{uuid4().hex[:12]}", task=task)
+def create_runtime_run(
+    task: str,
+    workspace: str | Path,
+    config_path: str | Path,
+    runs_dir: str | Path = "runs",
+    *,
+    conversation_id: str | None = None,
+    parent_run_id: str | None = None,
+    turn_index: int = 0,
+) -> RunState:
+    run_id = f"run-{uuid4().hex[:12]}"
+    run = RunState(
+        run_id=run_id,
+        task=task,
+        conversation_id=conversation_id or run_id,
+        parent_run_id=parent_run_id,
+        turn_index=max(0, turn_index),
+    )
     tracer = TraceWriter(runs_dir)
-    tracer.event(run.run_id, "run.created", {"task": task, "workspace": str(workspace)})
+    tracer.event(
+        run.run_id,
+        "run.created",
+        {
+            "task": task,
+            "workspace": str(workspace),
+            "conversation_id": run.conversation_id,
+            "parent_run_id": run.parent_run_id,
+            "turn_index": run.turn_index,
+        },
+    )
 
     transition_run(run, RunPhase.SCANNING)
     tracer.event(run.run_id, "run.transitioned", {"status": run.status.value})

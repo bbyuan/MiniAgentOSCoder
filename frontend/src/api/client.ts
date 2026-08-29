@@ -4,6 +4,7 @@ export interface CreateRunRequest {
   project_id: string;
   task: string;
   mode: RunMode;
+  parent_run_id?: string | null;
 }
 
 export interface SteerRunResponse {
@@ -42,6 +43,9 @@ export interface AgentContract {
 
 export interface RunSummary {
   run_id: string;
+  conversation_id?: string;
+  parent_run_id?: string | null;
+  turn_index?: number;
   status: string;
   phase: string;
   current_action?: string;
@@ -58,6 +62,29 @@ export interface RunSummary {
   rolled_back_to?: string;
   completion?: CompletionAssessment | null;
   completion_expectations?: string[];
+}
+
+export interface ConversationTurn {
+  run_id: string;
+  conversation_id: string;
+  parent_run_id?: string | null;
+  turn_index: number;
+  task: string;
+  mode: RunMode;
+  status: string;
+  created_at: string;
+  completed_at?: string | null;
+  final_message: string;
+  termination_reason: string;
+  changed_files: string[];
+  test_status: string;
+  completion?: CompletionAssessment | null;
+}
+
+export interface ConversationResponse {
+  conversation_id: string;
+  current_run_id: string;
+  turns: ConversationTurn[];
 }
 
 export interface CompletionCheck {
@@ -442,6 +469,9 @@ export interface HistoryProject {
 export interface HistoryRun {
   run_id: string;
   project_id: string;
+  conversation_id: string;
+  parent_run_id?: string | null;
+  turn_index: number;
   project_path: string;
   task: string;
   mode: string;
@@ -606,6 +636,7 @@ export const daemonApi = {
       body: JSON.stringify({ message }),
     }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
+  getConversation: (runId: string) => request<ConversationResponse>(`/runs/${runId}/conversation`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),

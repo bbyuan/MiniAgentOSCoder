@@ -128,7 +128,40 @@ def test_reopen_run_clears_terminal_result_and_preserves_usage(tmp_path: Path) -
     assert saved["steps"] == 3
 
 
-def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: Path) -> None:
+def test_conversation_lineage_is_persisted_and_ordered(tmp_path: Path) -> None:
+    database = tmp_path / "runtime" / "state.db"
+    store = HistoryStore(database)
+    project = _project(store, tmp_path)
+    root = RunState(
+        run_id="run-root",
+        task="Inspect parser",
+        conversation_id="run-root",
+        status=RunPhase.COMPLETED,
+    )
+    follow_up = RunState(
+        run_id="run-follow-up",
+        task="Now fix it",
+        conversation_id="run-root",
+        parent_run_id="run-root",
+        turn_index=1,
+        status=RunPhase.PLANNING,
+    )
+
+    store.record_run(root, str(project["project_id"]), tmp_path)
+    store.record_run(follow_up, str(project["project_id"]), tmp_path)
+    store.close()
+
+    reopened = HistoryStore(database)
+    conversation = reopened.list_conversation("run-follow-up")
+
+    assert [run["run_id"] for run in conversation] == ["run-root", "run-follow-up"]
+    assert conversation[1]["parent_run_id"] == "run-root"
+    assert conversation[1]["conversation_id"] == "run-root"
+    assert conversation[1]["turn_index"] == 1
+    reopened.close()
+
+
+def test_existing_database_adds_runtime_columns_without_losing_runs(tmp_path: Path) -> None:
     database = tmp_path / "legacy.db"
     store = HistoryStore(database)
     project = _project(store, tmp_path)
@@ -140,7 +173,7 @@ def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: 
         + ", ".join(
             row[1]
             for row in store._connection.execute("PRAGMA table_info(runs_current)").fetchall()
-            if row[1] != "completion_json"
+            if row[1] not in {"completion_json", "conversation_id", "parent_run_id", "turn_index"}
         )
         + " FROM runs_current"
     )
@@ -153,4 +186,7 @@ def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: 
 
     assert saved is not None
     assert saved["completion"] is None
+    assert saved["conversation_id"] == "legacy-run"
+    assert saved["parent_run_id"] is None
+    assert saved["turn_index"] == 0
     reopened.close()

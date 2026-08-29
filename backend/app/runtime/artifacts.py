@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from app.context import discover_project_rules, retrieve_workspace_context
 from app.context.pack_builder import ContextCandidate, build_context_pack, explain_context_items
+from app.guards import redact_secrets
 from app.models import ContextPack, DiffSummary, MemoryEntry, PlanStep, RunArtifacts, RunState, TestSummary, TraceEvent
 
 
@@ -27,6 +29,7 @@ def build_initial_context(
     plan: list[PlanStep] | None = None,
     memories: list[MemoryEntry] | None = None,
     workspace_root: str | Path | None = None,
+    prior_run: dict[str, object] | None = None,
 ) -> tuple[ContextPack, list[dict[str, object]]]:
     required = [
         ContextCandidate(
@@ -54,6 +57,8 @@ def build_initial_context(
             priority=0.99,
         ),
     ]
+    if prior_run is not None:
+        required.append(_prior_run_candidate(prior_run))
     candidates: list[ContextCandidate] = []
     if workspace_root is not None:
         required.extend(discover_project_rules(workspace_root))
@@ -79,6 +84,7 @@ def build_run_artifacts(
     trace_events: list[TraceEvent] | list[dict[str, object]],
     memories: list[MemoryEntry] | None = None,
     workspace_root: str | Path | None = None,
+    prior_run: dict[str, object] | None = None,
 ) -> tuple[RunArtifacts, ContextPack]:
     plan = build_initial_plan(run.mode, project_profile)
     context_pack, context_explanation = build_initial_context(
@@ -87,6 +93,7 @@ def build_run_artifacts(
         plan,
         memories,
         workspace_root,
+        prior_run,
     )
     for step in plan:
         if step.id == "context":
@@ -113,3 +120,52 @@ def _first_test_command(project_profile: dict[str, object]) -> str:
     if isinstance(commands, list) and commands:
         return str(commands[0])
     return "Not selected"
+
+
+def _prior_run_candidate(prior_run: dict[str, object]) -> ContextCandidate:
+    changed_files = prior_run.get("changed_files", [])
+    if not isinstance(changed_files, list):
+        changed_files = []
+    completion = prior_run.get("completion")
+    completion_summary: dict[str, object] | None = None
+    if isinstance(completion, dict):
+        checks = completion.get("checks", [])
+        completion_summary = {
+            "verdict": str(completion.get("verdict", ""))[:40],
+            "summary": redact_secrets(str(completion.get("summary", "")))[:1000],
+            "checks": [
+                {
+                    "id": str(check.get("id", ""))[:120],
+                    "passed": bool(check.get("passed", False)),
+                    "evidence": redact_secrets(str(check.get("evidence", "")))[:500],
+                }
+                for check in checks[:12]
+                if isinstance(check, dict)
+            ] if isinstance(checks, list) else [],
+        }
+    parent_id = str(prior_run.get("run_id", ""))
+    handoff = {
+        "parent_run_id": parent_id,
+        "turn_index": int(prior_run.get("turn_index", 0)),
+        "task": redact_secrets(str(prior_run.get("task", "")))[:1500],
+        "mode": str(prior_run.get("mode", ""))[:40],
+        "status": str(prior_run.get("status", ""))[:40],
+        "final_message": redact_secrets(str(prior_run.get("final_message", "")))[:4000],
+        "changed_files": [str(path)[:300] for path in changed_files[:40]],
+        "test_status": str(prior_run.get("test_status", ""))[:120],
+        "completion": completion_summary,
+    }
+    return ContextCandidate(
+        id="prior_run_summary",
+        type="prior_run_summary",
+        source=f"run:{parent_id}",
+        reason="bounded conversation handoff",
+        content=json.dumps(handoff, ensure_ascii=False, sort_keys=True),
+        priority=0.98,
+        metadata={
+            "parent_run_id": parent_id,
+            "conversation_id": str(prior_run.get("conversation_id", parent_id)),
+            "turn_index": int(prior_run.get("turn_index", 0)),
+            "bounded": True,
+        },
+    )

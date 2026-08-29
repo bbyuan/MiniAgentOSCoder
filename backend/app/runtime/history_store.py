@@ -87,23 +87,29 @@ class HistoryStore:
             connection.execute(
                 """
                 INSERT INTO runs(
-                    run_id, project_id, task, mode, status, phase, created_at, updated_at,
+                    run_id, project_id, conversation_id, parent_run_id, turn_index,
+                    task, mode, status, phase, created_at, updated_at,
                     termination_reason, final_message, budget_json, changed_files_json,
                     applied_patches, repair_attempts, steps, model_calls, tool_calls,
                     input_tokens, output_tokens, total_tokens, test_status,
                     report_path, trace_path, patch_path, archived, completion_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '{}')
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(run_id) DO NOTHING
                 """,
                 (
                     run.run_id,
                     project_id,
+                    run.conversation_id or run.run_id,
+                    run.parent_run_id,
+                    run.turn_index,
                     run.task,
                     run.mode,
                     run.status.value,
                     run.status.value,
                     now,
                     now,
+                    "",
+                    "",
                     values["budget_json"],
                     values["changed_files_json"],
                     run.applied_patches,
@@ -118,6 +124,8 @@ class HistoryStore:
                     str(run_dir / "report.md"),
                     str(run_dir / "trace.jsonl"),
                     str(run_dir / "patch.diff"),
+                    0,
+                    "{}",
                 ),
             )
 
@@ -280,6 +288,23 @@ class HistoryStore:
             ).fetchone()
         return _run_row(row) if row is not None else None
 
+    def list_conversation(self, run_id: str) -> list[dict[str, Any]]:
+        target = self.get_run(run_id)
+        if target is None:
+            return []
+        conversation_id = str(target.get("conversation_id") or run_id)
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT r.*, p.canonical_path AS project_path
+                FROM runs r JOIN projects p ON p.project_id=r.project_id
+                WHERE r.conversation_id=?
+                ORDER BY r.turn_index ASC, r.created_at ASC
+                """,
+                (conversation_id,),
+            ).fetchall()
+        return [_run_row(row) for row in rows]
+
     def set_archived(self, run_id: str, archived: bool) -> bool:
         with self._transaction() as connection:
             cursor = connection.execute(
@@ -309,6 +334,9 @@ class HistoryStore:
                 CREATE TABLE IF NOT EXISTS runs(
                     run_id TEXT PRIMARY KEY,
                     project_id TEXT NOT NULL REFERENCES projects(project_id),
+                    conversation_id TEXT NOT NULL,
+                    parent_run_id TEXT,
+                    turn_index INTEGER NOT NULL DEFAULT 0,
                     task TEXT NOT NULL,
                     mode TEXT NOT NULL,
                     status TEXT NOT NULL,
@@ -345,6 +373,16 @@ class HistoryStore:
             }
             if "completion_json" not in columns:
                 connection.execute("ALTER TABLE runs ADD COLUMN completion_json TEXT NOT NULL DEFAULT '{}'")
+            if "conversation_id" not in columns:
+                connection.execute("ALTER TABLE runs ADD COLUMN conversation_id TEXT NOT NULL DEFAULT ''")
+            if "parent_run_id" not in columns:
+                connection.execute("ALTER TABLE runs ADD COLUMN parent_run_id TEXT")
+            if "turn_index" not in columns:
+                connection.execute("ALTER TABLE runs ADD COLUMN turn_index INTEGER NOT NULL DEFAULT 0")
+            connection.execute("UPDATE runs SET conversation_id=run_id WHERE conversation_id='' OR conversation_id IS NULL")
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_runs_conversation_turn ON runs(conversation_id, turn_index ASC)"
+            )
 
     def _transaction(self):
         return _Transaction(self)
@@ -409,6 +447,9 @@ def _run_row(row: sqlite3.Row) -> dict[str, Any]:
     return {
         "run_id": row["run_id"],
         "project_id": row["project_id"],
+        "conversation_id": row["conversation_id"] if "conversation_id" in keys and row["conversation_id"] else row["run_id"],
+        "parent_run_id": row["parent_run_id"] if "parent_run_id" in keys else None,
+        "turn_index": int(row["turn_index"]) if "turn_index" in keys else 0,
         "project_path": row["project_path"] if "project_path" in keys else "",
         "task": row["task"],
         "mode": row["mode"],

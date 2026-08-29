@@ -44,6 +44,9 @@ class CompletionAssessment(Serializable):
 class RunState(Serializable):
     run_id: str
     task: str
+    conversation_id: str = ""
+    parent_run_id: str | None = None
+    turn_index: int = 0
     status: RunPhase = RunPhase.CREATED
     mode: str = "Bugfix"
     plan: list[dict[str, Any]] = field(default_factory=list)

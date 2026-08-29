@@ -121,3 +121,15 @@ The runtime SHALL retain the latest applied unified diff as a protected `current
 - WHEN the tool observation is added to Context
 - THEN the previous current Diff SHALL be replaced by the newly applied normalized Diff
 - AND automatic compaction SHALL preserve the current Diff
+
+### CM-010 Bounded Prior-Run Handoff
+
+The Context Manager SHALL represent conversation inheritance as one bounded, attributable Context Item and SHALL NOT replay prior prompts, Trace payloads, or tool outputs.
+
+#### Scenario: Build follow-up context
+
+- GIVEN a valid terminal parent Run has a final result and structured evidence
+- WHEN the Daemon prepares its follow-up Run
+- THEN the Context Pack SHALL include a required `prior_run_summary` item
+- AND the item SHALL contain bounded outcome, changed-file, test, and completion evidence
+- AND its metadata SHALL identify the parent Run and conversation turn

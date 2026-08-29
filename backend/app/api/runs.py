@@ -17,6 +17,7 @@ from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.config import load_governance_settings
 from app.runtime.completion_guard import completion_expectations
 from app.runtime.extensions import load_extension_catalog
+from app.runtime.history_store import TERMINAL_STATUSES
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
 from app.runtime.paths import default_agent_dir
 from app.runtime.recovery import RecoveryError, RunRecovery
@@ -32,6 +33,7 @@ class CreateRunRequest(BaseModel):
     project_id: str
     task: str
     mode: str = "Bugfix"
+    parent_run_id: str | None = None
 
 
 class RollbackRequest(BaseModel):
@@ -53,8 +55,20 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    parent_run = _validate_conversation_parent(request.parent_run_id, request.project_id)
+    conversation_id = str(parent_run["conversation_id"]) if parent_run is not None else None
+    turn_index = int(parent_run["turn_index"]) + 1 if parent_run is not None else 0
+
     config_path = _find_config_path(project.path)
-    run = create_runtime_run(request.task, project.path, config_path, runs_dir=project.path / "runs")
+    run = create_runtime_run(
+        request.task,
+        project.path,
+        config_path,
+        runs_dir=project.path / "runs",
+        conversation_id=conversation_id,
+        parent_run_id=request.parent_run_id,
+        turn_index=turn_index,
+    )
     contract = compile_agent_contract(config_path, task_mode=request.mode, project_profile=project.profile)
     governance = load_governance_settings(config_path)
     fallback_agent_dir = default_agent_dir()
@@ -79,6 +93,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         trace_events,
         memories,
         workspace_root=project.path,
+        prior_run=parent_run,
     )
     store.runs[run.run_id] = run
     store.contracts[run.run_id] = contract
@@ -114,6 +129,18 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
             "diagnostics": extension_catalog.diagnostics,
         },
     )
+    if parent_run is not None:
+        tracer.event(
+            run.run_id,
+            "conversation.follow_up.created",
+            {
+                "conversation_id": run.conversation_id,
+                "parent_run_id": run.parent_run_id,
+                "turn_index": run.turn_index,
+                "inherited_context_item": "prior_run_summary",
+            },
+            role="user",
+        )
     try:
         store.history.record_run(run, project.project_id, project.path, artifacts)
     except Exception as exc:
@@ -121,6 +148,9 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
 
     return {
         "run_id": run.run_id,
+        "conversation_id": run.conversation_id,
+        "parent_run_id": run.parent_run_id,
+        "turn_index": run.turn_index,
         "status": run.status.value,
         "phase": run.status.value,
         "contract": contract.to_dict(),
@@ -142,6 +172,9 @@ def get_run(run_id: str) -> dict[str, object]:
     )
     return {
         "run_id": run.run_id,
+        "conversation_id": run.conversation_id,
+        "parent_run_id": run.parent_run_id,
+        "turn_index": run.turn_index,
         "status": run.status.value,
         "phase": run.status.value,
         "current_action": run.last_observation.get("action_type"),
@@ -161,6 +194,18 @@ def get_run(run_id: str) -> dict[str, object]:
         "rolled_back_to": run.rolled_back_to,
         "applied_patches": run.applied_patches,
         "memory_refs": run.memory_refs,
+    }
+
+
+@router.get("/{run_id}/conversation")
+def get_run_conversation(run_id: str) -> dict[str, object]:
+    turns = store.history.list_conversation(run_id)
+    if not turns:
+        raise HTTPException(status_code=404, detail="Run conversation not found")
+    return {
+        "conversation_id": turns[0]["conversation_id"],
+        "current_run_id": run_id,
+        "turns": [_conversation_turn(turn) for turn in turns],
     }
 
 
@@ -311,6 +356,9 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
     run = RunState(
         run_id=run_id,
         task=str(historical["task"]),
+        conversation_id=str(historical.get("conversation_id") or run_id),
+        parent_run_id=str(historical["parent_run_id"]) if historical.get("parent_run_id") else None,
+        turn_index=int(historical.get("turn_index", 0)),
         status=RunPhase.PLANNING,
         mode=str(historical["mode"]),
         current_step=max(checkpoint.step, int(historical.get("steps", 0))),
@@ -350,6 +398,7 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
         trace_events,
         memories,
         workspace_root=workspace,
+        prior_run=store.history.get_run(run.parent_run_id) if run.parent_run_id else None,
     )
     resume_item = ContextItem(
         id=f"resume:{checkpoint.checkpoint_id}",
@@ -399,6 +448,9 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
     )
     return {
         "run_id": run_id,
+        "conversation_id": run.conversation_id,
+        "parent_run_id": run.parent_run_id,
+        "turn_index": run.turn_index,
         "status": run.status.value,
         "task": run.task,
         "mode": run.mode,
@@ -533,6 +585,41 @@ def steer_run(run_id: str, request: SteerRunRequest) -> dict[str, object]:
         "run_id": run_id,
         "status": "queued",
         "applies_at": "next_safe_boundary",
+    }
+
+
+def _validate_conversation_parent(parent_run_id: str | None, project_id: str) -> dict[str, object] | None:
+    if parent_run_id is None:
+        return None
+    parent = store.history.get_run(parent_run_id)
+    if parent is None:
+        raise HTTPException(status_code=404, detail="Parent run not found")
+    if parent["project_id"] != project_id:
+        raise HTTPException(status_code=409, detail="Parent run belongs to another project")
+    if parent["status"] not in TERMINAL_STATUSES:
+        raise HTTPException(status_code=409, detail="Parent run is not terminal")
+    conversation = store.history.list_conversation(parent_run_id)
+    if conversation and conversation[-1]["run_id"] != parent_run_id:
+        raise HTTPException(status_code=409, detail="Parent run is not the latest conversation turn")
+    return parent
+
+
+def _conversation_turn(run: dict[str, object]) -> dict[str, object]:
+    return {
+        "run_id": run["run_id"],
+        "conversation_id": run["conversation_id"],
+        "parent_run_id": run["parent_run_id"],
+        "turn_index": run["turn_index"],
+        "task": run["task"],
+        "mode": run["mode"],
+        "status": run["status"],
+        "created_at": run["created_at"],
+        "completed_at": run["completed_at"],
+        "final_message": run["final_message"],
+        "termination_reason": run["termination_reason"],
+        "changed_files": run["changed_files"],
+        "test_status": run["test_status"],
+        "completion": run["completion"],
     }
 
 

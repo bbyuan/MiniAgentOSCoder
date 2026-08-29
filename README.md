@@ -25,7 +25,7 @@ Shared daemon API contract:
 openspec/api-contract.md
 ```
 
-The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, checkpoint resume, replay, reports, local metrics, and isolated benchmarks.
+The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, checkpoint resume, replay, reports, local metrics, and isolated benchmarks. Terminal Runs can continue as an ordered conversation: each follow-up receives a bounded prior-result handoff while compiling a fresh contract and budget.
 
 ## First Development Target
 
@@ -144,7 +144,7 @@ The Context view shows prompt budget, token composition, selection state, and au
 
 The Governance view is both a preflight control surface and an evidence viewer. It shows the effective policy for every registered tool, each ordered Guard decision and reason, and sandbox execution records. The current `portable-process` backend guarantees argv-based execution without a shell, workspace confinement for process cwd, sanitized environment variables, private runtime directories, timeout/process-group termination, and bounded returned output. It does not claim kernel network isolation, syscall filtering, or read-only mounts; those capabilities require a future container or OS-native backend.
 
-The Extensions view loads `.agent/skills.yaml`, `.agent/mcp.yaml`, and `.agent/hooks.yaml`. Compatible Skills are recommended from the selected Run mode and only activated `SKILL.md` files enter Planner context. Enabled stdio MCP Servers complete `initialize` and `tools/list`; discovered tools receive names such as `mcp__github__search_issues` and still pass Tool Gateway approval. Enabled Hooks run at `run.before`, `run.after`, `tool.before`, or `tool.after` through the same Sandbox backend. MCP and Hook declarations use argv arrays, never shell strings, and their command arguments and environment values are withheld from the API.
+The Extensions view loads `.agent/skills.yaml`, `.agent/mcp.yaml`, and `.agent/hooks.yaml`. Compatible Skills are recommended from the selected Run mode; the Planner first receives bounded Skill cards and loads a selected `SKILL.md` only through the governed `use_skill` action. Enabled stdio MCP Servers complete `initialize` and `tools/list`; discovered tools receive names such as `mcp__github__search_issues` and still pass Tool Gateway approval. Enabled Hooks run at `run.before`, `run.after`, `tool.before`, or `tool.after` through the same Sandbox backend. MCP and Hook declarations use argv arrays, never shell strings, and their command arguments and environment values are withheld from the API.
 
 Minimal project declarations:
 

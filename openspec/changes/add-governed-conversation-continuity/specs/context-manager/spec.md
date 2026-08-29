@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### CM-006 Bounded Prior-Run Handoff
+### CM-010 Bounded Prior-Run Handoff
 
 The Context Manager SHALL represent conversation inheritance as one bounded, attributable Context Item and SHALL NOT replay prior prompts, Trace payloads, or tool outputs.
 

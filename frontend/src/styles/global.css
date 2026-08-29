@@ -4507,6 +4507,160 @@ button.statusChip:hover {
   gap: 11px;
 }
 
+.conversationHistory {
+  margin: 0 0 2px 43px;
+  border-left: 2px solid var(--border);
+}
+
+.conversationHistory > header {
+  min-height: 34px;
+  padding: 0 10px 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+}
+
+.conversationHistory > header strong {
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.conversationHistory > header span {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.conversationHistoryList {
+  display: flex;
+  flex-direction: column;
+}
+
+.conversationPriorTurn {
+  border-top: 1px solid var(--border);
+}
+
+.conversationPriorTurn > summary {
+  min-height: 54px;
+  padding: 8px 10px 8px 13px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.conversationPriorTurn > summary::-webkit-details-marker {
+  display: none;
+}
+
+.conversationPriorTurn > summary > svg {
+  color: var(--text-tertiary);
+  transition: transform 140ms ease;
+}
+
+.conversationPriorTurn[open] > summary > svg {
+  transform: rotate(180deg);
+}
+
+.priorTurnState {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+}
+
+.priorTurnState.successful {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.priorTurnState.attention {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.priorTurnTitle {
+  min-width: 0;
+}
+
+.priorTurnTitle strong,
+.priorTurnTitle small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priorTurnTitle strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.priorTurnTitle small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.priorTurnBody {
+  margin: 0 10px 12px 45px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+}
+
+.priorTurnBody > div:first-child {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 6px;
+  color: var(--text-tertiary);
+}
+
+.priorTurnBody p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.priorTurnOutcome {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.priorTurnOutcome span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.priorTurnBody footer {
+  margin-top: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.priorTurnBody footer span {
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  background: var(--surface-raised);
+  font-size: 8px;
+}
+
 .turnAvatar {
   width: 30px;
   height: 30px;
@@ -5152,6 +5306,7 @@ button.controlSignal:focus-visible {
 
   .activityPanel,
   .agentControlPlane,
+  .conversationHistory,
   .completionSummary,
   .followUpComposer,
   .inlineApproval,

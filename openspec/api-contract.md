@@ -43,15 +43,21 @@ Request:
 {
   "project_id": "proj-001",
   "task": "Fix the failing login test",
-  "mode": "Bugfix"
+  "mode": "Bugfix",
+  "parent_run_id": null
 }
 ```
+
+`parent_run_id` is optional. When present, it must identify the latest terminal Run in the same project; the Daemon derives conversation lineage and adds a bounded prior-result item to the new Context Pack.
 
 Response:
 
 ```json
 {
   "run_id": "run-001",
+  "conversation_id": "run-001",
+  "parent_run_id": null,
+  "turn_index": 0,
   "status": "planning",
   "contract": {},
   "completion_expectations": [
@@ -59,6 +65,27 @@ Response:
     "applied_change",
     "changed_files",
     "tests_after_change"
+  ]
+}
+```
+
+### `GET /runs/{run_id}/conversation`
+
+Return bounded summaries for all Runs in the same conversation, ordered by `turn_index`. The response includes tasks, final outcomes, changed-file names, test status, and completion evidence; it excludes prompts, Context contents, Trace payloads, and tool outputs.
+
+```json
+{
+  "conversation_id": "run-001",
+  "current_run_id": "run-002",
+  "turns": [
+    {
+      "run_id": "run-001",
+      "parent_run_id": null,
+      "turn_index": 0,
+      "task": "Fix the failing login test",
+      "status": "completed",
+      "final_message": "Fixed and verified."
+    }
   ]
 }
 ```
