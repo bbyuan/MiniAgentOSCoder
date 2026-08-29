@@ -264,3 +264,29 @@ The workbench SHALL explain mode-specific completion expectations before executi
 - WHEN the result is displayed in the live canvas or Run Center
 - THEN every check SHALL show its localized state and evidence
 - AND an older Run without an assessment SHALL be identified as unavailable rather than passed
+
+### DW-020 Layered Run Configuration
+
+The workbench SHALL distinguish required configuration, automatically managed runtime capabilities, and optional enhancements before launch, and SHALL keep advanced Inspector controls progressive.
+
+#### Scenario: User reaches preflight
+
+- GIVEN a Run has been prepared
+- WHEN the workbench renders launch readiness
+- THEN the model Provider SHALL be the only required configuration
+- AND Sandbox, Context, and Completion Guard SHALL be identified as automatically managed
+- AND Skills, MCP Servers, and Hooks SHALL be identified as optional
+
+#### Scenario: User does not need advanced controls
+
+- GIVEN a prepared Run uses the default governance and extension settings
+- WHEN the user reviews preflight
+- THEN the full Inspector SHALL remain hidden
+- AND the user SHALL be able to launch without opening advanced settings
+
+#### Scenario: User opens advanced settings
+
+- GIVEN a prepared Run is displayed
+- WHEN the user explicitly opens advanced settings
+- THEN the Inspector SHALL become available with goal-oriented localized labels
+- AND the user SHALL be able to close it without discarding the Run
