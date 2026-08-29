@@ -183,10 +183,18 @@ The runtime SHALL treat `finish` as a completion request and SHALL only transiti
 
 #### Scenario: Reject an unverified code task
 
-- GIVEN a Bugfix, Feature, or Spec Run has not applied a change or has no successful test after its latest patch
+- GIVEN a Bugfix, Feature, or Spec Run has neither an applied verified change nor successful inspection evidence that the requested behavior already exists
 - WHEN the model requests finish
 - THEN the runtime SHALL append a blocked CompletionAssessment
 - AND return failed check ids to the next planning step without ending the Run
+
+#### Scenario: Accept an already-correct Bugfix
+
+- GIVEN a Bugfix Run inspected relevant source without applying a patch
+- AND a relevant test completed successfully
+- WHEN the model explains that the requested behavior already exists
+- THEN Completion Guard SHALL accept the evidence without requiring a synthetic code change
+- AND the terminal assessment SHALL identify the verified-existing completion path
 
 #### Scenario: Accept a read-only review
 

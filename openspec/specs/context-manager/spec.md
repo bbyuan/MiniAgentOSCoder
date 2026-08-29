@@ -80,3 +80,44 @@ The runtime SHALL add the latest guarded tool result to Context and downgrade ol
 - WHEN its result is recorded
 - THEN the latest result SHALL be represented as a protected `latest_observation` ContextItem
 - AND any previous latest observation SHALL become lower-priority tool history
+
+### CM-007 Project Instruction Discovery
+
+The runtime SHALL discover workspace `AGENTS.md` instructions before execution and represent readable, redacted instructions as protected `project_rules` ContextItems.
+
+#### Scenario: Open a project with agent instructions
+
+- GIVEN a workspace contains a root `AGENTS.md` or `.agent/AGENTS.md`
+- WHEN a Run Context Pack is created
+- THEN each applicable instruction file SHALL be included with its source path
+- AND instruction contents SHALL be redacted and bounded before reaching the model
+
+### CM-008 Task-Aware Code Retrieval
+
+The runtime SHALL use the Workspace Index to select a bounded set of task-relevant source and test snippets using deterministic path, symbol, content, import, and test-relation signals.
+
+#### Scenario: Build context for a targeted bugfix
+
+- GIVEN the task names a symbol or behavior represented in the Workspace Index
+- WHEN the initial Context Pack is built
+- THEN matching snippets SHALL be ranked ahead of unrelated snippets
+- AND selected snippets SHALL include path, line range, score, matched terms, and a human-readable reason
+- AND no single file SHALL consume the entire snippet budget
+
+#### Scenario: No direct task match exists
+
+- GIVEN no indexed snippet directly matches the task
+- WHEN retrieval runs
+- THEN it SHALL select a small deterministic fallback from entrypoint and test files
+- AND it SHALL NOT include the entire workspace
+
+### CM-009 Current Diff Context
+
+The runtime SHALL retain the latest applied unified diff as a protected `current_diff` ContextItem for subsequent validation and repair decisions.
+
+#### Scenario: Apply a patch
+
+- GIVEN an approved patch is applied successfully
+- WHEN the tool observation is added to Context
+- THEN the previous current Diff SHALL be replaced by the newly applied normalized Diff
+- AND automatic compaction SHALL preserve the current Diff

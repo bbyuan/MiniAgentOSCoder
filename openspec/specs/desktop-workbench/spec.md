@@ -263,7 +263,9 @@ The workbench SHALL explain mode-specific completion expectations before executi
 
 - GIVEN a Bugfix Run is prepared
 - WHEN the user reviews preflight
-- THEN the workbench SHALL show that a summary, applied change, changed files, and a successful test after the latest change are required
+- THEN the workbench SHALL explain both valid completion paths
+- AND SHALL show that an applied change requires changed files and a successful post-change test
+- AND SHALL show that an already-correct result requires successful source inspection, a relevant successful test, and a completion explanation
 
 #### Scenario: Review a terminal result
 
