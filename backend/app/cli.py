@@ -82,6 +82,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     metrics = commands.add_parser("metrics", help="Show aggregate local run evidence")
     metrics.add_argument("--project")
+
+    benchmark = commands.add_parser("benchmark", help="Run isolated local benchmark tasks")
+    benchmark.add_argument("--manifest")
+    benchmark.add_argument("--output")
+    benchmark.add_argument("--config")
+    benchmark.add_argument("--provider", choices=["fixture", "configured"], default="fixture")
+    benchmark.add_argument("--variant", action="append", choices=["full_context", "task_only"])
     return parser
 
 
@@ -132,6 +139,16 @@ def execute(args: argparse.Namespace, client: DaemonClient) -> dict[str, Any]:
     if command == "metrics":
         suffix = f"?project_id={args.project}" if args.project else ""
         return client.request("GET", f"/evaluation/summary{suffix}")
+    if command == "benchmark":
+        from app.evaluation.benchmark import DEFAULT_CONFIG, DEFAULT_MANIFEST, DEFAULT_OUTPUT, VARIANTS, run_benchmark
+
+        return run_benchmark(
+            manifest_path=args.manifest or DEFAULT_MANIFEST,
+            output_dir=args.output or DEFAULT_OUTPUT,
+            config_path=args.config or DEFAULT_CONFIG,
+            provider=args.provider,
+            variants=args.variant or list(VARIANTS),
+        )
     raise RuntimeError(f"Unsupported command: {command}")
 
 

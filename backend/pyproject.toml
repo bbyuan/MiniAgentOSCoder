@@ -11,6 +11,7 @@ dependencies = [
 
 [project.scripts]
 miniagent = "app.cli:main"
+miniagent-benchmark = "app.evaluation.benchmark:main"
 
 [project.optional-dependencies]
 dev = [

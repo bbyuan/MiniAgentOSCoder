@@ -85,3 +85,30 @@ def test_cli_metrics_supports_project_scope() -> None:
     execute(args, client)
 
     assert client.calls == [("GET", "/evaluation/summary?project_id=project-1", None)]
+
+
+def test_cli_benchmark_runs_locally_without_daemon_calls(tmp_path, monkeypatch) -> None:
+    captured = {}
+
+    def fake_run_benchmark(**kwargs):
+        captured.update(kwargs)
+        return {"provider": kwargs["provider"], "aggregates": {}}
+
+    monkeypatch.setattr("app.evaluation.benchmark.run_benchmark", fake_run_benchmark)
+    client = FakeClient()
+    args = build_parser().parse_args([
+        "benchmark",
+        "--provider",
+        "fixture",
+        "--variant",
+        "full_context",
+        "--output",
+        str(tmp_path),
+    ])
+
+    result = execute(args, client)
+
+    assert result == {"provider": "fixture", "aggregates": {}}
+    assert captured["output_dir"] == str(tmp_path)
+    assert captured["variants"] == ["full_context"]
+    assert client.calls == []

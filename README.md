@@ -25,7 +25,7 @@ Shared daemon API contract:
 openspec/api-contract.md
 ```
 
-The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, checkpoint resume, replay, and reports.
+The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, checkpoint resume, replay, reports, local metrics, and isolated benchmarks.
 
 ## First Development Target
 
@@ -180,6 +180,15 @@ cd backend
 ```
 
 The demo copies `examples/python-bugfix` into a temporary workspace, scans it, builds a context pack, applies a patch through Patch Pipeline, runs tests before and after the patch, and writes artifacts under `runs/{run_id}/`.
+
+Offline Benchmark and Context ablation:
+
+```text
+make benchmark
+# or: cd backend && .venv/bin/python -m app.cli benchmark
+```
+
+The versioned tasks under `benchmarks/` run only in temporary fixture copies. The default Fixture Provider verifies the reproducibility of AgentRunLoop, Tool Gateway, Guard, Sandbox, Patch Pipeline, independent final tests, and report generation across `full_context` and `task_only`; it is deliberately labeled as runtime evidence rather than model quality. Use `--provider configured` only when you intentionally want to evaluate the locally configured model. JSON and Markdown reports include aligned metrics and candidate-minus-baseline deltas.
 
 One-command verification after dependencies are installed:
 
