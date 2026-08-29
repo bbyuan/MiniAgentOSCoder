@@ -20,6 +20,7 @@ import {
 } from "../api/client";
 import { translateMode, translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+import { CompletionEvidence } from "./CompletionEvidence";
 
 
 interface RunCenterProps {
@@ -281,6 +282,9 @@ function RunDetail({ detail, onArchive, onBack }: { detail: HistoryRunDetail; on
         <p>{run.final_message || run.termination_reason || t("history.noResult")}</p>
         <div className="historyEvidenceLine"><span>{t("history.tests")}</span><strong>{run.test_status}</strong><span>{t("history.traceEvents")}</span><strong>{detail.trace.event_count}</strong></div>
       </DetailSection>
+      <section className="historyDetailSection">
+        <CompletionEvidence assessment={run.completion} />
+      </section>
       <DetailSection title={t("history.changedFiles")}>
         {run.changed_files.length ? <ul className="historyFileList">{run.changed_files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : <p>{t("history.noChangedFiles")}</p>}
       </DetailSection>

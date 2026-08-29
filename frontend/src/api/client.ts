@@ -50,6 +50,23 @@ export interface RunSummary {
   repair_status?: string;
   last_checkpoint_id?: string;
   rolled_back_to?: string;
+  completion?: CompletionAssessment | null;
+  completion_expectations?: string[];
+}
+
+export interface CompletionCheck {
+  id: string;
+  passed: boolean;
+  evidence: string;
+  required: boolean;
+}
+
+export interface CompletionAssessment {
+  verdict: "passed" | "blocked";
+  mode: string;
+  checks: CompletionCheck[];
+  summary: string;
+  attempt: number;
 }
 
 export interface PlanStep {
@@ -423,6 +440,7 @@ export interface HistoryRun {
   patch_path: string;
   archived: boolean;
   duration_ms?: number;
+  completion?: CompletionAssessment | null;
 }
 
 export interface HistoryRunDetail {

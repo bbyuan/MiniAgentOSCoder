@@ -118,5 +118,5 @@ def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: 
     saved = reopened.get_run("legacy-run")
 
     assert saved is not None
-    assert saved["completion"] == {}
+    assert saved["completion"] is None
     reopened.close()

@@ -398,7 +398,7 @@ def _run_row(row: sqlite3.Row) -> dict[str, Any]:
         "output_tokens": int(row["output_tokens"]),
         "total_tokens": int(row["total_tokens"]),
         "test_status": row["test_status"],
-        "completion": _loads(row["completion_json"], {}) if "completion_json" in keys else {},
+        "completion": (_loads(row["completion_json"], {}) or None) if "completion_json" in keys else None,
         "report_path": row["report_path"],
         "trace_path": row["trace_path"],
         "patch_path": row["patch_path"],

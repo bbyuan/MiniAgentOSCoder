@@ -5,6 +5,7 @@ import {
   type AgentContract,
   type ApprovalRequest,
   type ContextPack,
+  type CompletionAssessment,
   type ContextCompactionResponse,
   type ExtensionResponse,
   type ExtensionSettings,
@@ -74,6 +75,8 @@ export function Workbench() {
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
   const [finalMessage, setFinalMessage] = useState("");
+  const [completion, setCompletion] = useState<CompletionAssessment | null>();
+  const [completionExpectations, setCompletionExpectations] = useState<string[]>([]);
   const [runBudget, setRunBudget] = useState<Record<string, number>>({});
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
@@ -185,6 +188,8 @@ export function Workbench() {
     setBusy(true);
     setError(null);
     setFinalMessage("");
+    setCompletion(undefined);
+    setCompletionExpectations([]);
     setRunBudget({});
     setApproval(null);
     setRecovery(undefined);
@@ -222,6 +227,7 @@ export function Workbench() {
       setRunId(run.run_id);
       setRunStatus(run.status);
       setContract(run.contract);
+      setCompletionExpectations(run.completion_expectations ?? []);
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
@@ -336,6 +342,7 @@ export function Workbench() {
           ]) => {
             setRunStatus(summary.status);
             setFinalMessage(summary.final_message || "");
+            setCompletion(summary.completion);
             setRunBudget(summary.budget || {});
             setArtifacts(latestArtifacts);
             setRecovery(latestRecovery);
@@ -400,6 +407,8 @@ export function Workbench() {
     setArtifacts(undefined);
     setTraceEvents([]);
     setFinalMessage("");
+    setCompletion(undefined);
+    setCompletionExpectations([]);
     setRunBudget({});
     setApproval(null);
     setRecovery(undefined);
@@ -632,6 +641,7 @@ export function Workbench() {
                   context={contextPack}
                   governance={governance}
                   extensions={extensions}
+                  completionExpectations={completionExpectations}
                   busy={busy}
                   onBack={discardPreparedRun}
                   onLaunch={launchRun}
@@ -658,6 +668,7 @@ export function Workbench() {
               status={runStatus}
               message={finalMessage}
               artifacts={artifacts}
+              completion={completion}
               onNewTask={() => resetRunState(true)}
             />
           ) : null}

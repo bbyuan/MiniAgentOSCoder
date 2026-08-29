@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Bot, Boxes, Braces, CheckCircle2, ShieldCheck, T
 import type { AgentContract, ContextPack, ExtensionResponse, GovernanceResponse, ModelProviderStatus, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
+import { CompletionEvidence } from "./CompletionEvidence";
 
 interface PreflightSummaryProps {
   mode: RunMode;
@@ -11,6 +12,7 @@ interface PreflightSummaryProps {
   context?: ContextPack;
   governance?: GovernanceResponse;
   extensions?: ExtensionResponse;
+  completionExpectations?: string[];
   busy: boolean;
   onBack: () => void;
   onLaunch: () => void;
@@ -25,6 +27,7 @@ export function PreflightSummary({
   context,
   governance,
   extensions,
+  completionExpectations,
   busy,
   onBack,
   onLaunch,
@@ -85,6 +88,8 @@ export function PreflightSummary({
           })}
         />
       </div>
+
+      <CompletionEvidence expectations={completionExpectations} preflight />
 
       {!ready ? (
         <div className="preflightWarning" role="alert">
