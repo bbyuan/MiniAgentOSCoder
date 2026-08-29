@@ -1130,6 +1130,37 @@ button.statusChip:hover {
   white-space: nowrap;
 }
 
+.capabilityLoadedSkills {
+  padding: 8px 11px 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.capabilityLoadedSkills > div {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.capabilityLoadedSkills code {
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  font-size: 8px;
+}
+
+.capabilityLoadedSkills small {
+  font-size: 8px;
+}
+
 .capabilityList {
   margin: 0;
   padding: 0;
@@ -2992,6 +3023,16 @@ button.statusChip:hover {
 }
 
 .extensionMeta b {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.extensionMeta b.available {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.extensionMeta b.loaded {
   color: var(--success);
   background: color-mix(in srgb, var(--success) 10%, transparent);
 }

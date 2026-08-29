@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from uuid import uuid4
 
-from app.models import AgentContract, ContextPack, RunLoopResult, RunPhase, RunState
+from app.models import ActiveSkill, AgentContract, ContextPack, RunLoopResult, RunPhase, RunState, SkillManifest
 from app.runtime.action_executor import ActionExecution, ActionExecutor
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import ModelClient
@@ -63,6 +64,8 @@ def execute_agent_run(
     tracer: TraceWriter,
     context_pack: ContextPack | None = None,
     prompt_cache: PromptCache | None = None,
+    skill_cards: list[SkillManifest] | None = None,
+    skill_loader: Callable[[str], ActiveSkill] | None = None,
 ) -> RunLoopResult:
     return AgentRunLoop(
         run_id=run_id,
@@ -70,4 +73,5 @@ def execute_agent_run(
         model_client=model_client,
         tracer=tracer,
         prompt_cache=prompt_cache,
-    ).run(task=task, contract=contract, context_pack=context_pack)
+        skill_loader=skill_loader,
+    ).run(task=task, contract=contract, context_pack=context_pack, skill_cards=skill_cards)

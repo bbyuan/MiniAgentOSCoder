@@ -18,6 +18,7 @@ from app.context import (
 )
 from app.guards import redact_secrets
 from app.models import (
+    ActiveSkill,
     ActionIR,
     AgentContract,
     ApprovalRequest,
@@ -131,22 +132,25 @@ class RunWorker:
                     profile=job.governance.sandbox_profile,
                     event_handler=lambda event, payload: job.tracer.event(job.run.run_id, event, payload),
                 )
-                active_skills = activate_skills(
-                    job.extension_catalog.skills,
-                    job.extension_settings.active_skill_ids,
-                    job.skills_registry_path,
-                ) if job.skills_registry_path is not None else []
-                for skill in active_skills:
-                    job.tracer.event(
-                        job.run.run_id,
-                        "skill.activated",
-                        {
-                            "skill_id": skill.id,
-                            "name": skill.name,
-                            "path": skill.path,
-                            "digest": skill.digest,
-                        },
-                    )
+                enabled_skill_ids = set(job.extension_settings.active_skill_ids)
+                skill_cards = [
+                    skill for skill in job.extension_catalog.skills
+                    if skill.id in enabled_skill_ids and skill.valid
+                ] if job.skills_registry_path is not None else []
+                job.tracer.event(
+                    job.run.run_id,
+                    "skill.cards.disclosed",
+                    {"skill_ids": [skill.id for skill in skill_cards], "count": len(skill_cards)},
+                )
+
+                def load_skill(skill_id: str) -> ActiveSkill:
+                    if job.skills_registry_path is None:
+                        raise ValueError("Skill registry is unavailable")
+                    return activate_skills(
+                        skill_cards,
+                        [skill_id],
+                        job.skills_registry_path,
+                    )[0]
                 enabled_hook_ids = set(job.extension_settings.enabled_hook_ids)
                 hooks = [
                     hook for hook in job.extension_catalog.hooks
@@ -208,11 +212,12 @@ class RunWorker:
                     take_steering=lambda: self.take_steering(job.run.run_id),
                     on_step=lambda step: setattr(job.run, "current_step", step),
                     prompt_cache=self.prompt_cache,
+                    skill_loader=load_skill,
                 ).run(
                     task=job.run.task,
                     contract=job.contract,
                     context_pack=job.context_pack,
-                    skills=active_skills,
+                    skill_cards=skill_cards,
                     mode=job.run.mode,
                     initial_steps=job.run.current_step,
                     initial_model_calls=max(0, int(job.run.budget.get("model_calls", 0))),

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from threading import Event
 
-from app.models import RunPhase
+from app.models import ActiveSkill, RunPhase, SkillManifest
 from app.runtime.agent_loop import execute_agent_run
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import QueuedStaticModelClient
@@ -78,6 +78,93 @@ def test_run_loop_allows_recovery_after_rejected_tool(tmp_path: Path) -> None:
     assert result.observations[0].ok is False
     assert result.observations[0].metadata["error_type"] == "ToolNotFound"
     assert "missing_tool" in client.requests[1].messages[1].content
+
+
+def test_run_loop_loads_skill_only_after_governed_request(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
+    client = QueuedStaticModelClient(
+        [
+            '{"type":"use_skill","rationale":"load review workflow","params":{"skill_id":"review"}}',
+            '{"type":"read_file","rationale":"inspect app","params":{"path":"app.py"}}',
+            '{"type":"finish","rationale":"done","params":{"message":"Reviewed."}}',
+        ]
+    )
+    contract = compile_agent_contract(ROOT / ".agent" / "config.yaml", task_mode="Chat")
+    gateway = ToolGateway(workspace_root=tmp_path, contract=contract)
+    for descriptor, handler, preflight in create_builtin_tool_registry(tmp_path):
+        gateway.register(descriptor, handler, preflight)
+    tracer = TraceWriter(tmp_path / "runs")
+    card = SkillManifest(
+        id="review",
+        name="Review",
+        description="Inspect correctness",
+        path=".agent/skills/review/SKILL.md",
+        default_tools=["read_file"],
+    )
+    loaded: list[str] = []
+
+    def load_skill(skill_id: str) -> ActiveSkill:
+        loaded.append(skill_id)
+        return ActiveSkill(
+            id=skill_id,
+            name="Review",
+            description="Inspect correctness",
+            path=card.path,
+            content="FULL SKILL INSTRUCTIONS: prioritize correctness.",
+            digest="digest-1",
+            default_tools=["read_file"],
+        )
+
+    result = execute_agent_run(
+        run_id="run-progressive-skill",
+        task="review app",
+        contract=contract,
+        gateway=gateway,
+        model_client=client,
+        tracer=tracer,
+        skill_cards=[card],
+        skill_loader=load_skill,
+    )
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.tool_calls == 1
+    assert loaded == ["review"]
+    assert "Inspect correctness" in client.requests[0].messages[1].content
+    assert "FULL SKILL INSTRUCTIONS" not in client.requests[0].messages[1].content
+    assert "FULL SKILL INSTRUCTIONS" in client.requests[1].messages[1].content
+    events = tracer.read_events("run-progressive-skill")
+    assert any(event["event"] == "skill.activated" for event in events)
+
+
+def test_run_loop_rejects_unavailable_skill_and_recovers(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
+    client = QueuedStaticModelClient(
+        [
+            '{"type":"use_skill","rationale":"load unknown","params":{"skill_id":"missing"}}',
+            '{"type":"read_file","rationale":"inspect app","params":{"path":"app.py"}}',
+            '{"type":"finish","rationale":"done","params":{"message":"Recovered."}}',
+        ]
+    )
+    contract = compile_agent_contract(ROOT / ".agent" / "config.yaml", task_mode="Chat")
+    gateway = ToolGateway(workspace_root=tmp_path, contract=contract)
+    for descriptor, handler, preflight in create_builtin_tool_registry(tmp_path):
+        gateway.register(descriptor, handler, preflight)
+    tracer = TraceWriter(tmp_path / "runs")
+
+    result = execute_agent_run(
+        run_id="run-missing-skill",
+        task="review app",
+        contract=contract,
+        gateway=gateway,
+        model_client=client,
+        tracer=tracer,
+        skill_cards=[],
+    )
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.observations[0].ok is False
+    assert result.observations[0].metadata["error_type"] == "SkillNotAvailable"
+    assert any(event["event"] == "skill.load_failed" for event in tracer.read_events("run-missing-skill"))
 
 
 def test_run_loop_rejects_finish_until_patch_has_successful_test(tmp_path: Path) -> None:

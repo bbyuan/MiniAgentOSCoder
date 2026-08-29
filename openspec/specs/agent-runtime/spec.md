@@ -228,3 +228,23 @@ The runtime SHALL avoid an identical provider request only when a bounded local 
 - WHEN the planner considers the response for reuse
 - THEN the runtime SHALL NOT store that response in Prompt Cache
 - AND a later matching planning turn SHALL require a provider request
+
+### AR-016 Adaptive Capability Disclosure
+
+The runtime SHALL derive a bounded capability phase for every planning turn and SHALL disclose only the registered tools relevant to inspection, work, verification, or repair. Disclosure SHALL reduce model context but SHALL NOT replace Tool Gateway authorization.
+
+#### Scenario: Begin with an inspection menu
+
+- GIVEN a code task has no successful workspace observations
+- WHEN the runtime prepares the first Planner request
+- THEN the request SHALL disclose read-only workspace and Git inspection tools
+- AND mutation and validation tools SHALL remain absent until the task reaches a compatible phase
+- AND Trace SHALL record the phase and disclosed tool names
+
+#### Scenario: Reopen repair capabilities after failed validation
+
+- GIVEN the Run has applied a patch and a validation action fails
+- WHEN the runtime builds the next capability menu
+- THEN the phase SHALL be `repair`
+- AND the menu SHALL include focused inspection, mutation, and validation tools allowed by the AgentContract
+- AND every selected action SHALL still pass the complete Guard, policy, approval, and Sandbox pipeline

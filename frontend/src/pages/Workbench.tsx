@@ -422,7 +422,7 @@ export function Workbench() {
         if (["policy.evaluated", "tool.executed", "tool.failed"].includes(event.event)) {
           daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
         }
-        if (["extension.updated", "skill.activated"].includes(event.event)
+        if (event.event === "extension.updated" || event.event.startsWith("skill.")
           || event.event.startsWith("mcp.")
           || event.event.startsWith("hook.")) {
           daemonApi.getExtensions(activeRunId).then(setExtensions).catch(() => undefined);

@@ -5,12 +5,14 @@ from collections.abc import Callable
 
 from app.models import (
     ActiveSkill,
+    ActionIR,
     ActionObservation,
     AgentContract,
     CompletionAssessment,
     ContextPack,
     RunLoopResult,
     RunPhase,
+    SkillManifest,
 )
 from app.runtime.action_executor import ActionExecutor
 from app.runtime.action_parser import ActionParseError
@@ -36,6 +38,7 @@ class AgentRunLoop:
         take_steering: Callable[[], list[str]] = lambda: [],
         on_step: Callable[[int], None] = lambda step: None,
         prompt_cache: PromptCache | None = None,
+        skill_loader: Callable[[str], ActiveSkill] | None = None,
     ) -> None:
         self.run_id = run_id
         self.gateway = gateway
@@ -46,6 +49,7 @@ class AgentRunLoop:
         self.take_steering = take_steering
         self.on_step = on_step
         self.prompt_cache = prompt_cache
+        self.skill_loader = skill_loader
         self.model_cache_hits = 0
 
     def run(
@@ -55,6 +59,7 @@ class AgentRunLoop:
         contract: AgentContract,
         context_pack: ContextPack | None = None,
         skills: list[ActiveSkill] | None = None,
+        skill_cards: list[SkillManifest] | None = None,
         mode: str | None = None,
         initial_steps: int = 0,
         initial_model_calls: int = 0,
@@ -82,6 +87,8 @@ class AgentRunLoop:
         last_completion: CompletionAssessment | None = None
         active_mode = mode or contract.program.mode
         active_task = task
+        loaded_skills = list(skills or [])
+        available_skill_cards = list(skill_cards or [])
 
         self.tracer.event(
             self.run_id,
@@ -136,7 +143,7 @@ class AgentRunLoop:
                 mode=active_mode,
                 allowed_effects=contract.effects.allow,
                 observations=observations,
-                active_skills=skills,
+                active_skills=loaded_skills,
             )
             self.tracer.event(
                 self.run_id,
@@ -155,7 +162,8 @@ class AgentRunLoop:
                     tracer=self.tracer,
                     context_pack=context_pack,
                     observations=observations,
-                    skills=skills,
+                    skills=loaded_skills,
+                    skill_cards=available_skill_cards,
                     prompt_cache=self.prompt_cache,
                 )
             except ActionParseError as exc:
@@ -213,6 +221,21 @@ class AgentRunLoop:
                     observations=observations,
                     completion=last_completion,
                 )
+            if decision.action.type == "use_skill":
+                observation = self._load_skill(
+                    decision.action,
+                    step=step,
+                    available=available_skill_cards,
+                    loaded=loaded_skills,
+                )
+                observations.append(observation)
+                self.tracer.event(
+                    self.run_id,
+                    "observation.recorded",
+                    {"observation": observation.to_dict()},
+                    role=decision.action.role,
+                )
+                continue
 
             if decision.action.type == "finish":
                 self.tracer.event(
@@ -375,6 +398,99 @@ class AgentRunLoop:
                 role="user",
             )
         return active_task, True
+
+    def _load_skill(
+        self,
+        action: ActionIR,
+        *,
+        step: int,
+        available: list[SkillManifest],
+        loaded: list[ActiveSkill],
+    ) -> ActionObservation:
+        self.tracer.event(
+            self.run_id,
+            "action.parsed",
+            {"action": action.to_dict(), "control_action": True},
+            role=action.role,
+        )
+        skill_id = action.params.get("skill_id")
+        available_ids = {skill.id for skill in available}
+        if not isinstance(skill_id, str) or skill_id not in available_ids:
+            error = "Skill is not enabled for this run"
+            self.tracer.event(
+                self.run_id,
+                "skill.load_failed",
+                {"skill_id": skill_id if isinstance(skill_id, str) else "", "error": error},
+                role=action.role,
+            )
+            return ActionObservation(
+                step=step,
+                action_type="use_skill",
+                ok=False,
+                error=error,
+                metadata={"skill_id": skill_id, "error_type": "SkillNotAvailable"},
+            )
+        existing = next((skill for skill in loaded if skill.id == skill_id), None)
+        if existing is not None:
+            return ActionObservation(
+                step=step,
+                action_type="use_skill",
+                ok=True,
+                output=f"Skill already loaded: {skill_id}",
+                metadata={"skill_id": skill_id, "already_loaded": True},
+            )
+        if self.skill_loader is None:
+            error = "Skill loader is unavailable"
+            self.tracer.event(
+                self.run_id,
+                "skill.load_failed",
+                {"skill_id": skill_id, "error": error},
+                role=action.role,
+            )
+            return ActionObservation(
+                step=step,
+                action_type="use_skill",
+                ok=False,
+                error=error,
+                metadata={"skill_id": skill_id, "error_type": "SkillLoaderUnavailable"},
+            )
+        try:
+            skill = self.skill_loader(skill_id)
+        except (OSError, TypeError, ValueError) as exc:
+            error = str(exc)
+            self.tracer.event(
+                self.run_id,
+                "skill.load_failed",
+                {"skill_id": skill_id, "error": error},
+                role=action.role,
+            )
+            return ActionObservation(
+                step=step,
+                action_type="use_skill",
+                ok=False,
+                error=error,
+                metadata={"skill_id": skill_id, "error_type": type(exc).__name__},
+            )
+        loaded.append(skill)
+        self.tracer.event(
+            self.run_id,
+            "skill.activated",
+            {
+                "skill_id": skill.id,
+                "name": skill.name,
+                "path": skill.path,
+                "digest": skill.digest,
+                "default_tools": skill.default_tools,
+            },
+            role=action.role,
+        )
+        return ActionObservation(
+            step=step,
+            action_type="use_skill",
+            ok=True,
+            output=f"Loaded Skill instructions: {skill.name}",
+            metadata={"skill_id": skill.id, "digest": skill.digest},
+        )
 
     def _cancelled_result(
         self,

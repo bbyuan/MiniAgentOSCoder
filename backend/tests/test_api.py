@@ -388,6 +388,7 @@ def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: P
         "app.api.runs.create_model_client",
         lambda config_path: QueuedStaticModelClient(
             [
+                '{"type":"use_skill","rationale":"load review workflow","params":{"skill_id":"code-review"}}',
                 '{"type":"read_file","rationale":"inspect","params":{"path":"app.py"}}',
                 '{"type":"finish","rationale":"done","params":{"message":"skill used"}}',
             ]
@@ -409,13 +410,15 @@ def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: P
         json={"active_skill_ids": [], "enabled_mcp_server_ids": [], "enabled_hook_ids": []},
     )
     trace = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
-    model_request = next(event for event in trace if event["event"] == "model.requested")
+    model_requests = [event for event in trace if event["event"] == "model.requested"]
 
     assert extensions["editable"] is False
     assert extensions["settings"]["active_skill_ids"] == ["code-review"]
     assert any(event["event"] == "skill.activated" for event in extensions["evidence"])
-    assert model_request["payload"]["request"]["metadata"]["active_skill_ids"] == ["code-review"]
-    assert "Prioritize correctness" not in json.dumps(model_request)
+    assert model_requests[0]["payload"]["request"]["metadata"]["available_skill_ids"] == ["code-review"]
+    assert model_requests[0]["payload"]["request"]["metadata"]["active_skill_ids"] == []
+    assert model_requests[1]["payload"]["request"]["metadata"]["active_skill_ids"] == ["code-review"]
+    assert "Prioritize correctness" not in json.dumps(model_requests)
     assert locked.status_code == 409
 
 

@@ -111,6 +111,12 @@ export function RuntimePanels({
     ? latestMenu.payload.tools.filter((tool): tool is string => typeof tool === "string")
     : [];
   const capabilityPhase = typeof latestMenu?.payload.phase === "string" ? latestMenu.payload.phase : "inspect";
+  const loadedSkillIds = Array.from(new Set(
+    trace
+      .filter((event) => event.event === "skill.activated")
+      .map((event) => event.payload.skill_id)
+      .filter((id): id is string => typeof id === "string"),
+  ));
 
   return (
     <aside className="inspector">
@@ -172,6 +178,14 @@ export function RuntimePanels({
               </div>
               <div className="capabilityToolList">
                 {disclosedTools.map((tool) => <code key={tool}>{tool}</code>)}
+              </div>
+              <div className="capabilityLoadedSkills">
+                <span>{t("control.loadedSkills")}</span>
+                <div>
+                  {loadedSkillIds.length > 0
+                    ? loadedSkillIds.map((skill) => <code key={skill}>{skill}</code>)
+                    : <small>{t("control.noLoadedSkills")}</small>}
+                </div>
               </div>
             </div>
 

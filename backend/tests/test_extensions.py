@@ -13,6 +13,7 @@ from app.models import (
     HookFailurePolicy,
     HookManifest,
     MCPServerManifest,
+    SkillManifest,
 )
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.extensions import load_extension_catalog, validate_extension_settings
@@ -60,6 +61,28 @@ def test_planner_discloses_only_active_skill_content() -> None:
 
     assert request.metadata["active_skill_ids"] == ["review"]
     assert "Prioritize correctness findings." in request.messages[1].content
+
+
+def test_planner_discloses_skill_card_without_loading_instructions() -> None:
+    card = SkillManifest(
+        id="review",
+        name="Review",
+        description="Inspect correctness and security",
+        path=".agent/skills/review/SKILL.md",
+        default_tools=["read_file", "search_code"],
+    )
+
+    request = build_action_request(
+        "review",
+        compile_agent_contract(ROOT / ".agent" / "config.yaml"),
+        [],
+        skill_cards=[card],
+    )
+
+    assert request.metadata["available_skill_ids"] == ["review"]
+    assert request.metadata["active_skill_ids"] == []
+    assert "Inspect correctness and security" in request.messages[1].content
+    assert "Prioritize correctness findings." not in request.messages[1].content
 
 
 def test_stdio_mcp_tool_is_registered_and_stays_behind_gateway_approval(tmp_path: Path) -> None:

@@ -32,6 +32,15 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
     () => [...(extensions?.evidence ?? [])].reverse().slice(0, 12),
     [extensions],
   );
+  const loadedSkillIds = useMemo(
+    () => new Set(
+      (extensions?.evidence ?? [])
+        .filter((event) => event.event === "skill.activated")
+        .map((event) => event.payload.skill_id)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+    [extensions],
+  );
 
   useEffect(() => {
     if (!extensions) return;
@@ -98,6 +107,11 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
                 <code>{skill.id}</code>
                 <em>{translateKnownText(locale, skill.risk)}</em>
                 {skill.recommended ? <b>{t("extensions.recommended")}</b> : null}
+                {settings.active_skill_ids.includes(skill.id) ? (
+                  <b className={loadedSkillIds.has(skill.id) ? "loaded" : "available"}>
+                    {t(loadedSkillIds.has(skill.id) ? "extensions.loaded" : "extensions.available")}
+                  </b>
+                ) : null}
               </span>
             </span>
           </label>
@@ -216,7 +230,12 @@ function EvidenceRow({ event }: { event: TraceEvent }) {
   const { locale } = usePreferences();
   const payload = event.payload;
   const identity = String(
-    payload.skill_id ?? payload.server_id ?? payload.hook_id ?? payload.tool ?? "runtime",
+    payload.skill_id
+      ?? (Array.isArray(payload.skill_ids) ? payload.skill_ids.join(", ") : undefined)
+      ?? payload.server_id
+      ?? payload.hook_id
+      ?? payload.tool
+      ?? "runtime",
   );
   const ok = payload.ok;
   return (
