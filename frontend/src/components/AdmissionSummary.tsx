@@ -80,7 +80,9 @@ export function AdmissionSummary({ admission }: AdmissionSummaryProps) {
           {actionableChecks.map((check) => (
             <div key={check.id} className={check.status}>
               {check.status === "blocked" ? <ShieldAlert size={15} /> : <AlertTriangle size={15} />}
-              <span>{t(`admission.check.${check.id}` as TranslationKey)}</span>
+              <span>{t((check.id === "model_route"
+                ? `admission.check.model_route.${check.status}`
+                : `admission.check.${check.id}`) as TranslationKey)}</span>
             </div>
           ))}
         </div>

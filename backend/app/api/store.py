@@ -12,6 +12,7 @@ from app.models import (
     ExtensionCatalog,
     ExtensionSettings,
     GovernanceSettings,
+    ModelRoutePlan,
     RunArtifacts,
     RunAdmission,
     RunLoopResult,
@@ -38,6 +39,7 @@ class RuntimeStore:
     approvals: dict[str, ApprovalRequest] = field(default_factory=dict)
     artifacts: dict[str, RunArtifacts] = field(default_factory=dict)
     admissions: dict[str, RunAdmission] = field(default_factory=dict)
+    model_routes: dict[str, ModelRoutePlan] = field(default_factory=dict)
     run_results: dict[str, RunLoopResult] = field(default_factory=dict)
     run_projects: dict[str, str] = field(default_factory=dict)
     governance: dict[str, GovernanceSettings] = field(default_factory=dict)

@@ -165,6 +165,7 @@ class AgentRunLoop:
                     skills=loaded_skills,
                     skill_cards=available_skill_cards,
                     prompt_cache=self.prompt_cache,
+                    capability_phase=capability_menu.phase,
                 )
             except ActionParseError as exc:
                 return self._failed_result(

@@ -44,7 +44,12 @@ export function PreflightSummary({
           onClick={ready ? undefined : onConfigureModel}
         >
           {ready ? <Bot size={17} /> : <KeyRound size={17} />}
-          <span><strong>{model?.model || t("top.modelUnchecked")}</strong><small>{t(ready ? "preflight.ready" : "preflight.needsSetup")}</small></span>
+          <span>
+            <strong>{model?.routing_enabled
+              ? t("modelRoute.profileCount", { count: model.configured_profiles ?? 0 })
+              : model?.model || t("top.modelUnchecked")}</strong>
+            <small>{t(ready ? "preflight.ready" : "preflight.needsSetup")}</small>
+          </span>
         </button>
       </header>
 

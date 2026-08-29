@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -106,6 +106,7 @@ export function RuntimePanels({
   const providerRequests = trace.filter((event) => event.event === "model.requested").length;
   const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const planningTurns = providerRequests + cacheHits;
+  const routedUsage = summarizeRoutedUsage(trace);
   const latestMenu = [...trace].reverse().find((event) => event.event === "capability.menu.built");
   const disclosedTools = Array.isArray(latestMenu?.payload.tools)
     ? latestMenu.payload.tools.filter((tool): tool is string => typeof tool === "string")
@@ -169,6 +170,21 @@ export function RuntimePanels({
                 <span><small>{t("control.cacheHits")}</small><strong>{cacheHits}</strong></span>
               </div>
             </div>
+
+            {routedUsage.length ? (
+              <div className="modelRouteEvidence">
+                <div className="modelGateHeading"><GitBranch size={15} /><strong>{t("control.modelRouteTitle")}</strong></div>
+                <div className="modelRouteUsageList">
+                  {routedUsage.map((usage) => (
+                    <div key={usage.profile}>
+                      <span><strong>{usage.profile}</strong><small>{usage.model}</small></span>
+                      <span>{t("control.modelRouteCalls", { count: usage.calls })}</span>
+                      <span>{t("control.modelRouteTokens", { count: usage.tokens })}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="capabilityMenuEvidence">
               <div className="modelGateHeading"><Layers3 size={15} /><strong>{t("control.capabilityMenuTitle")}</strong></div>
@@ -256,4 +272,33 @@ function effectLabel(effect: string, t: (key: TranslationKey, values?: Record<st
     "mcp.call": "effect.mcp.call",
   };
   return labels[effect] ? t(labels[effect]) : effect;
+}
+
+function summarizeRoutedUsage(trace: TraceEvent[]): Array<{ profile: string; model: string; calls: number; tokens: number }> {
+  const usage = new Map<string, { profile: string; model: string; calls: number; tokens: number }>();
+  for (const event of trace) {
+    if (event.event !== "model.responded") continue;
+    const response = isRecord(event.payload.response) ? event.payload.response : undefined;
+    const metadata = response && isRecord(response.metadata) ? response.metadata : undefined;
+    const profile = metadata && typeof metadata.route_profile === "string" ? metadata.route_profile : undefined;
+    if (!profile) continue;
+    const model = response && typeof response.model === "string" ? response.model : "-";
+    const tokenUsage = response && isRecord(response.usage) ? response.usage : {};
+    const input = numberValue(tokenUsage.input_tokens ?? tokenUsage.prompt_tokens);
+    const output = numberValue(tokenUsage.output_tokens ?? tokenUsage.completion_tokens);
+    const current = usage.get(profile) ?? { profile, model, calls: 0, tokens: 0 };
+    current.calls += 1;
+    current.tokens += input + output;
+    current.model = model;
+    usage.set(profile, current);
+  }
+  return [...usage.values()].sort((left, right) => right.calls - left.calls || left.profile.localeCompare(right.profile));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function numberValue(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
 }

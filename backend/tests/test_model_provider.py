@@ -12,9 +12,13 @@ from app.runtime.model_client import ModelMessage, ModelRequest
 from app.runtime.model_provider import (
     ModelConfigurationError,
     create_model_client,
+    create_routed_model_client,
     inspect_model_provider,
+    inspect_model_configuration,
     load_model_provider_config,
+    load_model_routing_config,
 )
+from app.runtime.model_routing import build_model_route_plan
 from app.runtime.openai_compatible import ModelProviderError, OpenAICompatibleModelClient
 from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
@@ -192,6 +196,92 @@ def test_model_provider_config_accepts_optional_token_prices(tmp_path: Path) -> 
 
     assert config.input_price_per_million == 0.14
     assert config.output_price_per_million == 0.28
+
+
+def test_model_configuration_status_summarizes_routed_profiles(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """models:
+  default_model: primary-model
+  api_key_env: PRIMARY_KEY
+  routing:
+    enabled: true
+    default_profile: primary
+    fallback_profiles: [economy]
+  profiles:
+    primary:
+      model: primary-model
+    economy:
+      model: economy-model
+      api_key_env: ECONOMY_KEY
+""",
+        encoding="utf-8",
+    )
+
+    status = inspect_model_configuration(config_path, environ={"ECONOMY_KEY": "secret"})
+
+    assert status.configured is True
+    assert status.routing_enabled is True
+    assert status.configured_profiles == 1
+    assert status.total_profiles == 2
+    assert "secret" not in str(status.to_dict())
+
+
+def test_routed_client_uses_selected_profile_model_and_credential(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """models:
+  default_model: primary-model
+  api_key_env: PRIMARY_KEY
+  base_url: https://provider.example/v1
+  routing:
+    enabled: true
+    phase_routes:
+      inspect: economy
+    fallback_profiles: [default]
+  profiles:
+    economy:
+      model: economy-model
+      api_key_env: ECONOMY_KEY
+""",
+        encoding="utf-8",
+    )
+    environ = {"PRIMARY_KEY": "primary-secret", "ECONOMY_KEY": "economy-secret"}
+    routing = load_model_routing_config(config_path)
+    plan = build_model_route_plan(
+        run_id="run-routed-provider",
+        mode="Bugfix",
+        context_tokens=100,
+        config=routing,
+        environ=environ,
+    )
+    transport = RecordingTransport(
+        response={
+            "model": "economy-model",
+            "choices": [{"message": {"content": '{"type":"finish","rationale":"done","params":{"message":"done"}}'}}],
+            "usage": {"prompt_tokens": 4, "completion_tokens": 2},
+        }
+    )
+    client = create_routed_model_client(
+        config_path,
+        plan,
+        environ=environ,
+        transport=transport,
+    )
+    request = ModelRequest(
+        messages=[ModelMessage(role="user", content="inspect")],
+        metadata={"capability_phase": "inspect"},
+    )
+
+    selection = client.route_request(request)
+    response = client.complete(request)
+
+    assert selection.profile_id == "economy"
+    assert transport.calls[0]["headers"]["Authorization"] == "Bearer economy-secret"
+    assert transport.calls[0]["payload"]["model"] == "economy-model"
+    assert response.metadata["route_profile"] == "economy"
+    assert "primary-secret" not in str(response.to_dict())
+    assert "economy-secret" not in str(response.to_dict())
 
 
 @pytest.mark.parametrize("value", ["invalid", -0.01, ".nan", True])

@@ -28,6 +28,7 @@ def make_client() -> TestClient:
     store.approvals.clear()
     store.artifacts.clear()
     store.admissions.clear()
+    store.model_routes.clear()
     store.run_results.clear()
     store.run_projects.clear()
     store.governance.clear()
@@ -148,6 +149,99 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
         "wall_time_seconds",
     }
     assert any(event["event"] == "run.admission.assessed" for event in trace["events"])
+    assert run["model_route"]["strategy"] == "single"
+    assert run["model_route"]["can_start"] is True
+
+
+def test_run_exposes_governed_model_route_plan(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        """agent:
+  id: routed-agent
+runtime:
+  max_steps: 10
+models:
+  provider: openai-compatible
+  default_model: primary-model
+  api_key_env: ROUTE_PRIMARY_KEY
+  base_url: https://provider.example/v1
+  routing:
+    enabled: true
+    default_profile: default
+    phase_routes:
+      inspect: economy
+      verify: economy
+    fallback_profiles: [default]
+  profiles:
+    economy:
+      model: economy-model
+      api_key_env: ROUTE_ECONOMY_KEY
+      context_window: 64000
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROUTE_PRIMARY_KEY", "primary-secret")
+    monkeypatch.setenv("ROUTE_ECONOMY_KEY", "economy-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect routing", "mode": "Bugfix"},
+    )
+    run = response.json()
+    route = client.get(f"/runs/{run['run_id']}/model-route").json()
+    trace = client.get(f"/runs/{run['run_id']}/trace").json()["events"]
+
+    assert response.status_code == 200
+    assert route["enabled"] is True
+    assert route["strategy"] == "policy"
+    assert route["can_start"] is True
+    assert route["routes"]["inspect"]["profile_id"] == "economy"
+    assert route["routes"]["work"]["profile_id"] == "default"
+    assert route["routes"]["repair"]["model"] == "primary-model"
+    assert any(event["event"] == "model.route.planned" for event in trace)
+    assert "primary-secret" not in json.dumps(route)
+    assert "economy-secret" not in json.dumps(route)
+
+
+def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        """agent:
+  id: blocked-route-agent
+runtime:
+  max_steps: 10
+models:
+  default_model: tiny-model
+  api_key_env: TINY_MODEL_KEY
+  context_window: 1
+  routing:
+    enabled: true
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("TINY_MODEL_KEY", "tiny-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect routing", "mode": "Chat"},
+    ).json()
+
+    def unexpected_routed_client(config_path, route_plan):
+        raise AssertionError("routed client must not be created for a blocked route")
+
+    monkeypatch.setattr("app.api.runs.create_routed_model_client", unexpected_routed_client)
+
+    response = client.post(f"/runs/{run['run_id']}/start")
+
+    assert run["model_route"]["can_start"] is False
+    assert run["admission"]["can_start"] is False
+    assert response.status_code == 409
+    assert "model_route" in response.json()["detail"]
 
 
 def test_follow_up_run_inherits_bounded_context_and_conversation_lineage(tmp_path: Path) -> None:

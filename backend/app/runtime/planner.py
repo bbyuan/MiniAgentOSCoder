@@ -28,6 +28,7 @@ def build_action_request(
     skills: list[ActiveSkill] | None = None,
     skill_cards: list[SkillManifest] | None = None,
     model: str | None = None,
+    capability_phase: str = "inspect",
 ) -> ModelRequest:
     tool_lines = [
         f"- {tool.name}: {tool.description} effect={tool.effect}, risk={tool.risk.value}, "
@@ -119,6 +120,7 @@ def build_action_request(
             "active_skill_ids": [skill.id for skill in skills or []],
             "available_skill_ids": [skill.id for skill in skill_cards or []],
             "max_output_tokens": contract.cost_envelope.max_output_tokens,
+            "capability_phase": capability_phase,
         },
     )
 
@@ -135,6 +137,7 @@ def plan_next_action(
     skills: list[ActiveSkill] | None = None,
     skill_cards: list[SkillManifest] | None = None,
     prompt_cache: PromptCache | None = None,
+    capability_phase: str = "inspect",
 ) -> PlannerDecision:
     request = build_action_request(
         task=task,
@@ -145,8 +148,18 @@ def plan_next_action(
         skills=skills,
         skill_cards=skill_cards,
         model=_model_identity(model_client),
+        capability_phase=capability_phase,
     )
-    request.metadata["model_cache_namespace"] = _model_cache_namespace(model_client)
+    route_request = getattr(model_client, "route_request", None)
+    if callable(route_request):
+        selection = route_request(request)
+        tracer.event(
+            run_id,
+            "model.route.selected",
+            selection.to_dict(),
+            role="Orchestrator",
+        )
+    request.metadata["model_cache_namespace"] = _model_cache_namespace(model_client, request)
     cached = prompt_cache.get(request) if prompt_cache is not None else None
     if cached is not None:
         request_digest, response, action_type = cached
@@ -245,7 +258,12 @@ def _model_identity(model_client: ModelClient) -> str:
     return type(model_client).__name__
 
 
-def _model_cache_namespace(model_client: ModelClient) -> str:
+def _model_cache_namespace(model_client: ModelClient, request: ModelRequest | None = None) -> str:
+    namespace_for = getattr(model_client, "cache_namespace_for", None)
+    if request is not None and callable(namespace_for):
+        routed = namespace_for(request)
+        if isinstance(routed, str) and routed:
+            return routed
     parts = [type(model_client).__name__, _model_identity(model_client)]
     base_url = getattr(model_client, "base_url", None)
     if isinstance(base_url, str):

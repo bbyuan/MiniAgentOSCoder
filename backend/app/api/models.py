@@ -7,8 +7,7 @@ from fastapi import APIRouter, HTTPException
 from app.api.store import store
 from app.runtime.model_provider import (
     ModelConfigurationError,
-    inspect_model_provider,
-    load_model_provider_config,
+    inspect_model_configuration,
 )
 from app.runtime.paths import default_agent_dir
 
@@ -26,8 +25,7 @@ def get_model_status(project_id: str | None = None) -> dict[str, object]:
 
     config_path = _find_config_path(project.path)
     try:
-        config = load_model_provider_config(config_path)
-        status = inspect_model_provider(config)
+        status = inspect_model_configuration(config_path)
     except (ModelConfigurationError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return status.to_dict()

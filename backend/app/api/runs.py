@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from app.api.store import ProjectRecord, store
 from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory, explain_context_items, refresh_context_pack
 from app.guards import redact_secrets
-from app.models import ContextItem, GovernanceSettings, MemoryScope, RunAdmission, RunLoopResult, RunPhase, RunState
+from app.models import AdmissionCheck, ContextItem, GovernanceSettings, MemoryScope, RunAdmission, RunLoopResult, RunPhase, RunState
 from app.runtime.admission import build_run_admission
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.agent_loop import create_runtime_run
@@ -23,8 +23,11 @@ from app.runtime.model_provider import (
     ModelConfigurationError,
     ModelProviderConfig,
     create_model_client,
+    create_routed_model_client,
     load_model_provider_config,
+    load_model_routing_config,
 )
+from app.runtime.model_routing import blocked_model_route_plan, build_model_route_plan
 from app.runtime.paths import default_agent_dir
 from app.runtime.recovery import RecoveryError, RunRecovery
 from app.runtime.run_artifact_writer import RunArtifactWriter
@@ -141,6 +144,12 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         "run.admission.assessed",
         {"trigger": "prepare", **_admission_trace_payload(admission)},
     )
+    tracer.event(
+        run.run_id,
+        "model.route.planned",
+        {"trigger": "prepare", **_model_route_trace_payload(store.model_routes[run.run_id])},
+        role="Orchestrator",
+    )
     if parent_run is not None:
         tracer.event(
             run.run_id,
@@ -168,6 +177,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         "contract": contract.to_dict(),
         "artifacts": artifacts.to_dict(),
         "admission": admission.to_dict(),
+        "model_route": store.model_routes[run.run_id].to_dict(),
         "completion_expectations": completion_expectations(run.mode),
     }
 
@@ -208,6 +218,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "applied_patches": run.applied_patches,
         "memory_refs": run.memory_refs,
         "admission": store.admissions.get(run_id).to_dict() if run_id in store.admissions else None,
+        "model_route": store.model_routes.get(run_id).to_dict() if run_id in store.model_routes else None,
     }
 
 
@@ -230,6 +241,14 @@ def get_run_admission(run_id: str) -> dict[str, object]:
     return _refresh_run_admission(run_id).to_dict()
 
 
+@router.get("/{run_id}/model-route")
+def get_run_model_route(run_id: str) -> dict[str, object]:
+    if run_id not in store.runs:
+        raise HTTPException(status_code=404, detail="Run not found")
+    _refresh_run_admission(run_id)
+    return store.model_routes[run_id].to_dict()
+
+
 @router.post("/{run_id}/start", status_code=202)
 def start_run(run_id: str) -> dict[str, object]:
     run = store.runs.get(run_id)
@@ -248,13 +267,24 @@ def start_run(run_id: str) -> dict[str, object]:
         "run.admission.assessed",
         {"trigger": "launch", **_admission_trace_payload(admission)},
     )
+    route_plan = store.model_routes[run_id]
+    tracer.event(
+        run_id,
+        "model.route.planned",
+        {"trigger": "launch", **_model_route_trace_payload(route_plan)},
+        role="Orchestrator",
+    )
     if not admission.can_start:
         failed = [check.id for check in admission.checks if check.status == "blocked"]
         raise HTTPException(status_code=409, detail=f"Run admission blocked: {', '.join(failed)}")
 
     config_path = _find_config_path(project.path)
     try:
-        model_client = create_model_client(config_path)
+        model_client = (
+            create_routed_model_client(config_path, route_plan)
+            if route_plan.enabled
+            else create_model_client(config_path)
+        )
     except ModelConfigurationError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -498,6 +528,7 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
         "contract": contract.to_dict(),
         "artifacts": artifacts.to_dict(),
         "admission": store.admissions[run_id].to_dict(),
+        "model_route": store.model_routes[run_id].to_dict(),
     }
 
 
@@ -629,10 +660,21 @@ def _refresh_run_admission(run_id: str) -> RunAdmission:
     if run is None or contract is None or context_pack is None or project is None:
         raise HTTPException(status_code=404, detail="Run not found")
 
+    config_path = _find_config_path(project.path)
+    context_tokens = context_pack.budget_report.used_tokens if context_pack.budget_report else 0
     try:
-        model_config = load_model_provider_config(_find_config_path(project.path))
-    except ModelConfigurationError:
+        routing_config = load_model_routing_config(config_path)
+        route_plan = build_model_route_plan(
+            run_id=run_id,
+            mode=run.mode,
+            context_tokens=context_tokens,
+            config=routing_config,
+        )
+        model_config = _route_pricing_config(routing_config, route_plan)
+    except (ModelConfigurationError, ValueError) as exc:
+        route_plan = blocked_model_route_plan(run_id, run.mode, context_tokens, str(exc))
         model_config = ModelProviderConfig()
+    store.model_routes[run_id] = route_plan
     settings = store.extension_settings.get(run_id)
     enabled_extensions = 0
     if settings is not None:
@@ -649,6 +691,28 @@ def _refresh_run_admission(run_id: str) -> RunAdmission:
         model_config=model_config,
         history_samples=store.history.list_resource_samples(project.project_id, run.mode),
         enabled_extensions=enabled_extensions,
+    )
+    admission.checks.append(
+        AdmissionCheck(
+            id="model_route",
+            status="blocked" if not route_plan.can_start else "warning" if route_plan.decision == "fallback" else "passed",
+            summary=(
+                "No feasible model route is available"
+                if not route_plan.can_start
+                else "One or more phases use an explicit fallback"
+                if route_plan.decision == "fallback"
+                else "Every execution phase has a feasible model route"
+            ),
+            evidence=f"strategy={route_plan.strategy}; decision={route_plan.decision}",
+        )
+    )
+    admission.can_start = admission.can_start and route_plan.can_start
+    admission.decision = (
+        "blocked"
+        if not admission.can_start
+        else "warning"
+        if any(check.status == "warning" for check in admission.checks)
+        else "ready"
     )
     store.admissions[run_id] = admission
     return admission
@@ -671,6 +735,52 @@ def _admission_trace_payload(admission: RunAdmission) -> dict[str, object]:
             for check in admission.checks
         ],
     }
+
+
+def _model_route_trace_payload(route_plan) -> dict[str, object]:
+    return {
+        "enabled": route_plan.enabled,
+        "strategy": route_plan.strategy,
+        "decision": route_plan.decision,
+        "can_start": route_plan.can_start,
+        "mode": route_plan.mode,
+        "context_tokens": route_plan.context_tokens,
+        "routes": {
+            phase: {
+                "preferred_profile_id": route.preferred_profile_id,
+                "profile_id": route.profile_id,
+                "provider": route.provider,
+                "model": route.model,
+                "reason": route.reason,
+                "fallback": route.fallback,
+                "configured": route.configured,
+                "context_window": route.context_window,
+                "issues": route.issues,
+            }
+            for phase, route in route_plan.routes.items()
+        },
+        "issues": route_plan.issues,
+    }
+
+
+def _route_pricing_config(routing_config, route_plan) -> ModelProviderConfig:
+    selected = {
+        route.profile_id
+        for route in route_plan.routes.values()
+        if route.configured and route.profile_id in routing_config.profiles
+    }
+    profiles = [routing_config.profiles[profile_id] for profile_id in selected]
+    if not profiles:
+        return ModelProviderConfig()
+    if any(
+        profile.input_price_per_million is None or profile.output_price_per_million is None
+        for profile in profiles
+    ):
+        return ModelProviderConfig()
+    return ModelProviderConfig(
+        input_price_per_million=max(float(profile.input_price_per_million) for profile in profiles),
+        output_price_per_million=max(float(profile.output_price_per_million) for profile in profiles),
+    )
 
 
 def _validate_conversation_parent(parent_run_id: str | None, project_id: str) -> dict[str, object] | None:

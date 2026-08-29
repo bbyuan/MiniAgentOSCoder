@@ -16,6 +16,7 @@ import {
   type MemoryInput,
   type MemoryResponse,
   type ModelProviderStatus,
+  type ModelRoutePlan,
   type OpenProjectResponse,
   type RecoveryResponse,
   type RunArtifacts,
@@ -34,6 +35,7 @@ import { ApprovalPanel } from "../components/ApprovalPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
+import { ModelRouteSummary } from "../components/ModelRouteSummary";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
 import { ProjectSidebar } from "../components/ProjectSidebar";
@@ -77,6 +79,7 @@ export function Workbench() {
   const [runStatus, setRunStatus] = useState("idle");
   const [contract, setContract] = useState<AgentContract | undefined>();
   const [admission, setAdmission] = useState<RunAdmission | undefined>();
+  const [modelRoute, setModelRoute] = useState<ModelRoutePlan | undefined>();
   const [contextPack, setContextPack] = useState<ContextPack | undefined>();
   const [contextBusy, setContextBusy] = useState(false);
   const [memory, setMemory] = useState<MemoryResponse>();
@@ -238,6 +241,7 @@ export function Workbench() {
       setRunStatus(resumed.status);
       setContract(resumed.contract);
       setAdmission(resumed.admission);
+      setModelRoute(resumed.model_route);
       setContextPack(contextResponse);
       setArtifacts(resumed.artifacts);
       setRecovery(recoveryResponse);
@@ -358,6 +362,7 @@ export function Workbench() {
       setRunStatus(run.status);
       setContract(run.contract);
       setAdmission(run.admission);
+      setModelRoute(run.model_route);
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
@@ -401,12 +406,14 @@ export function Workbench() {
     setError(null);
     setRuntimeDetailsOpen(false);
     try {
-      const [latestTrace, latestAdmission] = await Promise.all([
+      const [latestTrace, latestAdmission, latestModelRoute] = await Promise.all([
         daemonApi.getTrace(runId),
         daemonApi.getAdmission(runId),
+        daemonApi.getModelRoute(runId),
       ]);
       setTraceEvents(latestTrace.events);
       setAdmission(latestAdmission);
+      setModelRoute(latestModelRoute);
       if (!latestAdmission.can_start) {
         setError(t("admission.launchBlocked"));
         return;
@@ -582,6 +589,7 @@ export function Workbench() {
     setRunStatus("idle");
     setContract(undefined);
     setAdmission(undefined);
+    setModelRoute(undefined);
     setContextPack(undefined);
     setMemory(undefined);
     setGovernance(undefined);
@@ -681,14 +689,16 @@ export function Workbench() {
     setError(null);
     try {
       const result = await daemonApi.compactContext(runId, targetRatio, confirmed);
-      const [latestContext, latestRecovery, latestAdmission] = await Promise.all([
+      const [latestContext, latestRecovery, latestAdmission, latestModelRoute] = await Promise.all([
         daemonApi.getContext(runId),
         daemonApi.getCheckpoints(runId),
         daemonApi.getAdmission(runId),
+        daemonApi.getModelRoute(runId),
       ]);
       setContextPack(latestContext);
       setRecovery(latestRecovery);
       setAdmission(latestAdmission);
+      setModelRoute(latestModelRoute);
       return result;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.compactContext"));
@@ -775,13 +785,15 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.updateExtensions(runId, settings);
-      const [latestTrace, latestAdmission] = await Promise.all([
+      const [latestTrace, latestAdmission, latestModelRoute] = await Promise.all([
         daemonApi.getTrace(runId),
         daemonApi.getAdmission(runId),
+        daemonApi.getModelRoute(runId),
       ]);
       setExtensions(latestExtensions);
       setTraceEvents(latestTrace.events);
       setAdmission(latestAdmission);
+      setModelRoute(latestModelRoute);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
       throw caught;
@@ -808,7 +820,11 @@ export function Workbench() {
       <TopBar
         project={project ? basename(project.path) : t("top.noProject")}
         status={displayStatus}
-        model={modelStatus?.configured ? modelStatus.model : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
+        model={modelStatus?.configured
+          ? modelStatus.routing_enabled
+            ? t("modelRoute.profileCount", { count: modelStatus.configured_profiles ?? 0 })
+            : modelStatus.model
+          : modelStatus ? t("top.modelSetup") : t("top.modelUnchecked")}
         modelConfigured={modelStatus?.configured}
         onOpenHistory={() => openHistory()}
         onConfigureModel={() => setModelSetupOpen(true)}
@@ -875,6 +891,7 @@ export function Workbench() {
                   onConfigureModel={() => setModelSetupOpen(true)}
                 >
                   <AdmissionSummary admission={admission} />
+                  <ModelRouteSummary plan={modelRoute} />
                   <AgentOSControlPlane
                     variant="manifest"
                     mode={mode}

@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, a governed Tool Registry with workspace, validation, read-only Git, approved command, and patch tools, task-aware Context Pack retrieval, protected workspace `AGENTS.md` instructions and current Diffs, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, repair and rollback, mode-aware Completion Guard, pre-execution resource admission, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, a governed Tool Registry with workspace, validation, read-only Git, approved command, and patch tools, task-aware Context Pack retrieval, protected workspace `AGENTS.md` instructions and current Diffs, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, repair and rollback, mode-aware Completion Guard, pre-execution resource admission, governed phase-aware model routing, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -146,9 +146,44 @@ models:
 
 Omit either field to display token forecasts without a monetary estimate. Pricing never affects admission and is not treated as billing reconciliation.
 
+### Optional Model Routing
+
+The legacy root model configuration remains the default and needs no migration. To route different orchestrator phases explicitly, add named Profiles and policy:
+
+```yaml
+models:
+  provider: openai-compatible
+  default_model: primary-model
+  api_key_env: PRIMARY_MODEL_KEY
+  base_url: https://provider.example/v1
+
+  routing:
+    enabled: true
+    default_profile: primary
+    phase_routes:
+      inspect: economy
+      work: primary
+      verify: economy
+      repair: primary
+    mode_routes:
+      Review: economy
+    fallback_profiles: [primary]
+
+  profiles:
+    primary:
+      model: primary-model
+      context_window: 128000
+    economy:
+      model: economy-model
+      api_key_env: ECONOMY_MODEL_KEY
+      context_window: 64000
+```
+
+Profiles inherit omitted Provider options from the root model mapping. Route precedence is mode policy, phase policy, then default Profile. Only `fallback_profiles` may replace an unavailable or context-limited preferred Profile. Preflight blocks before model creation when any required phase has no feasible route. Profile credentials remain environment variables and never appear in route-plan APIs or Trace.
+
 In the desktop app, use **Configure model** when a project reports that its Provider is unavailable. The Rust host stores the key in the operating system credential manager (macOS Keychain, Windows Credential Manager, or Linux Secret Service), restarts the managed Daemon, and injects the credential only into that process environment. The Workbench never writes it to browser storage or a project file. Browser development continues to use the ignored root `.env` flow above.
 
-Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/admission` refreshes the forecast and deterministic launch checks; start repeats that assessment and returns `409` before model creation when a hard check is blocked. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
+Run execution uses a two-step API: `POST /runs` prepares a managed run and `POST /runs/{run_id}/start` schedules it. `GET /runs/{run_id}/admission` refreshes the forecast and deterministic launch checks, while `GET /runs/{run_id}/model-route` explains the selected Profile for inspection, work, verification, and repair. Start repeats both assessments and returns `409` before model creation when a hard check is blocked. `GET /runs/{run_id}/events/stream` provides cursor-based live events. Terminal runs write `runs/{run_id}/report.md`, applied patches accumulate in `patch.diff`, and `POST /runs/{run_id}/replay` returns a read-only event snapshot for the workbench timeline and future CLI use.
 
 The Context view shows prompt budget, token composition, selection state, and audited compaction. The Memory view separates read-only Run memory, editable project memory, and explicitly confirmed long-term memory. Persistent entries live under the opened workspace's `.agent/memory/`; secret-like content and path escapes are rejected by the Daemon.
 

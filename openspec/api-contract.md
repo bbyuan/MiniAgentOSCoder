@@ -69,6 +69,13 @@ Response:
     "resources": {},
     "checks": []
   },
+  "model_route": {
+    "enabled": false,
+    "strategy": "single",
+    "decision": "ready",
+    "can_start": true,
+    "routes": {}
+  },
   "completion_expectations": [
     "final_message",
     "applied_change",
@@ -81,6 +88,10 @@ Response:
 ### `GET /runs/{run_id}/admission`
 
 Refresh and return the pre-execution resource forecast and deterministic admission checks. Resource forecasts contain separate `low`, `expected`, `high`, and enforced `ceiling` values for model calls, tool calls, input/output tokens, and wall time. Cost is returned only when both provider token prices are configured. History calibration reads bounded numeric metrics only.
+
+### `GET /runs/{run_id}/model-route`
+
+Compile and return the safe model route plan for `inspect`, `work`, `verify`, and `repair`. Each route identifies preferred and selected Profile ids, concrete model, Provider type, policy/fallback reason, context window, and readiness. The response excludes credential values, request content, and private Provider payloads. Legacy model configuration returns a compatible single-Profile plan.
 
 ### `GET /runs/{run_id}/conversation`
 
@@ -130,7 +141,7 @@ Return run status, active phase, budget, current plan, latest observation, mode-
 
 ### `POST /runs/{run_id}/start`
 
-Refresh admission, validate the active model Provider, and schedule a prepared run on the local worker.
+Refresh admission and model routing, validate selected model Profiles, and schedule a prepared run on the local worker.
 
 Response:
 

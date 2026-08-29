@@ -14,6 +14,7 @@ from app.models.extensions import (
     SkillManifest,
 )
 from app.models.memory import MemoryEntry, MemoryScope
+from app.models.model_routing import ModelRoutePlan, ModelRouteProfile, ModelRouteSelection
 from app.models.governance import (
     DecisionStatus,
     GovernanceSettings,
@@ -65,6 +66,9 @@ __all__ = [
     "HookManifest",
     "MemoryEntry",
     "MemoryScope",
+    "ModelRoutePlan",
+    "ModelRouteProfile",
+    "ModelRouteSelection",
     "MCPServerManifest",
     "PolicySet",
     "PolicyEvaluation",

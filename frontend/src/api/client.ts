@@ -77,6 +77,40 @@ export interface RunAdmission {
   assumptions: string[];
 }
 
+export interface ModelRouteSelection {
+  phase: "inspect" | "work" | "verify" | "repair";
+  preferred_profile_id: string;
+  profile_id: string;
+  provider: string;
+  model: string;
+  reason: "mode_policy" | "phase_policy" | "default_policy" | "fallback_unavailable" | "fallback_context_window" | "no_feasible_profile";
+  fallback: boolean;
+  configured: boolean;
+  context_window?: number | null;
+  issues: string[];
+}
+
+export interface ModelRoutePlan {
+  run_id: string;
+  enabled: boolean;
+  strategy: "single" | "policy";
+  decision: "ready" | "fallback" | "blocked";
+  can_start: boolean;
+  mode: RunMode;
+  context_tokens: number;
+  default_profile_id: string;
+  routes: Record<string, ModelRouteSelection>;
+  profiles: Array<{
+    profile_id: string;
+    provider: string;
+    model: string;
+    configured: boolean;
+    context_window?: number | null;
+    issues: string[];
+  }>;
+  issues: string[];
+}
+
 export interface RunSummary {
   run_id: string;
   conversation_id?: string;
@@ -99,6 +133,7 @@ export interface RunSummary {
   completion?: CompletionAssessment | null;
   completion_expectations?: string[];
   admission?: RunAdmission;
+  model_route?: ModelRoutePlan;
 }
 
 export interface ConversationTurn {
@@ -414,6 +449,9 @@ export interface ModelProviderStatus {
   base_url: string;
   configured: boolean;
   issues: string[];
+  routing_enabled?: boolean;
+  configured_profiles?: number;
+  total_profiles?: number;
 }
 
 export interface StartRunResponse {
@@ -433,6 +471,7 @@ export interface ResumeRunResponse {
   contract: AgentContract;
   artifacts: RunArtifacts;
   admission: RunAdmission;
+  model_route: ModelRoutePlan;
 }
 
 export interface ApprovalRequest {
@@ -675,6 +714,7 @@ export const daemonApi = {
     }),
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
   getAdmission: (runId: string) => request<RunAdmission>(`/runs/${runId}/admission`),
+  getModelRoute: (runId: string) => request<ModelRoutePlan>(`/runs/${runId}/model-route`),
   getConversation: (runId: string) => request<ConversationResponse>(`/runs/${runId}/conversation`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),
