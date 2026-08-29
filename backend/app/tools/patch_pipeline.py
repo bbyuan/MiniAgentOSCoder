@@ -82,7 +82,7 @@ class PatchPipeline:
         unified_diff = self.normalize(unified_diff)
         summary = self.summarize(unified_diff)
         completed = subprocess.run(
-            ["git", "apply", "--check", "--no-index", "--unsafe-paths", "-"],
+            self._git_apply_command(check=True),
             cwd=self.workspace_root,
             input=unified_diff,
             text=True,
@@ -97,7 +97,7 @@ class PatchPipeline:
         unified_diff = self.normalize(unified_diff)
         summary = self.check_apply(unified_diff)
         completed = subprocess.run(
-            ["git", "apply", "--no-index", "--unsafe-paths", "-"],
+            self._git_apply_command(check=False),
             cwd=self.workspace_root,
             input=unified_diff,
             text=True,
@@ -107,6 +107,16 @@ class PatchPipeline:
         if completed.returncode != 0:
             raise PatchPipelineError(completed.stderr.strip() or "Patch apply failed")
         return summary
+
+    @staticmethod
+    def _git_apply_command(*, check: bool) -> list[str]:
+        command = ["git", "apply"]
+        if check:
+            command.append("--check")
+        # Model-generated patches often omit unchanged lines at a hunk boundary.
+        # Target validation and the dry run still run before any file is changed.
+        command.extend(["--recount", "--unidiff-zero", "--no-index", "--unsafe-paths", "-"])
+        return command
 
     def snapshot(self, summary: PatchSummary, destination: str | Path) -> Path:
         snapshot_root = Path(destination)

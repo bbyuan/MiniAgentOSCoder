@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,35 @@ def test_patch_pipeline_removes_repeated_workspace_prefix(tmp_path: Path) -> Non
     assert summary.files == ["app.py"]
     assert (workspace / "app.py").read_text(encoding="utf-8") == "new\n"
     assert not (workspace / "examples").exists()
+
+
+def test_patch_pipeline_applies_minimal_context_patch_in_nested_git_workspace(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    workspace = tmp_path / "examples" / "python-bugfix"
+    workspace.mkdir(parents=True)
+    calculator = workspace / "calculator.py"
+    calculator.write_text(
+        "def add(left: int, right: int) -> int:\n"
+        "    return left - right\n"
+        "\n",
+        encoding="utf-8",
+    )
+    patch = """--- a/calculator.py
++++ b/calculator.py
+@@ -1,2 +1,2 @@
+ def add(left: int, right: int) -> int:
+-    return left - right
++    return left + right
+"""
+
+    summary = PatchPipeline(workspace).apply(patch)
+
+    assert summary.files == ["calculator.py"]
+    assert calculator.read_text(encoding="utf-8") == (
+        "def add(left: int, right: int) -> int:\n"
+        "    return left + right\n"
+        "\n"
+    )
 
 
 def test_apply_patch_runs_preflight_and_requires_approval(tmp_path: Path) -> None:
