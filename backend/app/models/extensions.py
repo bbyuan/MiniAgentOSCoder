@@ -40,6 +40,7 @@ class ActiveSkill(Serializable):
     path: str
     content: str
     digest: str
+    default_tools: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

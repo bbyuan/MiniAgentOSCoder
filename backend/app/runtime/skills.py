@@ -81,6 +81,7 @@ def activate_skills(
                 path=card.path,
                 content=content,
                 digest=sha256(content.encode("utf-8")).hexdigest(),
+                default_tools=list(card.default_tools),
             )
         )
     return active

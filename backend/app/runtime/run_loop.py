@@ -14,6 +14,7 @@ from app.models import (
 )
 from app.runtime.action_executor import ActionExecutor
 from app.runtime.action_parser import ActionParseError
+from app.runtime.capability_menu import build_capability_menu
 from app.runtime.completion_guard import evaluate_completion
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
@@ -130,13 +131,26 @@ class AgentRunLoop:
                 "run.step.started",
                 {"step": step, "model_calls": model_calls, "tool_calls": self.gateway.used_tool_calls},
             )
+            capability_menu = build_capability_menu(
+                self.gateway.list_tools(),
+                mode=active_mode,
+                allowed_effects=contract.effects.allow,
+                observations=observations,
+                active_skills=skills,
+            )
+            self.tracer.event(
+                self.run_id,
+                "capability.menu.built",
+                {"step": step, **capability_menu.trace_payload()},
+                role="Orchestrator",
+            )
             model_calls += 1
             try:
                 decision = plan_next_action(
                     run_id=self.run_id,
                     task=active_task,
                     contract=contract,
-                    tools=self.gateway.list_tools(),
+                    tools=capability_menu.tools,
                     model_client=self.model_client,
                     tracer=self.tracer,
                     context_pack=context_pack,

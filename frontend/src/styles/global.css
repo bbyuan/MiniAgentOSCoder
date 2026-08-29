@@ -1087,6 +1087,49 @@ button.statusChip:hover {
   font-size: 14px;
 }
 
+.capabilityMenuEvidence {
+  margin: 0 0 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+}
+
+.capabilityMenuSummary {
+  padding: 9px 11px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.capabilityMenuSummary strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.capabilityToolList {
+  padding: 5px 11px 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.capabilityToolList code {
+  max-width: 100%;
+  padding: 3px 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .capabilityList {
   margin: 0;
   padding: 0;

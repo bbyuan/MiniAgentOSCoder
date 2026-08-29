@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -106,6 +106,11 @@ export function RuntimePanels({
   const providerRequests = trace.filter((event) => event.event === "model.requested").length;
   const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const planningTurns = providerRequests + cacheHits;
+  const latestMenu = [...trace].reverse().find((event) => event.event === "capability.menu.built");
+  const disclosedTools = Array.isArray(latestMenu?.payload.tools)
+    ? latestMenu.payload.tools.filter((tool): tool is string => typeof tool === "string")
+    : [];
+  const capabilityPhase = typeof latestMenu?.payload.phase === "string" ? latestMenu.payload.phase : "inspect";
 
   return (
     <aside className="inspector">
@@ -156,6 +161,17 @@ export function RuntimePanels({
                 <span><small>{t("control.planningTurns")}</small><strong>{planningTurns}</strong></span>
                 <span><small>{t("control.providerRequests")}</small><strong>{providerRequests}</strong></span>
                 <span><small>{t("control.cacheHits")}</small><strong>{cacheHits}</strong></span>
+              </div>
+            </div>
+
+            <div className="capabilityMenuEvidence">
+              <div className="modelGateHeading"><Layers3 size={15} /><strong>{t("control.capabilityMenuTitle")}</strong></div>
+              <div className="capabilityMenuSummary">
+                <span>{t(`control.capabilityPhase.${capabilityPhase}` as TranslationKey)}</span>
+                <strong>{t("control.disclosedToolCount", { count: disclosedTools.length })}</strong>
+              </div>
+              <div className="capabilityToolList">
+                {disclosedTools.map((tool) => <code key={tool}>{tool}</code>)}
               </div>
             </div>
 
