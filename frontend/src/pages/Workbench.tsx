@@ -24,6 +24,7 @@ import {
   type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { MetricStrip } from "../components/MetricStrip";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
@@ -631,7 +632,7 @@ export function Workbench() {
           />
         </div>
       ) : (
-        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout" : ""} ${runIsPrepared && !preflightAdvancedOpen ? "preflightSimpleLayout" : ""}`}>
+        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout preflightSimpleLayout" : ""}`}>
           <section className={`runCanvas ${runIsPrepared ? "preflightCanvas" : ""}`}>
             {runIsPrepared ? (
               <>
@@ -652,6 +653,16 @@ export function Workbench() {
                   onConfigureModel={() => setModelSetupOpen(true)}
                   onToggleAdvanced={() => setPreflightAdvancedOpen((current) => !current)}
                 />
+                {preflightAdvancedOpen ? (
+                  <AdvancedSetupPanel
+                    governance={governance}
+                    governanceBusy={governanceBusy}
+                    extensions={extensions}
+                    extensionsBusy={extensionsBusy}
+                    onSaveGovernance={saveGovernance}
+                    onSaveExtensions={saveExtensions}
+                  />
+                ) : null}
               </>
             ) : (
               <>
@@ -693,7 +704,7 @@ export function Workbench() {
             )}
         </section>
 
-        {!runIsPrepared || preflightAdvancedOpen ? <RuntimePanels
+        {!runIsPrepared ? <RuntimePanels
           plan={displayPlan}
           contract={displayContract}
           context={contextPack}

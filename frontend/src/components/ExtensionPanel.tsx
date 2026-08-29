@@ -11,16 +11,18 @@ import {
   Workflow,
 } from "lucide-react";
 import type { ExtensionResponse, ExtensionSettings, TraceEvent } from "../api/client";
+import { translateExtensionDiagnostic, translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ExtensionPanelProps {
   extensions?: ExtensionResponse;
   busy: boolean;
+  setupMode?: boolean;
   onSave: (settings: ExtensionSettings) => Promise<void>;
 }
 
-export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps) {
-  const { t } = usePreferences();
+export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: ExtensionPanelProps) {
+  const { locale, t } = usePreferences();
   const [settings, setSettings] = useState<ExtensionSettings>({
     active_skill_ids: [],
     enabled_mcp_server_ids: [],
@@ -61,8 +63,8 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
     <section className="inspectorSection extensionSection">
       <div className="sectionHeader extensionHeading">
         <div>
-          <h3>{t("extensions.title")}</h3>
-          <span>{extensions?.editable ? t("extensions.editable") : t("extensions.readOnly")}</span>
+          <h3>{t(setupMode ? "advanced.extensions" : "extensions.title")}</h3>
+          <span>{setupMode ? t("extensions.setupDescription") : extensions?.editable ? t("extensions.editable") : t("extensions.readOnly")}</span>
         </div>
         <PlugZap size={15} />
       </div>
@@ -70,7 +72,7 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
       {(extensions?.catalog.diagnostics.length ?? 0) > 0 ? (
         <div className="extensionDiagnostics">
           <AlertTriangle size={13} />
-          <span>{extensions?.catalog.diagnostics.join(" · ")}</span>
+          <span>{extensions?.catalog.diagnostics.map((item) => translateExtensionDiagnostic(locale, item)).join(" · ")}</span>
         </div>
       ) : null}
 
@@ -94,7 +96,7 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
               <small>{skill.description}</small>
               <span className="extensionMeta">
                 <code>{skill.id}</code>
-                <em>{skill.risk}</em>
+                <em>{translateKnownText(locale, skill.risk)}</em>
                 {skill.recommended ? <b>{t("extensions.recommended")}</b> : null}
               </span>
             </span>
@@ -121,10 +123,10 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
               <span className="extensionToggle" aria-hidden="true" />
               <span className="extensionMain">
                 <strong>{server.name}</strong>
-                <small>{server.transport} · {server.executable} · {server.effect}</small>
+                <small>{server.transport} · {server.executable} · {translateKnownText(locale, server.effect)}</small>
                 <span className="extensionMeta">
                   <code>{server.id}</code>
-                  <em>{server.risk}</em>
+                  <em>{translateKnownText(locale, server.risk)}</em>
                   {discovery ? <b>{t("extensions.toolsDiscovered", { count: discovery.tool_count })}</b> : null}
                 </span>
               </span>
@@ -150,17 +152,17 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
             <span className="extensionToggle" aria-hidden="true" />
             <span className="extensionMain">
               <strong>{hook.name}</strong>
-              <small>{hook.event} · {hook.executable}</small>
+              <small>{translateKnownText(locale, hook.event)} · {hook.executable}</small>
               <span className="extensionMeta">
                 <code>{hook.id}</code>
-                <em>{hook.failure_policy}</em>
+                <em>{translateKnownText(locale, hook.failure_policy)}</em>
               </span>
             </span>
           </label>
         ))}
       </ExtensionGroup>
 
-      <div className="extensionEvidence">
+      {!setupMode ? <div className="extensionEvidence">
         <div className="extensionGroupTitle">
           <Braces size={14} />
           <strong>{t("extensions.evidence")}</strong>
@@ -173,7 +175,7 @@ export function ExtensionPanel({ extensions, busy, onSave }: ExtensionPanelProps
             ))}
           </div>
         )}
-      </div>
+      </div> : null}
 
       {extensions?.editable ? (
         <button type="button" className="extensionSave" disabled={busy} onClick={save}>

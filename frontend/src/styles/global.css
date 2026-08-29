@@ -4530,6 +4530,200 @@ textarea:disabled {
   margin-top: 12px;
 }
 
+.advancedSetup {
+  width: min(100%, 900px);
+  margin: 8px auto 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.advancedSetupHeader {
+  min-height: 92px;
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.advancedSetupIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.advancedSetupHeader h2 {
+  margin: 1px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.advancedSetupHeader p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.advancedSetupBadge {
+  padding: 5px 8px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.advancedSetupLayout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 420px;
+}
+
+.advancedSetupNav {
+  padding: 16px 12px;
+  border-right: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.advancedSetupNav button {
+  width: 100%;
+  min-height: 70px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  text-align: left;
+}
+
+.advancedSetupNav button + button {
+  margin-top: 5px;
+}
+
+.advancedSetupNav button:hover,
+.advancedSetupNav button.active {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.advancedSetupNav button.active {
+  box-shadow: inset 3px 0 0 var(--accent), 0 1px 3px rgba(15, 18, 24, 0.06);
+}
+
+.advancedSetupNav button svg {
+  margin-top: 1px;
+}
+
+.advancedSetupNav button span,
+.advancedSetupNav button strong,
+.advancedSetupNav button small {
+  min-width: 0;
+  display: block;
+}
+
+.advancedSetupNav button strong {
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.advancedSetupNav button small {
+  margin-top: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.advancedSetupNav > p {
+  margin: 18px 9px 0;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.advancedSetupBody {
+  min-width: 0;
+  background: var(--surface);
+}
+
+.advancedSetupBody .inspectorSection {
+  padding: 22px 24px 24px;
+  border: 0;
+  background: var(--surface);
+}
+
+.advancedSetupBody .sectionHeader h3 {
+  font-size: 16px;
+}
+
+.advancedSetupBody .governanceHeading > div span,
+.advancedSetupBody .extensionHeading span {
+  font-size: 12px;
+}
+
+.advancedSetupBody .governanceBlockTitle strong,
+.advancedSetupBody .extensionGroupTitle strong,
+.advancedSetupBody .extensionMain > strong {
+  font-size: 13px;
+}
+
+.advancedSetupBody .governanceBlockTitle > span,
+.advancedSetupBody .extensionGroupTitle > span,
+.advancedSetupBody .riskLabel,
+.advancedSetupBody .extensionMeta code,
+.advancedSetupBody .extensionMeta em,
+.advancedSetupBody .extensionMeta b {
+  font-size: 10px;
+}
+
+.advancedSetupBody .sandboxProfileControl button,
+.advancedSetupBody .governanceSave,
+.advancedSetupBody .extensionSave {
+  font-size: 12px;
+}
+
+.sandboxProfileHint {
+  margin: 9px 2px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.advancedSetupBody .governanceTools article > div strong,
+.advancedSetupBody .governanceTools article p,
+.advancedSetupBody .governanceTools select,
+.advancedSetupBody .extensionMain > small,
+.advancedSetupBody .extensionDiagnostics,
+.advancedSetupBody .extensionGroup .emptyText {
+  font-size: 11px;
+}
+
+.advancedSetupBody .governanceTools article {
+  min-height: 68px;
+}
+
+.advancedSetupBody .governanceTools select {
+  width: 132px;
+}
+
+.advancedSetupBody .extensionRow {
+  min-height: 70px;
+}
+
 .preflightActions {
   margin-top: 23px;
   display: flex;
@@ -5223,5 +5417,66 @@ textarea:disabled {
 
   .modelSetupDialog > footer button {
     width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .advancedSetupHeader {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .advancedSetupBadge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .advancedSetupLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .advancedSetupNav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .advancedSetupNav button + button {
+    margin-top: 0;
+  }
+
+  .advancedSetupNav > p {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+
+  .advancedSetupBody .inspectorSection {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 520px) {
+  .advancedSetupHeader {
+    padding-inline: 16px;
+  }
+
+  .advancedSetupNav {
+    grid-template-columns: 1fr;
+  }
+
+  .advancedSetupNav > p {
+    grid-column: 1;
+  }
+
+  .advancedSetupBody .governanceTools article {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .advancedSetupBody .governanceTools select {
+    width: 100%;
+    grid-column: 1;
+    grid-row: 3;
   }
 }

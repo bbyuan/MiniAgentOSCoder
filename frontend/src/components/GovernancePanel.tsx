@@ -11,10 +11,11 @@ import { usePreferences } from "../preferences";
 interface GovernancePanelProps {
   governance?: GovernanceResponse;
   busy: boolean;
+  setupMode?: boolean;
   onSave: (profile: SandboxProfile, overrides: Record<string, ToolOverride>) => Promise<void>;
 }
 
-export function GovernancePanel({ governance, busy, onSave }: GovernancePanelProps) {
+export function GovernancePanel({ governance, busy, setupMode = false, onSave }: GovernancePanelProps) {
   const { locale, t } = usePreferences();
   const [profile, setProfile] = useState<SandboxProfile>("standard");
   const [overrides, setOverrides] = useState<Record<string, ToolOverride>>({});
@@ -43,8 +44,8 @@ export function GovernancePanel({ governance, busy, onSave }: GovernancePanelPro
     <section className="inspectorSection governanceSection">
       <div className="sectionHeader governanceHeading">
         <div>
-          <h3>{t("governance.title")}</h3>
-          <span>{governance?.editable ? t("governance.editable") : t("governance.readOnly")}</span>
+          <h3>{t(setupMode ? "advanced.governance" : "governance.title")}</h3>
+          <span>{setupMode ? t("governance.setupDescription") : governance?.editable ? t("governance.editable") : t("governance.readOnly")}</span>
         </div>
         <ShieldCheck size={15} />
       </div>
@@ -65,25 +66,30 @@ export function GovernancePanel({ governance, busy, onSave }: GovernancePanelPro
             </button>
           ))}
         </div>
-        <div className="sandboxBackend">
-          <Gauge size={13} />
-          <span>{t("governance.backend")}</span>
-          <code>{governance?.capabilities.backend ?? "-"}</code>
-        </div>
-        <div className="capabilityColumns">
-          <div>
-            <span>{t("governance.guarantees")}</span>
-            {(governance?.capabilities.guarantees ?? []).map((item) => (
-              <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>
-            ))}
-          </div>
-          <div>
-            <span>{t("governance.limitations")}</span>
-            {(governance?.capabilities.limitations ?? []).map((item) => (
-              <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>
-            ))}
-          </div>
-        </div>
+        {setupMode ? <p className="sandboxProfileHint">{t(`governance.profileHint.${profile}` as TranslationKey)}</p> : null}
+        {!setupMode ? (
+          <>
+            <div className="sandboxBackend">
+              <Gauge size={13} />
+              <span>{t("governance.backend")}</span>
+              <code>{governance?.capabilities.backend ?? "-"}</code>
+            </div>
+            <div className="capabilityColumns">
+              <div>
+                <span>{t("governance.guarantees")}</span>
+                {(governance?.capabilities.guarantees ?? []).map((item) => (
+                  <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>
+                ))}
+              </div>
+              <div>
+                <span>{t("governance.limitations")}</span>
+                {(governance?.capabilities.limitations ?? []).map((item) => (
+                  <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="governanceBlock toolsBlock">
@@ -95,7 +101,7 @@ export function GovernancePanel({ governance, busy, onSave }: GovernancePanelPro
                 <strong>{tool.name}</strong>
                 <span className={`riskLabel risk-${tool.risk}`}>{translateKnownText(locale, tool.risk)}</span>
               </div>
-              <p>{tool.effect} · {t("governance.effective", { policy: tool.effective_policy })}</p>
+              <p>{translateKnownText(locale, tool.effect)} · {t("governance.effective", { policy: translateKnownText(locale, tool.effective_policy) })}</p>
               <select
                 aria-label={`${tool.name} ${t("governance.override")}`}
                 value={overrides[tool.name] ?? "inherit"}
@@ -120,7 +126,7 @@ export function GovernancePanel({ governance, busy, onSave }: GovernancePanelPro
         ) : null}
       </div>
 
-      <div className="governanceBlock decisionsBlock">
+      {!setupMode ? <div className="governanceBlock decisionsBlock">
         <div className="governanceBlockTitle">
           <ShieldCheck size={14} />
           <strong>{t("governance.decisions")}</strong>
@@ -154,7 +160,7 @@ export function GovernancePanel({ governance, busy, onSave }: GovernancePanelPro
             <code>{lastExecution?.backend}</code>
           </div>
         ) : null}
-      </div>
+      </div> : null}
     </section>
   );
 }

@@ -121,6 +121,9 @@ const en = {
   "governance.sandbox": "Sandbox boundary",
   "governance.profile.standard": "Standard",
   "governance.profile.strict": "Strict",
+  "governance.profileHint.standard": "Uses the normal local runtime limits and environment allowlist.",
+  "governance.profileHint.strict": "Blocks obvious network commands and applies tighter time, output, and environment limits.",
+  "governance.setupDescription": "Choose a Sandbox level, then adjust only the tools that need a different approval policy.",
   "governance.backend": "Backend",
   "governance.guarantees": "Guaranteed",
   "governance.limitations": "Platform limits",
@@ -138,6 +141,7 @@ const en = {
   "extensions.title": "Extension runtime",
   "extensions.editable": "Select capabilities before launch",
   "extensions.readOnly": "Read-only activation evidence",
+  "extensions.setupDescription": "All extensions are optional. Enable only the capabilities this task needs.",
   "extensions.skills": "Skills",
   "extensions.skillsEmpty": "No skills are registered for this project.",
   "extensions.recommended": "Recommended",
@@ -335,8 +339,16 @@ const en = {
   "preflight.skills": "Skills",
   "preflight.enabledCount": "{count} enabled",
   "preflight.notEnabled": "Not enabled",
-  "preflight.showAdvanced": "Open advanced settings",
-  "preflight.hideAdvanced": "Close advanced settings",
+  "preflight.showAdvanced": "Review optional settings",
+  "preflight.hideAdvanced": "Hide optional settings",
+  "advanced.title": "Advanced run settings",
+  "advanced.description": "Adjust only the options that can change this run before it starts.",
+  "advanced.optional": "Optional",
+  "advanced.governance": "Safety and permissions",
+  "advanced.governanceDescription": "Sandbox level and tool approvals",
+  "advanced.extensions": "Extension capabilities",
+  "advanced.extensionsDescription": "Skills, MCP servers, and Hooks",
+  "advanced.note": "Context, completion checks, and runtime evidence are managed automatically.",
   "preflight.launchBlocked": "Configure the model before starting.",
   "completion.expectedTitle": "Completion contract",
   "completion.expectedDescription": "The runtime will require this evidence before accepting completion.",
@@ -563,6 +575,9 @@ const zh: Record<TranslationKey, string> = {
   "governance.sandbox": "Sandbox 边界",
   "governance.profile.standard": "标准",
   "governance.profile.strict": "严格",
+  "governance.profileHint.standard": "使用本地运行时的常规时限、输出上限和环境变量白名单。",
+  "governance.profileHint.strict": "阻止明显的联网命令，并收紧时限、输出上限和环境变量范围。",
+  "governance.setupDescription": "先选择 Sandbox 级别，再为确有需要的工具调整审批策略。",
   "governance.backend": "执行后端",
   "governance.guarantees": "已保证能力",
   "governance.limitations": "平台限制",
@@ -580,6 +595,7 @@ const zh: Record<TranslationKey, string> = {
   "extensions.title": "扩展运行时",
   "extensions.editable": "启动前选择运行能力",
   "extensions.readOnly": "只读激活与执行证据",
+  "extensions.setupDescription": "所有扩展均为可选，只启用本次任务确实需要的能力。",
   "extensions.skills": "Skills",
   "extensions.skillsEmpty": "当前项目没有注册 Skill。",
   "extensions.recommended": "模式推荐",
@@ -777,8 +793,16 @@ const zh: Record<TranslationKey, string> = {
   "preflight.skills": "Skills",
   "preflight.enabledCount": "已启用 {count} 项",
   "preflight.notEnabled": "未启用",
-  "preflight.showAdvanced": "打开高级设置",
-  "preflight.hideAdvanced": "关闭高级设置",
+  "preflight.showAdvanced": "查看可选设置",
+  "preflight.hideAdvanced": "收起可选设置",
+  "advanced.title": "本次运行的高级设置",
+  "advanced.description": "这里只展示启动前可以调整、并会影响本次运行的选项。",
+  "advanced.optional": "均为可选",
+  "advanced.governance": "安全与权限",
+  "advanced.governanceDescription": "调整 Sandbox 级别和工具审批",
+  "advanced.extensions": "扩展能力",
+  "advanced.extensionsDescription": "启用 Skills、MCP 服务与 Hooks",
+  "advanced.note": "上下文、完成验收和运行证据由系统自动管理，无需在这里配置。",
   "preflight.launchBlocked": "配置模型后即可开始执行。",
   "completion.expectedTitle": "完成条件",
   "completion.expectedDescription": "只有收集到以下证据后，运行时才会接受智能体的完成申请。",
@@ -938,6 +962,21 @@ const knownText: Record<Locale, Record<string, string>> = {
     "high": "高风险",
     "medium": "中风险",
     "low": "低风险",
+    "auto": "自动执行",
+    "approval_required": "需要审批",
+    "depends_on_effect": "根据副作用决定",
+    "inherit": "继承默认策略",
+    "deny": "禁用",
+    "fs.read": "读取文件",
+    "fs.write": "写入文件",
+    "test.run": "运行测试",
+    "mcp.call": "调用 MCP 服务",
+    "run.before": "运行开始前",
+    "run.after": "运行结束后",
+    "tool.before": "工具调用前",
+    "tool.after": "工具调用后",
+    "warn": "失败时警告",
+    "block": "失败时阻止执行",
     "approval.requested": "补丁等待审批",
     "approval.resolved": "审批决策已提交",
     "approval.cancelled": "审批等待已取消",
@@ -1014,6 +1053,22 @@ export function translate(
 
 export function translateKnownText(locale: Locale, value: string): string {
   return knownText[locale][value] ?? value;
+}
+
+export function translateExtensionDiagnostic(locale: Locale, value: string): string {
+  if (locale !== "zh") return value;
+  const exact: Record<string, string> = {
+    "MCP server entry must be a mapping": "MCP 服务条目必须是映射对象",
+    "Hook entry must be a mapping": "Hook 条目必须是映射对象",
+  };
+  if (exact[value]) return exact[value];
+  const prefixes: Array<[string, string]> = [
+    ["Skills registry: ", "Skills 注册表："],
+    ["MCP registry: ", "MCP 注册表："],
+    ["Hook registry: ", "Hook 注册表："],
+  ];
+  const matched = prefixes.find(([prefix]) => value.startsWith(prefix));
+  return matched ? `${matched[1]}${value.slice(matched[0].length)}` : value;
 }
 
 export function translateStatus(locale: Locale, value: string): string {
