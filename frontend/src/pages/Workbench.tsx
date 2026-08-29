@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CircleDot, GitBranch, Square } from "lucide-react";
+import { AlertCircle, CircleDot, GitBranch, PanelRightClose, PanelRightOpen, Square } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -57,7 +57,7 @@ export function Workbench() {
   const [recentProjects, setRecentProjects] = useState<HistoryProject[]>([]);
   const [projectBusy, setProjectBusy] = useState(false);
   const [task, setTask] = useState("");
-  const [mode, setMode] = useState<RunMode>("Bugfix");
+  const [mode, setMode] = useState<RunMode>("Feature");
   const [connection, setConnection] = useState<"checking" | "connected" | "offline">("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export function Workbench() {
   const [modelSetupOpen, setModelSetupOpen] = useState(false);
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
-  const [preflightAdvancedOpen, setPreflightAdvancedOpen] = useState(false);
+  const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export function Workbench() {
     }
   }
 
-  async function prepareRun() {
+  async function prepareRun(startImmediately = false) {
     if (!project) return;
     setBusy(true);
     setError(null);
@@ -200,7 +200,7 @@ export function Workbench() {
     setGovernance(undefined);
     setExtensions(undefined);
     setRollbackBusy(undefined);
-    setPreflightAdvancedOpen(false);
+    setRuntimeDetailsOpen(false);
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
@@ -241,7 +241,15 @@ export function Workbench() {
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
       setConnection("connected");
-
+      if (startImmediately) {
+        if (!providerStatus?.configured) {
+          setModelSetupOpen(true);
+          throw new Error(t("error.modelSetup", { issues: providerStatus?.issues.join(", ") || t("error.providerUnavailable") }));
+        }
+        const started = await daemonApi.startRun(run.run_id);
+        setRunStatus(started.status);
+        subscribeToRun(run.run_id, traceResponse.events.length);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.prepareRun"));
     } finally {
@@ -258,6 +266,7 @@ export function Workbench() {
     }
     setBusy(true);
     setError(null);
+    setRuntimeDetailsOpen(false);
     try {
       const latestTrace = await daemonApi.getTrace(runId);
       setTraceEvents(latestTrace.events);
@@ -281,6 +290,7 @@ export function Workbench() {
         if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
           setApproval(event.payload.approval);
           setRunStatus("waiting_approval");
+          setRuntimeDetailsOpen(true);
         } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
           setApproval(null);
         }
@@ -417,7 +427,7 @@ export function Workbench() {
     setRecovery(undefined);
     setReport(undefined);
     setRollbackBusy(undefined);
-    setPreflightAdvancedOpen(false);
+    setRuntimeDetailsOpen(false);
     setError(null);
     if (clearTask) setTask("");
   }
@@ -626,13 +636,14 @@ export function Workbench() {
             model={modelStatus}
             onTaskChange={setTask}
             onModeChange={setMode}
-            onAnalyze={prepareRun}
+            onStart={() => prepareRun(true)}
+            onReviewSettings={() => prepareRun(false)}
             onChangeProject={changeProject}
             onConfigureModel={() => setModelSetupOpen(true)}
           />
         </div>
       ) : (
-        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout preflightSimpleLayout" : ""}`}>
+        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout preflightSimpleLayout" : runtimeDetailsOpen ? "" : "runSimpleLayout"}`}>
           <section className={`runCanvas ${runIsPrepared ? "preflightCanvas" : ""}`}>
             {runIsPrepared ? (
               <>
@@ -641,19 +652,11 @@ export function Workbench() {
                   mode={mode}
                   task={task}
                   model={modelStatus}
-                  contract={contract}
-                  context={contextPack}
-                  governance={governance}
-                  extensions={extensions}
-                  completionExpectations={completionExpectations}
                   busy={busy}
-                  advancedOpen={preflightAdvancedOpen}
                   onBack={discardPreparedRun}
                   onLaunch={launchRun}
                   onConfigureModel={() => setModelSetupOpen(true)}
-                  onToggleAdvanced={() => setPreflightAdvancedOpen((current) => !current)}
-                />
-                {preflightAdvancedOpen ? (
+                >
                   <AdvancedSetupPanel
                     governance={governance}
                     governanceBusy={governanceBusy}
@@ -662,7 +665,7 @@ export function Workbench() {
                     onSaveGovernance={saveGovernance}
                     onSaveExtensions={saveExtensions}
                   />
-                ) : null}
+                </PreflightSummary>
               </>
             ) : (
               <>
@@ -672,9 +675,15 @@ export function Workbench() {
               <h1>{t(copy.title)}</h1>
               <p>{finalMessage || t(copy.description)}</p>
             </div>
-            <div className="runMeta">
-              <span><GitBranch size={14} />{translateMode(locale, mode)}</span>
-              {runId ? <span title={runId}><CircleDot size={14} />{runId.slice(-8)}</span> : null}
+            <div className="runHeaderControls">
+              <div className="runMeta">
+                <span><GitBranch size={14} />{translateMode(locale, mode)}</span>
+                {runId ? <span title={runId}><CircleDot size={14} />{runId.slice(-8)}</span> : null}
+              </div>
+              <button type="button" className="runDetailsAction" onClick={() => setRuntimeDetailsOpen((current) => !current)}>
+                {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+                {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
+              </button>
             </div>
           </header>
 
@@ -704,7 +713,7 @@ export function Workbench() {
             )}
         </section>
 
-        {!runIsPrepared ? <RuntimePanels
+        {!runIsPrepared && runtimeDetailsOpen ? <RuntimePanels
           plan={displayPlan}
           contract={displayContract}
           context={contextPack}

@@ -1,5 +1,4 @@
-import { ArrowRight, Bug, FileSearch, KeyRound, Lightbulb, MessageSquare, Plus, Sparkles } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowUp, FolderGit2, KeyRound, SlidersHorizontal, Sparkles } from "lucide-react";
 import type { ModelProviderStatus, OpenProjectResponse, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -12,18 +11,13 @@ interface TaskSetupProps {
   model?: ModelProviderStatus;
   onTaskChange: (task: string) => void;
   onModeChange: (mode: RunMode) => void;
-  onAnalyze: () => void;
+  onStart: () => void;
+  onReviewSettings: () => void;
   onChangeProject: () => void;
   onConfigureModel: () => void;
 }
 
-const taskModes: Array<{ mode: RunMode; icon: LucideIcon; description: "task.mode.bugfix" | "task.mode.feature" | "task.mode.review" | "task.mode.spec" | "task.mode.chat" }> = [
-  { mode: "Bugfix", icon: Bug, description: "task.mode.bugfix" },
-  { mode: "Feature", icon: Plus, description: "task.mode.feature" },
-  { mode: "Review", icon: FileSearch, description: "task.mode.review" },
-  { mode: "Spec", icon: Lightbulb, description: "task.mode.spec" },
-  { mode: "Chat", icon: MessageSquare, description: "task.mode.chat" },
-];
+const taskModes: RunMode[] = ["Bugfix", "Feature", "Review", "Spec", "Chat"];
 
 const examples: Record<RunMode, "task.example.bugfix" | "task.example.feature" | "task.example.review" | "task.example.spec" | "task.example.chat"> = {
   Bugfix: "task.example.bugfix",
@@ -41,25 +35,26 @@ export function TaskSetup({
   model,
   onTaskChange,
   onModeChange,
-  onAnalyze,
+  onStart,
+  onReviewSettings,
   onChangeProject,
   onConfigureModel,
 }: TaskSetupProps) {
   const { locale, t } = usePreferences();
+  const modelReady = model?.configured === true;
 
   return (
-    <section className="taskSetup" aria-labelledby="task-setup-title">
-      <div className="activeProjectBar">
+    <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
+      <div className="activeProjectBar productProjectBar">
+        <FolderGit2 size={18} />
         <div>
-          <span>{t("task.project")}</span>
           <strong>{basename(project.path)}</strong>
           <small>{project.path}</small>
         </div>
         <button type="button" onClick={onChangeProject}>{t("task.changeProject")}</button>
       </div>
 
-      <header className="taskIntro">
-        <span className="stageEyebrow">{t("task.eyebrow")}</span>
+      <header className="taskIntro productTaskIntro">
         <h1 id="task-setup-title">{t("task.title")}</h1>
         <p>{t("task.description")}</p>
       </header>
@@ -72,57 +67,66 @@ export function TaskSetup({
         </div>
       ) : null}
 
-      <div className="taskModeGroup" role="radiogroup" aria-label={t("composer.mode")}>
-        {taskModes.map(({ mode: item, icon: Icon, description }) => (
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === item}
-            className={mode === item ? "active" : ""}
-            key={item}
-            disabled={busy}
-            onClick={() => onModeChange(item)}
-          >
-            <Icon size={17} />
-            <span>
-              <strong>{translateMode(locale, item)}</strong>
-              <small>{t(description)}</small>
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="taskComposerLarge">
-        <label htmlFor="task-description">{t("task.instruction")}</label>
+      <div className="taskComposerProduct">
+        <label className="srOnly" htmlFor="task-description">{t("task.instruction")}</label>
         <textarea
           id="task-description"
           value={task}
           disabled={busy}
-          rows={7}
+          rows={8}
           placeholder={t("task.placeholder")}
           onChange={(event) => onTaskChange(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && task.trim() && modelReady && !busy) {
+              event.preventDefault();
+              onStart();
+            }
+          }}
         />
-        <div className="taskExample">
-          <Sparkles size={14} />
-          <span>{t("task.tryExample")}</span>
-          <button type="button" disabled={busy} onClick={() => onTaskChange(t(examples[mode]))}>
-            {t(examples[mode])}
-          </button>
-        </div>
-        <div className="taskSubmitRow">
-          <p>{t("task.analyzeHint")}</p>
-          <button className="textPrimaryAction" type="button" disabled={busy || !task.trim()} onClick={onAnalyze}>
-            {busy ? t("task.analyzing") : t("task.analyze")}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
 
-      <div className="projectSignals" aria-label={t("task.detected") }>
-        <span>{t("task.detected")}</span>
-        {project.profile.languages.slice(0, 4).map((language) => <code key={language}>{language}</code>)}
-        {project.profile.package_managers.slice(0, 3).map((manager) => <code key={manager}>{manager}</code>)}
-        {project.profile.test_commands.length ? <small>{t("task.testCommands", { count: project.profile.test_commands.length })}</small> : null}
+        <div className="taskComposerToolbar">
+          <div className="taskComposerOptions">
+            <label className="taskTypeSelect">
+              <span>{t("task.type")}</span>
+              <select
+                value={mode}
+                disabled={busy}
+                aria-label={t("task.type")}
+                onChange={(event) => onModeChange(event.target.value as RunMode)}
+              >
+                {taskModes.map((item) => <option value={item} key={item}>{translateMode(locale, item)}</option>)}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="exampleFillAction"
+              disabled={busy}
+              onClick={() => onTaskChange(t(examples[mode]))}
+            >
+              <Sparkles size={15} />{t("task.tryExample")}
+            </button>
+          </div>
+
+          <div className="taskPrimaryActions">
+            <button
+              type="button"
+              className="runSettingsAction"
+              disabled={busy || !task.trim() || !modelReady}
+              onClick={onReviewSettings}
+            >
+              <SlidersHorizontal size={16} />{t("task.reviewSettings")}
+            </button>
+            <button
+              type="button"
+              className="startTaskAction"
+              disabled={busy || !task.trim() || !modelReady}
+              onClick={onStart}
+            >
+              {busy ? t("task.starting") : t("task.start")}
+              <ArrowUp size={17} />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

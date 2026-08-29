@@ -5480,3 +5480,367 @@ textarea:disabled {
     grid-row: 3;
   }
 }
+
+/* Task-centered product flow */
+.workbenchLayout.runSimpleLayout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.runSimpleLayout .runCanvas {
+  padding-inline: clamp(28px, 6vw, 92px);
+}
+
+.productTaskSetup {
+  width: min(100%, 820px);
+}
+
+.productProjectBar {
+  min-height: 54px;
+  margin-bottom: 64px;
+  padding: 9px 10px 9px 14px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  justify-content: initial;
+  gap: 10px;
+}
+
+.productProjectBar > svg {
+  color: var(--text-tertiary);
+}
+
+.productProjectBar > div {
+  min-width: 0;
+  display: block;
+}
+
+.productProjectBar strong,
+.productProjectBar small {
+  display: block;
+}
+
+.productProjectBar small {
+  margin-top: 3px;
+}
+
+.productTaskIntro {
+  max-width: 720px;
+}
+
+.productTaskIntro h1 {
+  margin-top: 0;
+  font-size: 36px;
+}
+
+.productTaskIntro p {
+  max-width: 650px;
+  font-size: 15px;
+}
+
+.taskComposerProduct {
+  margin-top: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-composer);
+  overflow: hidden;
+}
+
+.taskComposerProduct textarea {
+  width: 100%;
+  min-height: 210px;
+  padding: 20px 21px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.taskComposerProduct textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.taskComposerToolbar {
+  min-height: 66px;
+  padding: 11px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.taskComposerOptions,
+.taskPrimaryActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taskTypeSelect {
+  height: 38px;
+  padding: 0 7px 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.taskTypeSelect select {
+  height: 34px;
+  padding: 0 22px 0 2px;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.exampleFillAction,
+.runSettingsAction,
+.startTaskAction,
+.runDetailsAction {
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.exampleFillAction,
+.runSettingsAction,
+.runDetailsAction {
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.startTaskAction {
+  min-width: 112px;
+  border: 1px solid var(--text);
+  color: var(--surface);
+  background: var(--text);
+}
+
+.runSettingsAction:hover:not(:disabled),
+.exampleFillAction:hover:not(:disabled),
+.runDetailsAction:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.runHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.runHeaderControls .runMeta {
+  margin: 0;
+}
+
+.runSettingsPage {
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+
+.runSettingsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.runSettingsHeader > div {
+  max-width: 650px;
+}
+
+.runSettingsHeader h1 {
+  margin: 10px 0 9px;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.runSettingsHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.runSettingsModel {
+  min-width: 170px;
+  min-height: 52px;
+  padding: 8px 11px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  text-align: left;
+}
+
+.runSettingsModel.ready {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 25%, var(--border));
+  background: var(--success-soft);
+}
+
+.runSettingsModel strong,
+.runSettingsModel small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runSettingsModel strong {
+  font-size: 12px;
+}
+
+.runSettingsModel small {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.runSettingsTask {
+  margin: 26px 0 22px;
+  padding: 14px 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border-block: 1px solid var(--border);
+}
+
+.runSettingsTask > span {
+  padding: 5px 8px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.runSettingsTask p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.runSettingsPage .advancedSetup {
+  width: 100%;
+  margin-top: 0;
+}
+
+.runSettingsFooter {
+  margin-top: 20px;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.runSettingsFooter > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.runSettingsFooter > div > span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+@media (max-width: 820px) {
+  .productProjectBar {
+    margin-bottom: 44px;
+  }
+
+  .taskComposerToolbar,
+  .runSettingsFooter,
+  .runSettingsFooter > div,
+  .runSettingsHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taskComposerOptions,
+  .taskPrimaryActions {
+    justify-content: space-between;
+  }
+
+  .runSettingsModel {
+    width: min(100%, 260px);
+  }
+
+  .runSettingsFooter > div > span {
+    flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .productProjectBar {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .productProjectBar > button {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+
+  .productTaskIntro h1 {
+    font-size: 28px;
+  }
+
+  .taskComposerProduct textarea {
+    min-height: 190px;
+    padding: 17px;
+    font-size: 15px;
+  }
+
+  .taskComposerOptions,
+  .taskPrimaryActions,
+  .runHeaderControls {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taskTypeSelect,
+  .taskTypeSelect select,
+  .exampleFillAction,
+  .runSettingsAction,
+  .startTaskAction,
+  .runDetailsAction {
+    width: 100%;
+  }
+
+  .taskTypeSelect select {
+    flex: 1;
+  }
+
+  .runSettingsTask {
+    grid-template-columns: 1fr;
+  }
+}
