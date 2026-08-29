@@ -1030,6 +1030,63 @@ button.statusChip:hover {
   line-height: 1.5;
 }
 
+.modelGateEvidence {
+  margin: 16px 0 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+}
+
+.modelGateHeading {
+  min-height: 38px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid var(--border);
+  color: var(--accent);
+}
+
+.modelGateHeading strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.modelGateEvidence > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modelGateEvidence > div:last-child > span {
+  min-width: 0;
+  padding: 10px 11px;
+  border-right: 1px solid var(--border);
+}
+
+.modelGateEvidence > div:last-child > span:last-child {
+  border-right: 0;
+}
+
+.modelGateEvidence small,
+.modelGateEvidence span > strong {
+  display: block;
+}
+
+.modelGateEvidence small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelGateEvidence span > strong {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 14px;
+}
+
 .capabilityList {
   margin: 0;
   padding: 0;
@@ -3943,7 +4000,7 @@ button.statusChip:hover {
 
 .evaluationRateGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--border);
 }
 
@@ -5036,6 +5093,20 @@ button.controlSignal:focus-visible {
 
   .controlPlaneSignals {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .evaluationRateGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .evaluationRateGrid > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .evaluationRateGrid > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
   }
 }
 

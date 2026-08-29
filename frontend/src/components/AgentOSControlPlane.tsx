@@ -5,7 +5,7 @@ import {
   CircleGauge,
   FileCheck2,
   Gauge,
-  History,
+  Zap,
   Layers3,
   PlugZap,
   ShieldCheck,
@@ -16,8 +16,8 @@ import type {
   ExtensionResponse,
   GovernanceResponse,
   MemoryResponse,
-  RecoveryResponse,
   RunMode,
+  TraceEvent,
 } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -32,7 +32,7 @@ interface AgentOSControlPlaneProps {
   memory?: MemoryResponse;
   governance?: GovernanceResponse;
   extensions?: ExtensionResponse;
-  recovery?: RecoveryResponse;
+  trace?: TraceEvent[];
   runStatus?: string;
   activeTarget?: ControlPlaneTarget;
   onOpen?: (target: ControlPlaneTarget) => void;
@@ -57,7 +57,7 @@ export function AgentOSControlPlane({
   memory,
   governance,
   extensions,
-  recovery,
+  trace = [],
   runStatus,
   activeTarget,
   onOpen,
@@ -73,6 +73,8 @@ export function AgentOSControlPlane({
       + extensions.settings.enabled_mcp_server_ids.length
       + extensions.settings.enabled_hook_ids.length
     : 0;
+  const providerRequests = trace.filter((event) => event.event === "model.requested").length;
+  const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const checkCount = mode === "Review" ? 3 : mode === "Chat" ? 2 : 4;
   const sandbox = governance?.settings.sandbox_profile ?? "standard";
   const contextTone = context?.threshold_state === "critical"
@@ -118,12 +120,13 @@ export function AgentOSControlPlane({
       tone: "success",
     },
     {
-      id: "recovery",
-      label: "control.recovery",
-      value: t("control.recoveryCount", { count: recovery?.checkpoints.length ?? 0 }),
-      hint: t("control.hint.recovery"),
-      icon: History,
-      target: "changes",
+      id: "model-gate",
+      label: "control.modelGate",
+      value: t("control.modelGateValue", { requests: providerRequests, hits: cacheHits }),
+      hint: t("control.hint.modelGate"),
+      icon: Zap,
+      target: "overview",
+      tone: cacheHits > 0 ? "success" : "normal",
     },
     {
       id: "extensions",

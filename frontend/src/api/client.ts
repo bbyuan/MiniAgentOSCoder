@@ -530,6 +530,11 @@ export interface EvaluationSummary {
     context_compactions: number;
     resumes: number;
   };
+  optimization: {
+    provider_requests: number;
+    model_cache_hits: number;
+    avoided_provider_rate: number | null;
+  };
   failures: Array<{ category: string; count: number; share: number | null }>;
   evidence: { trace_runs: number; evidence_gaps: number };
   privacy: { content_collected: false; fields_excluded: string[] };

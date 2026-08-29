@@ -120,6 +120,8 @@ class RunArtifactWriter:
                 "## Budget",
                 "",
                 f"- Model calls: {budget.get('model_calls', 0)}",
+                f"- Provider requests: {max(0, int(budget.get('model_calls', 0)) - int(budget.get('model_cache_hits', 0)))}",
+                f"- Prompt cache hits: {budget.get('model_cache_hits', 0)}",
                 f"- Tool calls: {budget.get('tool_calls', 0)}",
                 f"- Input tokens: {budget.get('input_tokens', 0)}",
                 f"- Output tokens: {budget.get('output_tokens', 0)}",

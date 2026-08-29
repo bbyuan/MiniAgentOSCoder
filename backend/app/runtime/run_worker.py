@@ -37,6 +37,7 @@ from app.models import (
 )
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import ModelClient
+from app.runtime.prompt_cache import PromptCache
 from app.runtime.hooks import HookPipeline
 from app.runtime.mcp import MCPRuntime
 from app.runtime.run_loop import AgentRunLoop
@@ -86,6 +87,7 @@ class RunWorker:
     _approval_waiters: dict[str, ApprovalWaiter] = field(default_factory=dict)
     _threads: dict[str, Thread] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
+    prompt_cache: PromptCache = field(default_factory=PromptCache)
 
     def prepare(self, job: RunJob) -> None:
         with self._lock:
@@ -205,6 +207,7 @@ class RunWorker:
                     should_cancel=cancel_event.is_set,
                     take_steering=lambda: self.take_steering(job.run.run_id),
                     on_step=lambda step: setattr(job.run, "current_step", step),
+                    prompt_cache=self.prompt_cache,
                 ).run(
                     task=job.run.task,
                     contract=job.contract,
@@ -218,6 +221,7 @@ class RunWorker:
                         "output_tokens": max(0, int(job.run.budget.get("output_tokens", 0))),
                         "total_tokens": max(0, int(job.run.budget.get("total_tokens", 0))),
                     },
+                    initial_model_cache_hits=max(0, int(job.run.budget.get("model_cache_hits", 0))),
                 )
                 hook_pipeline.execute(HookEvent.RUN_AFTER)
             except Exception as exc:
@@ -332,6 +336,7 @@ class RunWorker:
             self._steering_messages.clear()
             self._approval_waiters.clear()
             self._threads.clear()
+            self.prompt_cache.clear()
 
     def _request_approval(
         self,
@@ -673,6 +678,7 @@ class RunWorker:
         run.current_step = result.steps
         run.budget = {
             "model_calls": result.model_calls,
+            "model_cache_hits": result.model_cache_hits,
             "tool_calls": result.tool_calls,
             **result.token_usage,
         }

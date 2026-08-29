@@ -17,6 +17,7 @@ from app.runtime.action_parser import ActionParseError
 from app.runtime.completion_guard import evaluate_completion
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
+from app.runtime.prompt_cache import PromptCache
 from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
 
@@ -33,6 +34,7 @@ class AgentRunLoop:
         should_cancel: Callable[[], bool] = lambda: False,
         take_steering: Callable[[], list[str]] = lambda: [],
         on_step: Callable[[int], None] = lambda step: None,
+        prompt_cache: PromptCache | None = None,
     ) -> None:
         self.run_id = run_id
         self.gateway = gateway
@@ -42,6 +44,8 @@ class AgentRunLoop:
         self.should_cancel = should_cancel
         self.take_steering = take_steering
         self.on_step = on_step
+        self.prompt_cache = prompt_cache
+        self.model_cache_hits = 0
 
     def run(
         self,
@@ -54,6 +58,7 @@ class AgentRunLoop:
         initial_steps: int = 0,
         initial_model_calls: int = 0,
         initial_token_usage: dict[str, int] | None = None,
+        initial_model_cache_hits: int = 0,
     ) -> RunLoopResult:
         observations: list[ActionObservation] = []
         previous_usage = initial_token_usage or {}
@@ -67,6 +72,7 @@ class AgentRunLoop:
             token_usage["input_tokens"] + token_usage["output_tokens"],
         )
         model_calls = max(0, initial_model_calls)
+        self.model_cache_hits = max(0, initial_model_cache_hits)
         initial_tool_calls = self.gateway.used_tool_calls
         started_at = self.clock()
         max_steps = max(0, min(contract.program.max_steps, contract.cost_envelope.max_steps))
@@ -85,6 +91,7 @@ class AgentRunLoop:
                 "effective_max_steps": max_steps,
                 "resumed_from_step": starting_step,
                 "initial_model_calls": model_calls,
+                "initial_model_cache_hits": self.model_cache_hits,
                 "initial_tool_calls": initial_tool_calls,
                 "initial_token_usage": dict(token_usage),
             },
@@ -135,6 +142,7 @@ class AgentRunLoop:
                     context_pack=context_pack,
                     observations=observations,
                     skills=skills,
+                    prompt_cache=self.prompt_cache,
                 )
             except ActionParseError as exc:
                 return self._failed_result(
@@ -160,6 +168,8 @@ class AgentRunLoop:
                 )
 
             _add_usage(token_usage, decision.response.usage)
+            if decision.cache_hit:
+                self.model_cache_hits += 1
             if self.should_cancel():
                 return self._cancelled_result(
                     steps=step,
@@ -460,6 +470,7 @@ class AgentRunLoop:
             termination_reason=reason,
             steps=steps,
             model_calls=model_calls,
+            model_cache_hits=self.model_cache_hits,
             tool_calls=self.gateway.used_tool_calls,
             token_usage=dict(token_usage),
             observations=list(observations),
@@ -490,6 +501,7 @@ def _terminal_payload(result: RunLoopResult) -> dict[str, object]:
         "termination_reason": result.termination_reason,
         "steps": result.steps,
         "model_calls": result.model_calls,
+        "model_cache_hits": result.model_cache_hits,
         "tool_calls": result.tool_calls,
         "token_usage": result.token_usage,
         "final_message": result.final_message,

@@ -209,3 +209,22 @@ The runtime SHALL treat `finish` as a completion request and SHALL only transiti
 - WHEN the Run exhausts a contract budget before satisfying the missing checks
 - THEN the Run SHALL fail
 - AND its result SHALL preserve the last blocked assessment
+
+### AR-015 Privacy-Bounded Model Call Gate
+
+The runtime SHALL avoid an identical provider request only when a bounded local Prompt Cache contains a previously parsed read-only planning decision for the same model namespace and complete request digest.
+
+#### Scenario: Reuse a read-only planning decision
+
+- GIVEN an identical planning request previously produced a cacheable read-only action
+- WHEN another Run reaches the same request under the same model provider namespace
+- THEN the runtime SHALL reuse that Action IR without contacting the provider
+- AND SHALL execute the selected read tool against the current workspace
+- AND SHALL record the cache hit and skipped provider request without raw prompt content
+
+#### Scenario: Refuse to cache a side effect
+
+- GIVEN a model response requests a patch, command, test, MCP call, or another effectful action
+- WHEN the planner considers the response for reuse
+- THEN the runtime SHALL NOT store that response in Prompt Cache
+- AND a later matching planning turn SHALL require a provider request

@@ -835,7 +835,6 @@ export function Workbench() {
                     memory={memory}
                     governance={governance}
                     extensions={extensions}
-                    recovery={recovery}
                   />
                   <AdvancedSetupPanel
                     governance={governance}
@@ -895,7 +894,7 @@ export function Workbench() {
             memory={memory}
             governance={governance}
             extensions={extensions}
-            recovery={recovery}
+            trace={traceEvents}
             runStatus={runStatus}
             activeTarget={runtimeDetailsOpen ? runtimePanelTarget : undefined}
             onOpen={openControlPlaneTarget}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, ShieldCheck } from "lucide-react";
+import { Check, CircleGauge, FlaskConical, Gauge, GitPullRequest, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -103,6 +103,9 @@ export function RuntimePanels({
 }: RuntimePanelsProps) {
   const [activeView, setActiveView] = useState<ControlView>(initialTarget);
   const { locale, t } = usePreferences();
+  const providerRequests = trace.filter((event) => event.event === "model.requested").length;
+  const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
+  const planningTurns = providerRequests + cacheHits;
 
   return (
     <aside className="inspector">
@@ -145,6 +148,15 @@ export function RuntimePanels({
             <div className="contractAssurance">
               <span><Check size={16} /></span>
               <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
+            </div>
+
+            <div className="modelGateEvidence">
+              <div className="modelGateHeading"><Sparkles size={15} /><strong>{t("control.modelGateTitle")}</strong></div>
+              <div>
+                <span><small>{t("control.planningTurns")}</small><strong>{planningTurns}</strong></span>
+                <span><small>{t("control.providerRequests")}</small><strong>{providerRequests}</strong></span>
+                <span><small>{t("control.cacheHits")}</small><strong>{cacheHits}</strong></span>
+              </div>
             </div>
 
             <div className="subsectionLabel">{t("control.capabilitiesTitle")}</div>

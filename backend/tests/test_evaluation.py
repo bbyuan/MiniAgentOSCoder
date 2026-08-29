@@ -64,6 +64,8 @@ def test_evaluation_aggregates_runs_and_trace_without_content(tmp_path: Path) ->
     tracer.event("run-complete", "approval.requested", {"private": "source code"})
     tracer.event("run-complete", "approval.resolved", {"decision": "approve_once"})
     tracer.event("run-complete", "context.compacted", {})
+    tracer.event("run-complete", "model.requested", {})
+    tracer.event("run-complete", "model.cache.hit", {"request_digest": "digest-only"})
     tracer.event(
         "run-failed",
         "policy.evaluated",
@@ -83,6 +85,11 @@ def test_evaluation_aggregates_runs_and_trace_without_content(tmp_path: Path) ->
     assert summary["averages"]["model_calls"] == 2.0
     assert summary["governance"]["guard_blocks"] == 1
     assert summary["governance"]["context_compactions"] == 1
+    assert summary["optimization"] == {
+        "provider_requests": 1,
+        "model_cache_hits": 1,
+        "avoided_provider_rate": 0.5,
+    }
     assert summary["failures"] == [{"category": "model_error", "count": 1, "share": 1.0}]
     assert summary["evidence"]["evidence_gaps"] == 0
     assert "private task text" not in encoded

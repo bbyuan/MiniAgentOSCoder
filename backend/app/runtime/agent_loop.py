@@ -8,6 +8,7 @@ from app.runtime.action_executor import ActionExecution, ActionExecutor
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
+from app.runtime.prompt_cache import PromptCache
 from app.runtime.run_loop import AgentRunLoop
 from app.runtime.state_machine import transition_run
 from app.runtime.tracer import TraceWriter
@@ -61,10 +62,12 @@ def execute_agent_run(
     model_client: ModelClient,
     tracer: TraceWriter,
     context_pack: ContextPack | None = None,
+    prompt_cache: PromptCache | None = None,
 ) -> RunLoopResult:
     return AgentRunLoop(
         run_id=run_id,
         gateway=gateway,
         model_client=model_client,
         tracer=tracer,
+        prompt_cache=prompt_cache,
     ).run(task=task, contract=contract, context_pack=context_pack)

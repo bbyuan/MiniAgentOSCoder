@@ -61,6 +61,10 @@ def build_evaluation_summary(history: HistoryStore, project_id: str | None = Non
                 event_counts["context_compactions"] += 1
             elif name == "run.resumed":
                 event_counts["resumes"] += 1
+            elif name == "model.requested":
+                event_counts["provider_requests"] += 1
+            elif name == "model.cache.hit":
+                event_counts["model_cache_hits"] += 1
 
     failures = Counter(_failure_category(run) for run in terminal if run["status"] != "completed")
     terminal_count = len(terminal)
@@ -93,6 +97,14 @@ def build_evaluation_summary(history: HistoryStore, project_id: str | None = Non
             "guard_blocks": event_counts["guard_blocks"],
             "context_compactions": event_counts["context_compactions"],
             "resumes": event_counts["resumes"],
+        },
+        "optimization": {
+            "provider_requests": event_counts["provider_requests"],
+            "model_cache_hits": event_counts["model_cache_hits"],
+            "avoided_provider_rate": _rate(
+                event_counts["model_cache_hits"],
+                event_counts["provider_requests"] + event_counts["model_cache_hits"],
+            ),
         },
         "failures": [
             {"category": category, "count": count, "share": _rate(count, sum(failures.values()))}

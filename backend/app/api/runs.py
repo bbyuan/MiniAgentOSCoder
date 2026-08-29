@@ -544,6 +544,8 @@ def _resume_usage(
 ) -> tuple[int, dict[str, int]]:
     steps = sum(1 for event in events if event.get("event") == "run.step.started")
     model_calls = sum(1 for event in events if event.get("event") == "model.requested")
+    model_cache_hits = sum(1 for event in events if event.get("event") == "model.cache.hit")
+    model_calls += sum(1 for event in events if event.get("event") == "model.request.skipped")
     tool_calls = sum(1 for event in events if event.get("event") in {"tool.executed", "tool.failed"})
     input_tokens = 0
     output_tokens = 0
@@ -559,6 +561,7 @@ def _resume_usage(
         output_tokens += max(0, int(usage.get("output_tokens", usage.get("completion_tokens", 0))))
     budget = {
         "model_calls": max(model_calls, int(persisted_budget.get("model_calls", 0))),
+        "model_cache_hits": max(model_cache_hits, int(persisted_budget.get("model_cache_hits", 0))),
         "tool_calls": max(tool_calls, int(persisted_budget.get("tool_calls", 0))),
         "input_tokens": max(input_tokens, int(persisted_budget.get("input_tokens", 0))),
         "output_tokens": max(output_tokens, int(persisted_budget.get("output_tokens", 0))),

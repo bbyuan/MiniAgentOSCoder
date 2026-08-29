@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, Clock3, Database, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, CheckCircle2, Clock3, Database, Gauge, ShieldCheck, Sparkles } from "lucide-react";
 import type { EvaluationSummary } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -22,6 +22,7 @@ export function EvaluationOverview({ summary }: { summary: EvaluationSummary }) 
     { label: t("evaluation.completionRate"), value: formatRate(summary.rates.completion), icon: CheckCircle2 },
     { label: t("evaluation.testPassRate"), value: formatRate(summary.rates.test_pass), icon: ShieldCheck },
     { label: t("evaluation.patchAcceptance"), value: formatRate(summary.rates.patch_acceptance), icon: Sparkles },
+    { label: t("evaluation.cacheSavings"), value: formatRate(summary.optimization.avoided_provider_rate), icon: Gauge },
   ];
   const averageMetrics = [
     [t("evaluation.modelCalls"), formatNumber(summary.averages.model_calls)],
@@ -34,6 +35,8 @@ export function EvaluationOverview({ summary }: { summary: EvaluationSummary }) 
     [t("evaluation.guardBlocks"), summary.governance.guard_blocks],
     [t("evaluation.compactions"), summary.governance.context_compactions],
     [t("evaluation.resumes"), summary.governance.resumes],
+    [t("evaluation.cacheHits"), summary.optimization.model_cache_hits],
+    [t("evaluation.providerRequests"), summary.optimization.provider_requests],
   ];
 
   return (

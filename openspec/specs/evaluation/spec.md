@@ -50,3 +50,14 @@ The product SHALL distinguish deterministic Harness verification from configured
 - WHEN a user reads the report
 - THEN it SHALL label results as runtime reproducibility evidence
 - AND SHALL NOT describe them as model quality or general task success
+
+### EV-004 Model Call Optimization Evidence
+
+The Runtime SHALL aggregate provider requests, Prompt Cache hits, and avoided-provider-call rate from validated local Trace events.
+
+#### Scenario: Inspect model gate savings
+
+- GIVEN local Runs contain model request and cache-hit evidence
+- WHEN a client opens local evaluation insights
+- THEN the Web workbench SHALL show provider requests, cache hits, and the avoided-provider-call rate
+- AND the aggregate response SHALL NOT include cache entries, prompts, model responses, or source content

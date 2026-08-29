@@ -116,6 +116,7 @@ class RunLoopResult(Serializable):
     termination_reason: str
     steps: int = 0
     model_calls: int = 0
+    model_cache_hits: int = 0
     tool_calls: int = 0
     token_usage: dict[str, int] = field(default_factory=dict)
     observations: list[ActionObservation] = field(default_factory=list)

@@ -8,6 +8,7 @@ from app.models import ActiveSkill, ActionIR, ActionObservation, AgentContract, 
 from app.models.base import Serializable
 from app.runtime.action_parser import ActionParseError, parse_action_ir
 from app.runtime.model_client import ModelClient, ModelMessage, ModelRequest, ModelResponse
+from app.runtime.prompt_cache import PromptCache
 from app.runtime.tracer import TraceWriter
 
 
@@ -15,6 +16,7 @@ from app.runtime.tracer import TraceWriter
 class PlannerDecision(Serializable):
     action: ActionIR
     response: ModelResponse
+    cache_hit: bool = False
 
 
 def build_action_request(
@@ -118,6 +120,7 @@ def plan_next_action(
     context_pack: ContextPack | None = None,
     observations: list[ActionObservation] | None = None,
     skills: list[ActiveSkill] | None = None,
+    prompt_cache: PromptCache | None = None,
 ) -> PlannerDecision:
     request = build_action_request(
         task=task,
@@ -126,25 +129,50 @@ def plan_next_action(
         context_pack=context_pack,
         observations=observations,
         skills=skills,
+        model=_model_identity(model_client),
     )
-    tracer.event(run_id, "model.requested", {"request": _trace_request(request)}, role="Planner")
-
-    try:
-        response = model_client.complete(request)
-    except Exception as exc:
+    request.metadata["model_cache_namespace"] = _model_cache_namespace(model_client)
+    cached = prompt_cache.get(request) if prompt_cache is not None else None
+    if cached is not None:
+        request_digest, response, action_type = cached
         tracer.event(
             run_id,
-            "model.failed",
-            {"error": str(exc), "error_type": type(exc).__name__},
+            "model.cache.hit",
+            {"request_digest": request_digest, "action_type": action_type},
             role="Planner",
         )
-        raise
-    tracer.event(
-        run_id,
-        "model.responded",
-        {"response": response.to_dict()},
-        role="Planner",
-    )
+        tracer.event(
+            run_id,
+            "model.request.skipped",
+            {"reason": "exact_read_only_cache_hit", "request_digest": request_digest},
+            role="Planner",
+        )
+    else:
+        if prompt_cache is not None:
+            tracer.event(
+                run_id,
+                "model.cache.missed",
+                {"request_digest": prompt_cache.key_for(request)},
+                role="Planner",
+            )
+        tracer.event(run_id, "model.requested", {"request": _trace_request(request)}, role="Planner")
+
+        try:
+            response = model_client.complete(request)
+        except Exception as exc:
+            tracer.event(
+                run_id,
+                "model.failed",
+                {"error": str(exc), "error_type": type(exc).__name__},
+                role="Planner",
+            )
+            raise
+        tracer.event(
+            run_id,
+            "model.responded",
+            {"response": response.to_dict()},
+            role="Planner",
+        )
 
     try:
         action = parse_action_ir(response.content)
@@ -156,6 +184,24 @@ def plan_next_action(
             role="Planner",
         )
         raise
+    if cached is not None:
+        tracer.event(
+            run_id,
+            "model.cache.reused",
+            {"request_digest": cached[0], "action_type": action.type},
+            role="Planner",
+        )
+        return PlannerDecision(action=action, response=response, cache_hit=True)
+
+    if prompt_cache is not None:
+        request_digest = prompt_cache.put(request, response, action.type)
+        if request_digest is not None:
+            tracer.event(
+                run_id,
+                "model.cache.stored",
+                {"request_digest": request_digest, "action_type": action.type},
+                role="Planner",
+            )
     return PlannerDecision(action=action, response=response)
 
 
@@ -172,6 +218,24 @@ def _render_observation(observation: ActionObservation, output_limit: int = 4000
         "metadata": observation.metadata,
     }
     return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def _model_identity(model_client: ModelClient) -> str:
+    configured = getattr(model_client, "default_model", None)
+    if isinstance(configured, str) and configured.strip():
+        return configured.strip()
+    static = getattr(model_client, "model", None)
+    if isinstance(static, str) and static.strip():
+        return static.strip()
+    return type(model_client).__name__
+
+
+def _model_cache_namespace(model_client: ModelClient) -> str:
+    parts = [type(model_client).__name__, _model_identity(model_client)]
+    base_url = getattr(model_client, "base_url", None)
+    if isinstance(base_url, str):
+        parts.append(base_url.rstrip("/"))
+    return sha256("\n".join(parts).encode("utf-8")).hexdigest()
 
 
 def _trace_request(request: ModelRequest) -> dict[str, object]:

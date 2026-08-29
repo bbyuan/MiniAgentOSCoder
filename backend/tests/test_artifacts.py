@@ -47,7 +47,7 @@ def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) 
         status=RunPhase.COMPLETED,
         changed_files=["app.py"],
         applied_patches=2,
-        budget={"model_calls": 4, "tool_calls": 3, "total_tokens": 120},
+        budget={"model_calls": 4, "model_cache_hits": 1, "tool_calls": 3, "total_tokens": 120},
     )
     result = RunLoopResult(
         run_id=run.run_id,
@@ -78,6 +78,8 @@ def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) 
     assert "-old" in patches and "+fixed" in patches
     assert "Applied patches: 2" in report
     assert "Trace events before report: 1" in report
+    assert "Provider requests: 3" in report
+    assert "Prompt cache hits: 1" in report
     assert "## Completion Guard" in report
     assert "`tests_after_change`: pytest passed" in report
     assert "2026-08-28T00:00:00+00:00" in report
