@@ -26,6 +26,7 @@ from app.models import (
     ExtensionSettings,
     GovernanceSettings,
     HookEvent,
+    PolicyEvaluation,
     RunArtifacts,
     RunLoopResult,
     RunPhase,
@@ -93,6 +94,9 @@ class RunWorker:
             self._cancel_events[job.run.run_id] = Event()
 
         transition_run(job.run, RunPhase.RUNNING)
+        if job.artifacts is not None:
+            _set_plan_state(job.artifacts, "context", "done", "Task context is ready")
+            _set_plan_state(job.artifacts, "inspect", "active")
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": RunPhase.RUNNING.value})
         job.on_state_changed(job.run, None)
 
@@ -155,11 +159,7 @@ class RunWorker:
                         preview,
                     ),
                     result_handler=lambda action, result: self._record_tool_result(job, action, result),
-                    policy_handler=lambda evaluation: job.tracer.event(
-                        job.run.run_id,
-                        "policy.evaluated",
-                        {"evaluation": evaluation.to_dict()},
-                    ),
+                    policy_handler=lambda evaluation: self._record_policy_evaluation(job, evaluation),
                     governance=job.governance,
                     sandbox_validator=sandbox.validate_argv,
                     before_handler=lambda action, descriptor: hook_pipeline.execute(
@@ -455,6 +455,9 @@ class RunWorker:
                     _set_plan_state(job.artifacts, "test", "active")
                 transition_run(job.run, RunPhase.TESTING)
             else:
+                if job.artifacts is not None:
+                    _set_plan_state(job.artifacts, "inspect", "done")
+                    _set_plan_state(job.artifacts, "patch", "failed", result.error or "Patch validation failed")
                 transition_run(job.run, RunPhase.REPAIRING)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
         elif action.type == "run_test":
@@ -491,6 +494,19 @@ class RunWorker:
 
         job.on_state_changed(job.run, None)
         self._update_context_from_result(job, action, result)
+
+    @staticmethod
+    def _record_policy_evaluation(job: RunJob, evaluation: PolicyEvaluation) -> None:
+        job.tracer.event(
+            job.run.run_id,
+            "policy.evaluated",
+            {"evaluation": evaluation.to_dict()},
+        )
+        if job.artifacts is None or evaluation.tool != "apply_patch" or evaluation.outcome == "allowed":
+            return
+        detail = evaluation.decisions[-1].reason if evaluation.decisions else "Patch validation failed"
+        _set_plan_state(job.artifacts, "inspect", "done")
+        _set_plan_state(job.artifacts, "patch", "failed", detail)
 
     @staticmethod
     def _update_context_from_result(job: RunJob, action: ActionIR, result: ToolResult) -> None:
@@ -562,7 +578,7 @@ class RunWorker:
             )
         except (OSError, ValueError) as exc:
             if job.artifacts is not None:
-                _set_plan_state(job.artifacts, "report", "active")
+                _set_plan_state(job.artifacts, "report", "failed", "Report generation failed")
             job.tracer.event(
                 job.run.run_id,
                 "report.failed",
@@ -613,8 +629,10 @@ def _pytest_count(output: str, label: str) -> int:
     return int(match.group(1)) if match else 0
 
 
-def _set_plan_state(artifacts: RunArtifacts, step_id: str, state: str) -> None:
+def _set_plan_state(artifacts: RunArtifacts, step_id: str, state: str, detail: str | None = None) -> None:
     for step in artifacts.plan:
         if step.id == step_id:
             step.state = state
+            if detail is not None:
+                step.detail = detail
             return

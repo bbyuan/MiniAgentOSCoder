@@ -81,7 +81,7 @@ def test_run_worker_finalizes_active_and_waiting_plan_steps(tmp_path: Path) -> N
     worker.execute(job)
 
     states = {step.id: step.state for step in job.artifacts.plan}
-    assert states == {"scan": "done", "context": "skipped", "test": "skipped", "report": "done"}
+    assert states == {"scan": "done", "context": "done", "test": "skipped", "report": "done"}
 
 
 def test_run_worker_rejects_duplicate_prepare(tmp_path: Path) -> None:

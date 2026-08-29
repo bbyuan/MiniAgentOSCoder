@@ -23,7 +23,7 @@ import { usePreferences } from "../preferences";
 
 interface ActivityFeedProps {
   events: TraceEvent[];
-  active: boolean;
+  status: string;
 }
 
 function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
@@ -55,9 +55,34 @@ function eventTime(value: string): string {
     : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export function ActivityFeed({ events, active }: ActivityFeedProps) {
+function activityState(status: string): { key: "activity.live" | "activity.completed" | "activity.failed" | "activity.cancelled" | "activity.paused"; tone: string } {
+  if (["running", "applying_patch", "testing", "repairing", "cancellation_requested"].includes(status)) {
+    return { key: "activity.live", tone: "active" };
+  }
+  if (status === "completed") return { key: "activity.completed", tone: "completed" };
+  if (status === "failed") return { key: "activity.failed", tone: "failed" };
+  if (status === "cancelled") return { key: "activity.cancelled", tone: "cancelled" };
+  return { key: "activity.paused", tone: "paused" };
+}
+
+function eventDetail(event: TraceEvent, t: ReturnType<typeof usePreferences>["t"]): string {
+  const error = event.payload.error;
+  if (typeof error === "string" && error.trim()) return error;
+  const reason = event.payload.termination_reason;
+  if (typeof reason === "string" && reason.trim()) return reason;
+  if (event.event.startsWith("model.")) return t("activity.detail.model");
+  if (event.event.startsWith("tool.")) return t("activity.detail.tool");
+  if (event.event.startsWith("approval.")) return t("activity.detail.approval");
+  if (event.event.startsWith("context.")) return t("activity.detail.context");
+  if (event.event.startsWith("patch.")) return t("activity.detail.patch");
+  if (event.event.startsWith("run.")) return t("activity.detail.runtime");
+  return t("activity.detail.system");
+}
+
+export function ActivityFeed({ events, status }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
-  const visibleEvents = events.slice(-8);
+  const visibleEvents = events.slice(-10);
+  const state = activityState(status);
 
   return (
     <section className="activityPanel" aria-live="polite">
@@ -66,9 +91,9 @@ export function ActivityFeed({ events, active }: ActivityFeedProps) {
           <h2>{t("activity.title")}</h2>
           <span>{t("activity.eventCount", { count: events.length })}</span>
         </div>
-        <div className={`liveIndicator ${active ? "active" : ""}`}>
+        <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
-          {active ? t("activity.live") : t("activity.waiting")}
+          {t(state.key)}
         </div>
       </div>
 
@@ -90,7 +115,7 @@ export function ActivityFeed({ events, active }: ActivityFeedProps) {
                 </div>
                 <div className="eventCopy">
                   <strong>{translateKnownText(locale, event.event)}</strong>
-                  <span>{event.role}</span>
+                  <span>{eventDetail(event, t)}</span>
                 </div>
                 <time dateTime={event.time}>{eventTime(event.time)}</time>
               </article>

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
+import { Activity, FlaskConical, GitPullRequest, ShieldCheck } from "lucide-react";
 import type {
-  ApprovalRequest,
   ContextCompactionResponse,
   ContextPack,
   ExtensionResponse,
@@ -18,7 +17,6 @@ import type {
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 import { PlanPanel, type PlanItem } from "./PlanPanel";
-import { ApprovalPanel } from "./ApprovalPanel";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { RunReportPanel } from "./RunReportPanel";
 import { TraceReplayPanel } from "./TraceReplayPanel";
@@ -27,7 +25,8 @@ import { MemoryPanel } from "./MemoryPanel";
 import { GovernancePanel } from "./GovernancePanel";
 import { ExtensionPanel } from "./ExtensionPanel";
 
-type InspectorTab = "overview" | "context" | "memory" | "extensions" | "governance" | "recovery" | "report" | "trace";
+type InspectorTab = "overview" | "changes" | "diagnostics";
+type DiagnosticView = "context" | "memory" | "extensions" | "governance" | "trace";
 
 interface RuntimePanelsProps {
   plan: PlanItem[];
@@ -58,13 +57,9 @@ interface RuntimePanelsProps {
   trace: TraceEvent[];
   runId?: string;
   runStatus: string;
-  approval: ApprovalRequest | null;
-  approvalBusy: boolean;
   recovery?: RecoveryResponse;
   report?: RunReportResponse;
   rollbackBusy?: string;
-  onApprove: () => void;
-  onDeny: (reason: string) => void;
   onRollback: (checkpointId: string) => void;
   onCompactContext: (targetRatio: number, confirmed: boolean) => Promise<ContextCompactionResponse>;
   onCreateMemory: (input: MemoryInput) => Promise<void>;
@@ -90,13 +85,9 @@ export function RuntimePanels({
   trace,
   runId,
   runStatus,
-  approval,
-  approvalBusy,
   recovery,
   report,
   rollbackBusy,
-  onApprove,
-  onDeny,
   onRollback,
   onCompactContext,
   onCreateMemory,
@@ -106,16 +97,12 @@ export function RuntimePanels({
   onSaveExtensions,
 }: RuntimePanelsProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
+  const [diagnosticView, setDiagnosticView] = useState<DiagnosticView>("context");
   const { locale, t } = usePreferences();
   const tabs: Array<{ id: InspectorTab; label: string }> = [
     { id: "overview", label: t("inspector.overview") },
-    { id: "context", label: t("inspector.context") },
-    { id: "memory", label: t("inspector.memory") },
-    { id: "extensions", label: t("inspector.extensions") },
-    { id: "governance", label: t("inspector.governance") },
-    { id: "recovery", label: t("inspector.recovery") },
-    { id: "report", label: t("inspector.report") },
-    { id: "trace", label: t("inspector.trace") },
+    { id: "changes", label: t("inspector.changes") },
+    { id: "diagnostics", label: t("inspector.diagnostics") },
   ];
 
   return (
@@ -167,6 +154,11 @@ export function RuntimePanels({
               </div>
             </section>
 
+          </>
+        ) : null}
+
+        {activeTab === "changes" ? (
+          <>
             <section className="inspectorSection signalGrid">
               <div className="signalItem">
                 <div className="signalTitle"><GitPullRequest size={15} /><span>{t("diff.title")}</span></div>
@@ -179,50 +171,29 @@ export function RuntimePanels({
                 <small>{tests.command} · {t("tests.passed", { count: tests.passed })} · {t("tests.failed", { count: tests.failed })}</small>
               </div>
             </section>
-
-            <ApprovalPanel
-              approval={approval}
-              busy={approvalBusy}
-              onApprove={onApprove}
-              onDeny={onDeny}
-            />
+            <RunReportPanel report={report} />
+            <RecoveryPanel recovery={recovery} busyCheckpoint={rollbackBusy} onRollback={onRollback} />
           </>
         ) : null}
 
-        {activeTab === "context" ? (
-          <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} />
-        ) : null}
-
-        {activeTab === "memory" ? (
-          <MemoryPanel
-            memory={memory}
-            busy={memoryBusy}
-            onCreate={onCreateMemory}
-            onUpdate={onUpdateMemory}
-            onDelete={onDeleteMemory}
-          />
-        ) : null}
-
-        {activeTab === "governance" ? (
-          <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} />
-        ) : null}
-
-        {activeTab === "extensions" ? (
-          <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} />
-        ) : null}
-
-        {activeTab === "recovery" ? (
-          <RecoveryPanel
-            recovery={recovery}
-            busyCheckpoint={rollbackBusy}
-            onRollback={onRollback}
-          />
-        ) : null}
-
-        {activeTab === "report" ? <RunReportPanel report={report} /> : null}
-
-        {activeTab === "trace" ? (
-          <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} />
+        {activeTab === "diagnostics" ? (
+          <>
+            <section className="diagnosticChooser">
+              <Activity size={15} />
+              <select value={diagnosticView} onChange={(event) => setDiagnosticView(event.target.value as DiagnosticView)}>
+                <option value="context">{t("inspector.context")}</option>
+                <option value="memory">{t("inspector.memory")}</option>
+                <option value="extensions">{t("inspector.extensions")}</option>
+                <option value="governance">{t("inspector.governance")}</option>
+                <option value="trace">{t("inspector.trace")}</option>
+              </select>
+            </section>
+            {diagnosticView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
+            {diagnosticView === "memory" ? <MemoryPanel memory={memory} busy={memoryBusy} onCreate={onCreateMemory} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} /> : null}
+            {diagnosticView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} /> : null}
+            {diagnosticView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
+            {diagnosticView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
+          </>
         ) : null}
       </div>
     </aside>

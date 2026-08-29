@@ -1,4 +1,4 @@
-import { Check, Circle, LoaderCircle } from "lucide-react";
+import { Ban, Check, Circle, CircleAlert, LoaderCircle, Minus } from "lucide-react";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -13,6 +13,9 @@ const icons = {
   done: <Check size={14} />,
   active: <LoaderCircle size={14} />,
   waiting: <Circle size={14} />,
+  failed: <CircleAlert size={14} />,
+  cancelled: <Ban size={14} />,
+  skipped: <Minus size={14} />,
 };
 
 export function PlanPanel({ items }: { items: PlanItem[] }) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CircleDot, GitBranch, PanelRightClose, PanelRightOpen, Square } from "lucide-react";
+import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, Square, UserRound } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -25,8 +25,8 @@ import {
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
+import { ApprovalPanel } from "../components/ApprovalPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
-import { MetricStrip } from "../components/MetricStrip";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
@@ -76,9 +76,10 @@ export function Workbench() {
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
   const [finalMessage, setFinalMessage] = useState("");
+  const [terminationReason, setTerminationReason] = useState("");
+  const [lastObservation, setLastObservation] = useState<Record<string, unknown>>({});
+  const [followUpTask, setFollowUpTask] = useState("");
   const [completion, setCompletion] = useState<CompletionAssessment | null>();
-  const [completionExpectations, setCompletionExpectations] = useState<string[]>([]);
-  const [runBudget, setRunBudget] = useState<Record<string, number>>({});
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [recovery, setRecovery] = useState<RecoveryResponse>();
@@ -124,13 +125,6 @@ export function Workbench() {
   ].includes(runStatus);
   const runIsPrepared = Boolean(runId && runStatus === "planning");
   const displayStatus = runId ? runStatus : connection;
-  const displayBudget = {
-    modelCalls: runBudget.model_calls ?? 0,
-    toolCalls: runBudget.tool_calls ?? 0,
-    tokens: contextPack
-      ? `${contextPack.budget_report.used_tokens}/${contextPack.budget_report.max_tokens}`
-      : "0/0",
-  };
   const copy = runId
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
@@ -185,14 +179,14 @@ export function Workbench() {
     }
   }
 
-  async function prepareRun(startImmediately = false) {
+  async function prepareRun(startImmediately = false, requestedTask = task) {
     if (!project) return;
     setBusy(true);
     setError(null);
     setFinalMessage("");
+    setTerminationReason("");
+    setLastObservation({});
     setCompletion(undefined);
-    setCompletionExpectations([]);
-    setRunBudget({});
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
@@ -205,7 +199,7 @@ export function Workbench() {
     streamCleanup.current = null;
     try {
       const [run, providerStatus] = await Promise.all([
-        daemonApi.createRun({ project_id: project.project_id, task, mode }),
+        daemonApi.createRun({ project_id: project.project_id, task: requestedTask, mode }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
       const [
@@ -230,7 +224,6 @@ export function Workbench() {
       setRunId(run.run_id);
       setRunStatus(run.status);
       setContract(run.contract);
-      setCompletionExpectations(run.completion_expectations ?? []);
       setContextPack(contextResponse);
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
@@ -314,18 +307,15 @@ export function Workbench() {
           || event.event.startsWith("hook.")) {
           daemonApi.getExtensions(activeRunId).then(setExtensions).catch(() => undefined);
         }
-        const eventBudget = Object.fromEntries(
-          Object.entries(event.payload).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
-        );
-        if (Object.keys(eventBudget).length > 0) {
-          setRunBudget((current) => ({ ...current, ...eventBudget }));
-        }
         const transitionedStatus = event.payload.status;
         if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
           setRunStatus(transitionedStatus);
           if (["waiting_approval", "testing", "repairing", "completed"].includes(transitionedStatus)) {
             daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
           }
+        }
+        if (event.event === "run.budget_exceeded" && typeof event.payload.termination_reason === "string") {
+          setTerminationReason(event.payload.termination_reason);
         }
         if (
           event.event === "run.transitioned" &&
@@ -355,8 +345,9 @@ export function Workbench() {
           ]) => {
             setRunStatus(summary.status);
             setFinalMessage(summary.final_message || "");
+            setTerminationReason(summary.termination_reason || "");
+            setLastObservation(summary.last_observation || {});
             setCompletion(summary.completion);
-            setRunBudget(summary.budget || {});
             setArtifacts(latestArtifacts);
             setRecovery(latestRecovery);
             setReport(latestReport);
@@ -420,9 +411,10 @@ export function Workbench() {
     setArtifacts(undefined);
     setTraceEvents([]);
     setFinalMessage("");
+    setTerminationReason("");
+    setLastObservation({});
+    setFollowUpTask("");
     setCompletion(undefined);
-    setCompletionExpectations([]);
-    setRunBudget({});
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
@@ -602,6 +594,14 @@ export function Workbench() {
     }
   }
 
+  async function startFollowUp() {
+    const nextTask = followUpTask.trim();
+    if (!nextTask) return;
+    setTask(nextTask);
+    setFollowUpTask("");
+    await prepareRun(true, nextTask);
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -669,17 +669,13 @@ export function Workbench() {
               </>
             ) : (
               <>
-          <header className="runHeader">
+          <header className="runHeader sessionRunHeader">
             <div className="runHeading">
-              <span className="eyebrow">{t("run.eyebrow")}</span>
-              <h1>{t(copy.title)}</h1>
-              <p>{finalMessage || t(copy.description)}</p>
+              <span className="eyebrow">{t("session.currentTask")}</span>
+              <h1>{t("session.title")}</h1>
+              <p>{basename(project.path)} · {translateMode(locale, mode)}</p>
             </div>
             <div className="runHeaderControls">
-              <div className="runMeta">
-                <span><GitBranch size={14} />{translateMode(locale, mode)}</span>
-                {runId ? <span title={runId}><CircleDot size={14} />{runId.slice(-8)}</span> : null}
-              </div>
               <button type="button" className="runDetailsAction" onClick={() => setRuntimeDetailsOpen((current) => !current)}>
                 {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
                 {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
@@ -687,17 +683,41 @@ export function Workbench() {
             </div>
           </header>
 
-          <MetricStrip budget={displayBudget} phase={displayStatus} />
+          <section className="conversationTurn userTurn">
+            <div className="turnAvatar"><UserRound size={16} /></div>
+            <div className="turnBody">
+              <span>{t("session.you")}</span>
+              <p>{task}</p>
+            </div>
+          </section>
+
+          <section className="conversationTurn agentTurn">
+            <div className="turnAvatar"><Bot size={16} /></div>
+            <div className="turnBody">
+              <span>MiniAgentOS</span>
+              <strong>{t(copy.title)}</strong>
+              {!terminal ? <p>{t(copy.description)}</p> : null}
+            </div>
+          </section>
+
+          {approval ? (
+            <div className="inlineApproval">
+              <ApprovalPanel approval={approval} busy={approvalBusy} onApprove={approveAction} onDeny={denyAction} />
+            </div>
+          ) : null}
+
           {terminal ? (
             <CompletionSummary
               status={runStatus}
               message={finalMessage}
+              terminationReason={terminationReason}
+              lastObservation={lastObservation}
               artifacts={artifacts}
               completion={completion}
               onNewTask={() => resetRunState(true)}
             />
           ) : null}
-          <ActivityFeed events={traceEvents} active={runIsActive} />
+          <ActivityFeed events={traceEvents} status={runStatus} />
 
           {error ? <ErrorBanner message={error} /> : null}
 
@@ -708,6 +728,31 @@ export function Workbench() {
                 <Square size={12} fill="currentColor" />{t("composer.cancel")}
               </button>
             </div>
+          ) : null}
+
+          {terminal ? (
+            <section className="followUpComposer">
+              <label htmlFor="follow-up-task">{t("session.followUp")}</label>
+              <div>
+                <textarea
+                  id="follow-up-task"
+                  rows={2}
+                  value={followUpTask}
+                  placeholder={t("session.followUpPlaceholder")}
+                  onChange={(event) => setFollowUpTask(event.target.value)}
+                  onKeyDown={(event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && followUpTask.trim()) {
+                      event.preventDefault();
+                      void startFollowUp();
+                    }
+                  }}
+                />
+                <button type="button" disabled={!followUpTask.trim() || busy} onClick={() => void startFollowUp()} title={t("session.sendFollowUp")} aria-label={t("session.sendFollowUp")}>
+                  <ArrowUp size={17} />
+                </button>
+              </div>
+              <span>{t("session.followUpHint")}</span>
+            </section>
           ) : null}
               </>
             )}
@@ -729,13 +774,9 @@ export function Workbench() {
           trace={traceEvents}
           runId={runId}
           runStatus={runStatus}
-          approval={approval}
-          approvalBusy={approvalBusy}
           recovery={recovery}
           report={report}
           rollbackBusy={rollbackBusy}
-          onApprove={approveAction}
-          onDeny={denyAction}
           onRollback={rollbackToCheckpoint}
           onCompactContext={compactContext}
           onCreateMemory={createMemory}

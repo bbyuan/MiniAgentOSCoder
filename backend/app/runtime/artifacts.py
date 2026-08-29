@@ -75,6 +75,11 @@ def build_run_artifacts(
 ) -> tuple[RunArtifacts, ContextPack]:
     plan = build_initial_plan(run.mode, project_profile)
     context_pack, context_explanation = build_initial_context(run, project_profile, plan, memories)
+    for step in plan:
+        if step.id == "context":
+            step.state = "done"
+            step.detail = "Task context is ready"
+            break
     trace_summary = [
         str(event.event if isinstance(event, TraceEvent) else event.get("event", "unknown"))
         for event in trace_events
