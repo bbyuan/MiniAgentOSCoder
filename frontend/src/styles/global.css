@@ -6952,7 +6952,7 @@ button.controlSignal:focus-visible {
   bottom: 18px;
   z-index: 8;
   margin: 14px 0 2px 43px;
-  padding: 12px;
+  padding: 13px;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
@@ -6960,15 +6960,48 @@ button.controlSignal:focus-visible {
   backdrop-filter: blur(14px);
 }
 
+.runSteeringComposer header {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.runSteeringComposer header > div {
+  min-width: 0;
+}
+
+.runSteeringComposer header strong,
+.runSteeringComposer header span {
+  display: block;
+}
+
+.runSteeringComposer header strong {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.runSteeringComposer header span {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .runSteeringComposer textarea {
   width: 100%;
-  min-height: 54px;
-  padding: 2px 3px 8px;
+  min-height: 64px;
+  margin-top: 10px;
+  padding: 11px 12px;
   resize: vertical;
-  border: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   outline: 0;
   color: var(--text);
-  background: transparent;
+  background: var(--surface);
   font: inherit;
   font-size: 14px;
   line-height: 1.55;
@@ -6985,12 +7018,15 @@ button.controlSignal:focus-visible {
 }
 
 .runSteeringComposer footer {
+  margin-top: 10px;
   min-height: 34px;
   justify-content: space-between;
   gap: 12px;
 }
 
 .runSteeringComposer footer > div {
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 7px;
 }
 
@@ -7022,17 +7058,22 @@ button.controlSignal:focus-visible {
 }
 
 .runSteeringComposer button {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .steeringStop {
+  padding: 0 10px;
   border: 1px solid var(--border);
-  color: var(--text-secondary);
-  background: var(--surface);
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .steeringStop:hover:not(:disabled) {
@@ -7042,9 +7083,23 @@ button.controlSignal:focus-visible {
 }
 
 .steeringSend {
+  padding: 0 11px;
   border: 1px solid var(--text);
   color: var(--surface);
   background: var(--text);
+}
+
+.steeringSuggestion {
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.steeringSuggestion:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .runSteeringComposer button:disabled {
@@ -7266,10 +7321,17 @@ button.controlSignal:focus-visible {
 
   .runSteeringComposer footer {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .steeringState {
     padding-top: 7px;
+  }
+
+  .runSteeringComposer footer > div,
+  .steeringSuggestion,
+  .steeringSend {
+    width: 100%;
   }
 }
 

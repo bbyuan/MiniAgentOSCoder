@@ -1,4 +1,4 @@
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, GitBranch, SearchCode, Square, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import { usePreferences } from "../preferences";
 
@@ -13,6 +13,11 @@ interface RunSteeringComposerProps {
 export function RunSteeringComposer({ status, busy, stopping, onSend, onStop }: RunSteeringComposerProps) {
   const { t } = usePreferences();
   const [message, setMessage] = useState("");
+  const suggestions = [
+    { key: "steering.suggestion.inspect", icon: SearchCode },
+    { key: "steering.suggestion.test", icon: TestTube2 },
+    { key: "steering.suggestion.plan", icon: GitBranch },
+  ] as const;
 
   async function submit() {
     const guidance = message.trim();
@@ -27,6 +32,22 @@ export function RunSteeringComposer({ status, busy, stopping, onSend, onStop }: 
 
   return (
     <section className="runSteeringComposer" aria-label={t("steering.title")}>
+      <header>
+        <div>
+          <strong>{t("steering.title")}</strong>
+          <span>{t(status === "waiting_approval" ? "steering.replacesApproval" : "steering.safeBoundary")}</span>
+        </div>
+        <button
+          type="button"
+          className="steeringStop"
+          disabled={busy || stopping}
+          onClick={onStop}
+          title={t("composer.cancel")}
+        >
+          <Square size={12} fill="currentColor" />
+          {t("steering.stop")}
+        </button>
+      </header>
       <textarea
         rows={2}
         value={message}
@@ -43,28 +64,30 @@ export function RunSteeringComposer({ status, busy, stopping, onSend, onStop }: 
       <footer>
         <span className={`steeringState state-${status}`}>
           <i aria-hidden="true" />
-          {t(status === "waiting_approval" ? "steering.replacesApproval" : "steering.safeBoundary")}
+          {t("steering.interruptible")}
         </span>
         <div>
-          <button
-            type="button"
-            className="steeringStop"
-            disabled={busy || stopping}
-            onClick={onStop}
-            title={t("composer.cancel")}
-            aria-label={t("composer.cancel")}
-          >
-            <Square size={13} fill="currentColor" />
-          </button>
+          {suggestions.map(({ key, icon: Icon }) => (
+            <button
+              type="button"
+              className="steeringSuggestion"
+              disabled={busy || stopping}
+              onClick={() => setMessage((current) => current ? `${current}\n${t(key)}` : t(key))}
+              key={key}
+            >
+              <Icon size={14} />
+              {t(key)}
+            </button>
+          ))}
           <button
             type="button"
             className="steeringSend"
             disabled={!message.trim() || busy || stopping}
             onClick={() => void submit()}
             title={t("steering.send")}
-            aria-label={t("steering.send")}
           >
             <ArrowUp size={17} />
+            {t("steering.sendShort")}
           </button>
         </div>
       </footer>
