@@ -24,6 +24,23 @@ class RunPhase(StrEnum):
 
 
 @dataclass(slots=True)
+class CompletionCheck(Serializable):
+    id: str
+    passed: bool
+    evidence: str
+    required: bool = True
+
+
+@dataclass(slots=True)
+class CompletionAssessment(Serializable):
+    verdict: str
+    mode: str
+    checks: list[CompletionCheck] = field(default_factory=list)
+    summary: str = ""
+    attempt: int = 1
+
+
+@dataclass(slots=True)
 class RunState(Serializable):
     run_id: str
     task: str
@@ -103,3 +120,4 @@ class RunLoopResult(Serializable):
     token_usage: dict[str, int] = field(default_factory=dict)
     observations: list[ActionObservation] = field(default_factory=list)
     final_message: str = ""
+    completion: CompletionAssessment | None = None

@@ -1,10 +1,10 @@
 # 任务
 
-- [ ] 1.1 建立 CompletionCheck、CompletionAssessment 数据模型和模式策略
-- [ ] 1.2 将 finish 验收、拒绝反馈和 Trace 事件接入自主运行循环
-- [ ] 1.3 覆盖通过、拒绝续跑、预算耗尽和五种模式的后端测试
-- [ ] 2.1 将验收结果写入 Run API、SQLite 历史和增量迁移
-- [ ] 2.2 在运行报告中生成可复核的 Completion Guard 章节
+- [x] 1.1 建立 CompletionCheck、CompletionAssessment 数据模型和模式策略
+- [x] 1.2 将 finish 验收、拒绝反馈和 Trace 事件接入自主运行循环
+- [x] 1.3 覆盖通过、拒绝续跑、预算耗尽和五种模式的后端测试
+- [x] 2.1 将验收结果写入 Run API、SQLite 历史和增量迁移
+- [x] 2.2 在运行报告中生成可复核的 Completion Guard 章节
 - [ ] 3.1 在运行前检查中展示模式对应的验收预期
 - [ ] 3.2 在实时终态和 Run Center 历史详情中展示验收证据板
 - [ ] 3.3 补齐中英文、深浅主题和窄屏样式

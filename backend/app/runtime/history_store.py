@@ -91,8 +91,8 @@ class HistoryStore:
                     termination_reason, final_message, budget_json, changed_files_json,
                     applied_patches, repair_attempts, steps, model_calls, tool_calls,
                     input_tokens, output_tokens, total_tokens, test_status,
-                    report_path, trace_path, patch_path, archived
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    report_path, trace_path, patch_path, archived, completion_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '{}')
                 ON CONFLICT(run_id) DO NOTHING
                 """,
                 (
@@ -137,7 +137,7 @@ class HistoryStore:
                     status=?, phase=?, updated_at=?, completed_at=COALESCE(?, completed_at),
                     termination_reason=?, final_message=?, budget_json=?, changed_files_json=?,
                     applied_patches=?, repair_attempts=?, steps=?, model_calls=?, tool_calls=?,
-                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?
+                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json=?
                 WHERE run_id=?
                 """,
                 (
@@ -158,6 +158,7 @@ class HistoryStore:
                     values["output_tokens"],
                     values["total_tokens"],
                     values["test_status"],
+                    values["completion_json"],
                     run.run_id,
                 ),
             )
@@ -299,12 +300,19 @@ class HistoryStore:
                     report_path TEXT NOT NULL,
                     trace_path TEXT NOT NULL,
                     patch_path TEXT NOT NULL,
-                    archived INTEGER NOT NULL DEFAULT 0
+                    archived INTEGER NOT NULL DEFAULT 0,
+                    completion_json TEXT NOT NULL DEFAULT '{}'
                 );
                 CREATE INDEX IF NOT EXISTS idx_runs_project_updated ON runs(project_id, updated_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_runs_status_updated ON runs(status, updated_at DESC);
                 """
             )
+            columns = {
+                row[1]
+                for row in connection.execute("PRAGMA table_info(runs)").fetchall()
+            }
+            if "completion_json" not in columns:
+                connection.execute("ALTER TABLE runs ADD COLUMN completion_json TEXT NOT NULL DEFAULT '{}'")
 
     def _transaction(self):
         return _Transaction(self)
@@ -346,6 +354,7 @@ def _run_values(
         "output_tokens": int(token_usage.get("output_tokens", budget.get("output_tokens", 0))),
         "total_tokens": int(token_usage.get("total_tokens", budget.get("total_tokens", 0))),
         "test_status": artifacts.test_summary.status if artifacts is not None else (run.test_status or "Not run"),
+        "completion_json": _json(result.completion.to_dict()) if result is not None and result.completion is not None else "{}",
     }
 
 
@@ -389,6 +398,7 @@ def _run_row(row: sqlite3.Row) -> dict[str, Any]:
         "output_tokens": int(row["output_tokens"]),
         "total_tokens": int(row["total_tokens"]),
         "test_status": row["test_status"],
+        "completion": _loads(row["completion_json"], {}) if "completion_json" in keys else {},
         "report_path": row["report_path"],
         "trace_path": row["trace_path"],
         "patch_path": row["patch_path"],

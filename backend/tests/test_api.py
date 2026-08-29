@@ -254,7 +254,7 @@ def test_governance_api_rebuilds_policy_and_sandbox_history(tmp_path: Path, monk
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(
         "/runs",
-        json={"project_id": project["project_id"], "task": "run governed test", "mode": "Bugfix"},
+        json={"project_id": project["project_id"], "task": "run governed test", "mode": "Chat"},
     ).json()
 
     client.post(f"/runs/{run['run_id']}/start")
@@ -290,7 +290,7 @@ def test_elevated_test_policy_uses_generic_approval_and_resumes(tmp_path: Path, 
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(
         "/runs",
-        json={"project_id": project["project_id"], "task": "approve test", "mode": "Bugfix"},
+        json={"project_id": project["project_id"], "task": "approve test", "mode": "Chat"},
     ).json()
     client.put(
         f"/runs/{run['run_id']}/governance",
@@ -349,10 +349,14 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
 
 
 def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
     monkeypatch.setattr(
         "app.api.runs.create_model_client",
         lambda config_path: QueuedStaticModelClient(
-            ['{"type":"finish","rationale":"done","params":{"message":"skill used"}}']
+            [
+                '{"type":"read_file","rationale":"inspect","params":{"path":"app.py"}}',
+                '{"type":"finish","rationale":"done","params":{"message":"skill used"}}',
+            ]
         ),
     )
     client = make_client()
@@ -479,7 +483,7 @@ def test_start_run_executes_worker_and_exposes_terminal_summary(
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(
         "/runs",
-        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Chat"},
     ).json()
 
     start_response = client.post(f"/runs/{run['run_id']}/start")
@@ -609,7 +613,7 @@ def test_start_run_rejects_missing_model_configuration(tmp_path: Path) -> None:
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(
         "/runs",
-        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Chat"},
     ).json()
 
     response = client.post(f"/runs/{run['run_id']}/start")
@@ -630,7 +634,7 @@ def test_terminal_run_sse_stream_supports_event_cursor(tmp_path: Path, monkeypat
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
     run = client.post(
         "/runs",
-        json={"project_id": project["project_id"], "task": "finish", "mode": "Bugfix"},
+        json={"project_id": project["project_id"], "task": "finish", "mode": "Chat"},
     ).json()
     client.post(f"/runs/{run['run_id']}/start")
     wait_until(lambda: client.get(f"/runs/{run['run_id']}").json()["status"] == "completed")

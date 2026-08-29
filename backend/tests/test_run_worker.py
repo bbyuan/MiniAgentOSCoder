@@ -28,7 +28,7 @@ def make_job(
     *,
     run_id: str = "run-worker-001",
 ) -> tuple[RunJob, list[RunLoopResult]]:
-    run = RunState(run_id=run_id, task="finish", status=RunPhase.PLANNING)
+    run = RunState(run_id=run_id, task="finish", status=RunPhase.PLANNING, mode="Chat")
     contract = compile_agent_contract(ROOT / ".agent" / "config.yaml")
     results: list[RunLoopResult] = []
     job = RunJob(
@@ -152,7 +152,7 @@ def test_run_worker_waits_for_patch_approval_and_resumes_same_loop(tmp_path: Pat
     assert "patch.snapshot.created" in events
 
 
-def test_run_worker_returns_denial_to_model_without_applying_patch(tmp_path: Path) -> None:
+def test_run_worker_does_not_accept_completion_after_denied_bugfix(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text("old\n", encoding="utf-8")
     patch = """--- a/app.py
 +++ b/app.py
@@ -188,7 +188,11 @@ def test_run_worker_returns_denial_to_model_without_applying_patch(tmp_path: Pat
     ) is True
     wait_until(lambda: len(results) == 1)
 
-    assert results[0].status == RunPhase.COMPLETED
+    assert results[0].status == RunPhase.FAILED
+    assert results[0].termination_reason == "model_error"
+    assert results[0].completion is not None
+    assert results[0].completion.verdict == "blocked"
+    assert "applied_change" in results[0].completion.summary
     assert results[0].observations[0].metadata["approval_denied"] is True
     assert "change is too broad" in (results[0].observations[0].error or "")
     assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"

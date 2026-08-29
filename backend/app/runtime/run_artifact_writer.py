@@ -71,6 +71,7 @@ class RunArtifactWriter:
         mcp_servers = [event for event in trace_events if event.get("event") == "mcp.server.started"]
         mcp_calls = [event for event in trace_events if event.get("event") == "mcp.tool.called"]
         hook_executions = [event for event in trace_events if event.get("event") == "hook.finished"]
+        completion_lines = _completion_lines(result)
 
         report = "\n".join(
             [
@@ -95,6 +96,10 @@ class RunArtifactWriter:
                 "## Final Answer",
                 "",
                 _text_block(result.final_message or "No final message was produced."),
+                "",
+                "## Completion Guard",
+                "",
+                *completion_lines,
                 "",
                 "## Changes",
                 "",
@@ -178,3 +183,20 @@ def _event_ids(events: list[dict[str, Any]], key: str) -> str:
         if isinstance(event.get("payload"), dict) and event["payload"].get(key)
     ]
     return _inline_list(list(dict.fromkeys(values)))
+
+
+def _completion_lines(result: RunLoopResult) -> list[str]:
+    assessment = result.completion
+    if assessment is None:
+        return ["- Assessment: `not available`"]
+    lines = [
+        f"- Verdict: `{assessment.verdict}`",
+        f"- Mode: `{assessment.mode}`",
+        f"- Attempt: {assessment.attempt}",
+        f"- Summary: {assessment.summary}",
+    ]
+    lines.extend(
+        f"- [{'x' if check.passed else ' '}] `{check.id}`: {check.evidence}"
+        for check in assessment.checks
+    )
+    return lines

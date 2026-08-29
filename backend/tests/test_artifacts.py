@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.models import ContextPack, RunArtifacts, RunLoopResult, RunPhase, RunState
+from app.models import CompletionAssessment, CompletionCheck, ContextPack, RunArtifacts, RunLoopResult, RunPhase, RunState
 from app.runtime.artifacts import build_initial_plan, build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.run_artifact_writer import RunArtifactWriter
@@ -55,6 +55,12 @@ def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) 
         termination_reason="finish",
         steps=4,
         final_message="fixed password=hunter2",
+        completion=CompletionAssessment(
+            verdict="passed",
+            mode="Bugfix",
+            checks=[CompletionCheck(id="tests_after_change", passed=True, evidence="pytest passed")],
+            summary="All checks passed",
+        ),
     )
 
     report_path = writer.write_report(
@@ -72,6 +78,8 @@ def test_run_artifact_writer_appends_patches_and_redacts_report(tmp_path: Path) 
     assert "-old" in patches and "+fixed" in patches
     assert "Applied patches: 2" in report
     assert "Trace events before report: 1" in report
+    assert "## Completion Guard" in report
+    assert "`tests_after_change`: pytest passed" in report
     assert "2026-08-28T00:00:00+00:00" in report
     assert "hunter2" not in report
     assert "[REDACTED_SECRET]" in report

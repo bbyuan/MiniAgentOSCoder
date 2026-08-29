@@ -205,6 +205,7 @@ class RunWorker:
                     contract=job.contract,
                     context_pack=job.context_pack,
                     skills=active_skills,
+                    mode=job.run.mode,
                 )
                 hook_pipeline.execute(HookEvent.RUN_AFTER)
             except Exception as exc:
@@ -456,6 +457,7 @@ class RunWorker:
                 transition_run(job.run, RunPhase.REPAIRING)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
         elif action.type == "run_test":
+            job.run.test_status = "Passed" if result.ok else "Failed"
             if job.run.status in {RunPhase.RUNNING, RunPhase.REPAIRING}:
                 transition_run(job.run, RunPhase.TESTING)
             if job.artifacts is not None:

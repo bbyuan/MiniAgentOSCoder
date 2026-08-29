@@ -22,7 +22,17 @@ from app.models.governance import (
     SandboxExecution,
     SandboxProfile,
 )
-from app.models.run import ApprovalRequest, Checkpoint, RecoveryPoint, RunLoopResult, RunPhase, RunState, RunStatus
+from app.models.run import (
+    ApprovalRequest,
+    Checkpoint,
+    CompletionAssessment,
+    CompletionCheck,
+    RecoveryPoint,
+    RunLoopResult,
+    RunPhase,
+    RunState,
+    RunStatus,
+)
 from app.models.tool import ApprovalPolicy, RiskLevel, ToolDescriptor, ToolHandler, ToolResult
 from app.models.trace import TraceEvent
 
@@ -34,6 +44,8 @@ __all__ = [
     "ApprovalPolicy",
     "ApprovalRequest",
     "Checkpoint",
+    "CompletionAssessment",
+    "CompletionCheck",
     "ContextItem",
     "ContextPack",
     "ContextPackBudget",

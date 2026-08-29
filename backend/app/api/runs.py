@@ -14,6 +14,7 @@ from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.config import load_governance_settings
+from app.runtime.completion_guard import completion_expectations
 from app.runtime.extensions import load_extension_catalog
 from app.runtime.model_provider import ModelConfigurationError, create_model_client
 from app.runtime.paths import default_agent_dir
@@ -98,6 +99,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         "phase": run.status.value,
         "contract": contract.to_dict(),
         "artifacts": artifacts.to_dict(),
+        "completion_expectations": completion_expectations(run.mode),
     }
 
 
@@ -125,6 +127,8 @@ def get_run(run_id: str) -> dict[str, object]:
         "last_observation": run.last_observation,
         "termination_reason": result.termination_reason if result else None,
         "final_message": result.final_message if result else "",
+        "completion": result.completion.to_dict() if result and result.completion else None,
+        "completion_expectations": completion_expectations(run.mode),
         "repair_attempts": run.repair_attempts,
         "repair_status": run.repair_status,
         "last_checkpoint_id": run.last_checkpoint_id,

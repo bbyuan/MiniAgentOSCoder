@@ -7,12 +7,14 @@ from app.models import (
     ActiveSkill,
     ActionObservation,
     AgentContract,
+    CompletionAssessment,
     ContextPack,
     RunLoopResult,
     RunPhase,
 )
 from app.runtime.action_executor import ActionExecutor
 from app.runtime.action_parser import ActionParseError
+from app.runtime.completion_guard import evaluate_completion
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
 from app.runtime.tracer import TraceWriter
@@ -46,6 +48,7 @@ class AgentRunLoop:
         contract: AgentContract,
         context_pack: ContextPack | None = None,
         skills: list[ActiveSkill] | None = None,
+        mode: str | None = None,
     ) -> RunLoopResult:
         observations: list[ActionObservation] = []
         token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -53,6 +56,9 @@ class AgentRunLoop:
         initial_tool_calls = self.gateway.used_tool_calls
         started_at = self.clock()
         max_steps = max(0, min(contract.program.max_steps, contract.cost_envelope.max_steps))
+        completion_attempts = 0
+        last_completion: CompletionAssessment | None = None
+        active_mode = mode or contract.program.mode
 
         self.tracer.event(
             self.run_id,
@@ -73,6 +79,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
             budget_reason = self._preflight_budget_reason(
                 contract=contract,
@@ -87,6 +94,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
 
             self.tracer.event(
@@ -116,6 +124,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
             except Exception as exc:
                 return self._failed_result(
@@ -126,6 +135,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
 
             _add_usage(token_usage, decision.response.usage)
@@ -136,6 +146,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
             token_reason = _token_budget_reason(contract, token_usage)
             if token_reason is not None:
@@ -146,6 +157,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
 
             if decision.action.type == "finish":
@@ -155,19 +167,50 @@ class AgentRunLoop:
                     {"action": decision.action.to_dict(), "control_action": True},
                     role=decision.action.role,
                 )
-                if _patch_requires_successful_test(observations):
+                final_message = decision.action.params.get("message")
+                if not isinstance(final_message, str) or not final_message.strip():
+                    final_message = decision.action.rationale
+                completion_attempts += 1
+                last_completion = evaluate_completion(
+                    mode=active_mode,
+                    final_message=final_message,
+                    observations=observations,
+                    attempt=completion_attempts,
+                )
+                self.tracer.event(
+                    self.run_id,
+                    "completion.evaluated",
+                    {"assessment": last_completion.to_dict()},
+                    role=decision.action.role,
+                )
+                if last_completion.verdict != "passed":
+                    failed_checks = [check.id for check in last_completion.checks if check.required and not check.passed]
                     observation = ActionObservation(
                         step=step,
                         action_type="finish",
                         ok=False,
-                        error="A successful test is required after the latest applied patch",
-                        metadata={"policy": "test_after_patch"},
+                        error=last_completion.summary,
+                        metadata={
+                            "policy": "completion_guard",
+                            "failed_checks": failed_checks,
+                            "assessment": last_completion.to_dict(),
+                        },
                     )
                     observations.append(observation)
                     self.tracer.event(
                         self.run_id,
+                        "completion.rejected",
+                        {"action": decision.action.to_dict(), "assessment": last_completion.to_dict()},
+                        role=decision.action.role,
+                    )
+                    self.tracer.event(
+                        self.run_id,
                         "action.rejected",
-                        {"action": decision.action.to_dict(), "reason": "test_after_patch"},
+                        {
+                            "action": decision.action.to_dict(),
+                            "reason": "completion_guard",
+                            "failed_checks": failed_checks,
+                        },
                         role=decision.action.role,
                     )
                     self.tracer.event(
@@ -177,9 +220,12 @@ class AgentRunLoop:
                         role=decision.action.role,
                     )
                     continue
-                final_message = decision.action.params.get("message")
-                if not isinstance(final_message, str) or not final_message.strip():
-                    final_message = decision.action.rationale
+                self.tracer.event(
+                    self.run_id,
+                    "completion.passed",
+                    {"assessment": last_completion.to_dict()},
+                    role=decision.action.role,
+                )
                 result = self._result(
                     status=RunPhase.COMPLETED,
                     reason="finish",
@@ -189,6 +235,7 @@ class AgentRunLoop:
                     token_usage=token_usage,
                     observations=observations,
                     final_message=final_message,
+                    completion=last_completion,
                 )
                 self.tracer.event(
                     self.run_id,
@@ -226,6 +273,7 @@ class AgentRunLoop:
                     initial_tool_calls=initial_tool_calls,
                     token_usage=token_usage,
                     observations=observations,
+                    completion=last_completion,
                 )
 
         return self._budget_result(
@@ -235,6 +283,7 @@ class AgentRunLoop:
             initial_tool_calls=initial_tool_calls,
             token_usage=token_usage,
             observations=observations,
+            completion=last_completion,
         )
 
     def _cancelled_result(
@@ -245,6 +294,7 @@ class AgentRunLoop:
         initial_tool_calls: int,
         token_usage: dict[str, int],
         observations: list[ActionObservation],
+        completion: CompletionAssessment | None = None,
     ) -> RunLoopResult:
         result = self._result(
             status=RunPhase.CANCELLED,
@@ -254,6 +304,7 @@ class AgentRunLoop:
             initial_tool_calls=initial_tool_calls,
             token_usage=token_usage,
             observations=observations,
+            completion=completion,
         )
         self.tracer.event(self.run_id, "run.cancelled", _terminal_payload(result))
         return result
@@ -280,6 +331,7 @@ class AgentRunLoop:
         initial_tool_calls: int,
         token_usage: dict[str, int],
         observations: list[ActionObservation],
+        completion: CompletionAssessment | None = None,
     ) -> RunLoopResult:
         result = self._result(
             status=RunPhase.FAILED,
@@ -289,6 +341,7 @@ class AgentRunLoop:
             initial_tool_calls=initial_tool_calls,
             token_usage=token_usage,
             observations=observations,
+            completion=completion,
         )
         self.tracer.event(self.run_id, "run.budget_exceeded", _terminal_payload(result))
         return result
@@ -303,6 +356,7 @@ class AgentRunLoop:
         initial_tool_calls: int,
         token_usage: dict[str, int],
         observations: list[ActionObservation],
+        completion: CompletionAssessment | None = None,
     ) -> RunLoopResult:
         result = self._result(
             status=RunPhase.FAILED,
@@ -312,6 +366,7 @@ class AgentRunLoop:
             initial_tool_calls=initial_tool_calls,
             token_usage=token_usage,
             observations=observations,
+            completion=completion,
         )
         self.tracer.event(
             self.run_id,
@@ -331,6 +386,7 @@ class AgentRunLoop:
         token_usage: dict[str, int],
         observations: list[ActionObservation],
         final_message: str = "",
+        completion: CompletionAssessment | None = None,
     ) -> RunLoopResult:
         return RunLoopResult(
             run_id=self.run_id,
@@ -342,6 +398,7 @@ class AgentRunLoop:
             token_usage=dict(token_usage),
             observations=list(observations),
             final_message=final_message,
+            completion=completion,
         )
 
 
@@ -351,16 +408,6 @@ def _add_usage(total: dict[str, int], usage: dict[str, int]) -> None:
     total["input_tokens"] += max(0, input_tokens)
     total["output_tokens"] += max(0, output_tokens)
     total["total_tokens"] = total["input_tokens"] + total["output_tokens"]
-
-
-def _patch_requires_successful_test(observations: list[ActionObservation]) -> bool:
-    requires_test = False
-    for observation in observations:
-        if observation.action_type == "apply_patch" and observation.ok:
-            requires_test = True
-        elif observation.action_type == "run_test" and observation.ok:
-            requires_test = False
-    return requires_test
 
 
 def _token_budget_reason(contract: AgentContract, usage: dict[str, int]) -> str | None:
@@ -380,4 +427,5 @@ def _terminal_payload(result: RunLoopResult) -> dict[str, object]:
         "tool_calls": result.tool_calls,
         "token_usage": result.token_usage,
         "final_message": result.final_message,
+        "completion": result.completion.to_dict() if result.completion is not None else None,
     }

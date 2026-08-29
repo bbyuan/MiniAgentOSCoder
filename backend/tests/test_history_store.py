@@ -1,6 +1,14 @@
 from pathlib import Path
 
-from app.models import RunArtifacts, RunLoopResult, RunPhase, RunState, TestSummary as RunTestSummary
+from app.models import (
+    CompletionAssessment,
+    CompletionCheck,
+    RunArtifacts,
+    RunLoopResult,
+    RunPhase,
+    RunState,
+    TestSummary as RunTestSummary,
+)
 from app.runtime.history_store import HistoryStore, stable_project_id
 
 
@@ -42,6 +50,12 @@ def test_run_summary_updates_and_supports_filters_and_archive(tmp_path: Path) ->
         tool_calls=3,
         token_usage={"input_tokens": 90, "output_tokens": 30, "total_tokens": 120},
         final_message="Done",
+        completion=CompletionAssessment(
+            verdict="passed",
+            mode="Bugfix",
+            checks=[CompletionCheck(id="tests_after_change", passed=True, evidence="pytest passed")],
+            summary="All checks passed",
+        ),
     )
     artifacts = RunArtifacts(run_id=run.run_id, test_summary=RunTestSummary(status="Passed"))
     store.update_run(run, result=result, artifacts=artifacts)
@@ -54,6 +68,8 @@ def test_run_summary_updates_and_supports_filters_and_archive(tmp_path: Path) ->
     assert saved is not None
     assert saved["changed_files"] == ["app.py"]
     assert saved["test_status"] == "Passed"
+    assert saved["completion"]["verdict"] == "passed"
+    assert saved["completion"]["checks"][0]["id"] == "tests_after_change"
     assert saved["completed_at"] is not None
     assert store.set_archived(run.run_id, True)
     assert store.list_runs()[1] == 0
@@ -75,4 +91,32 @@ def test_reopen_marks_non_terminal_runs_interrupted(tmp_path: Path) -> None:
     assert saved is not None
     assert saved["status"] == "interrupted"
     assert saved["completed_at"] is not None
+    reopened.close()
+
+
+def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: Path) -> None:
+    database = tmp_path / "legacy.db"
+    store = HistoryStore(database)
+    project = _project(store, tmp_path)
+    run = RunState(run_id="legacy-run", task="Legacy", status=RunPhase.PLANNING)
+    store.record_run(run, str(project["project_id"]), tmp_path)
+    store._connection.execute("ALTER TABLE runs RENAME TO runs_current")
+    store._connection.execute(
+        "CREATE TABLE runs AS SELECT "
+        + ", ".join(
+            row[1]
+            for row in store._connection.execute("PRAGMA table_info(runs_current)").fetchall()
+            if row[1] != "completion_json"
+        )
+        + " FROM runs_current"
+    )
+    store._connection.execute("DROP TABLE runs_current")
+    store._connection.commit()
+    store.close()
+
+    reopened = HistoryStore(database)
+    saved = reopened.get_run("legacy-run")
+
+    assert saved is not None
+    assert saved["completion"] == {}
     reopened.close()

@@ -114,10 +114,14 @@ def test_run_loop_rejects_finish_until_patch_has_successful_test(tmp_path: Path)
     assert result.status == RunPhase.COMPLETED
     assert result.final_message == "verified"
     assert result.model_calls == 4
-    assert result.observations[1].metadata["policy"] == "test_after_patch"
-    assert "successful test is required" in (result.observations[1].error or "").lower()
+    assert result.observations[1].metadata["policy"] == "completion_guard"
+    assert result.observations[1].metadata["failed_checks"] == ["tests_after_change"]
     events = tracer.read_events("run-test-after-patch")
-    assert any(event["event"] == "action.rejected" and event["payload"].get("reason") == "test_after_patch" for event in events)
+    assert any(event["event"] == "completion.rejected" for event in events)
+    assert any(event["event"] == "action.rejected" and event["payload"].get("reason") == "completion_guard" for event in events)
+    assert result.completion is not None
+    assert result.completion.verdict == "passed"
+    assert result.completion.attempt == 2
 
 
 def test_run_loop_stops_at_model_call_budget(tmp_path: Path) -> None:
