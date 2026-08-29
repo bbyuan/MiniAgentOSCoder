@@ -31,7 +31,7 @@ export function ProjectLauncher({
         <p>{t("launcher.description")}</p>
       </div>
 
-      <button className="openProjectAction" type="button" onClick={onBrowse} disabled={busy || !desktop}>
+      <button className="openProjectAction" type="button" onClick={onBrowse} disabled={busy}>
         <span className="openProjectIcon"><FolderOpen size={21} /></span>
         <span>
           <strong>{busy ? t("launcher.opening") : t("launcher.open")}</strong>

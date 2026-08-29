@@ -45,6 +45,26 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_select_project_directory_returns_selected_path(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("app.api.projects.choose_local_directory", lambda: tmp_path)
+    client = make_client()
+
+    response = client.post("/projects/select-directory")
+
+    assert response.status_code == 200
+    assert response.json() == {"path": str(tmp_path), "cancelled": False}
+
+
+def test_select_project_directory_reports_cancel(monkeypatch) -> None:
+    monkeypatch.setattr("app.api.projects.choose_local_directory", lambda: None)
+    client = make_client()
+
+    response = client.post("/projects/select-directory")
+
+    assert response.status_code == 200
+    assert response.json() == {"path": None, "cancelled": True}
+
+
 def test_cors_allows_local_workbench_origin() -> None:
     client = make_client()
 

@@ -507,6 +507,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const daemonApi = {
   health: () => request<{ status: string }>("/health"),
+  selectProjectDirectory: () =>
+    request<{ path: string | null; cancelled: boolean }>("/projects/select-directory", { method: "POST" }),
   openProject: (path: string) =>
     request<OpenProjectResponse>("/projects/open", {
       method: "POST",

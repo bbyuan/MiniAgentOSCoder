@@ -6,12 +6,25 @@ from pydantic import BaseModel
 
 from app.api.store import ProjectRecord, store
 from app.context import build_workspace_index, scan_workspace, write_project_profile
+from app.runtime.native_dialog import NativeDialogUnavailable, choose_local_directory
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 class OpenProjectRequest(BaseModel):
     path: str
+
+
+@router.post("/select-directory")
+def select_project_directory() -> dict[str, object]:
+    try:
+        selected = choose_local_directory()
+    except NativeDialogUnavailable as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
+    return {
+        "path": str(selected) if selected is not None else None,
+        "cancelled": selected is None,
+    }
 
 
 @router.post("/open")

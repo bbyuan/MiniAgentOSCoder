@@ -32,6 +32,7 @@ import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
+import { RunProgress } from "../components/RunProgress";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
@@ -302,6 +303,9 @@ export function Workbench() {
         if (["policy.evaluated", "sandbox.started", "sandbox.finished", "governance.updated"].includes(event.event)) {
           daemonApi.getGovernance(activeRunId).then(setGovernance).catch(() => undefined);
         }
+        if (["policy.evaluated", "tool.executed", "tool.failed"].includes(event.event)) {
+          daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
+        }
         if (["extension.updated", "skill.activated"].includes(event.event)
           || event.event.startsWith("mcp.")
           || event.event.startsWith("hook.")) {
@@ -310,9 +314,7 @@ export function Workbench() {
         const transitionedStatus = event.payload.status;
         if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
           setRunStatus(transitionedStatus);
-          if (["waiting_approval", "testing", "repairing", "completed"].includes(transitionedStatus)) {
-            daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
-          }
+          daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
         }
         if (event.event === "run.budget_exceeded" && typeof event.payload.termination_reason === "string") {
           setTerminationReason(event.payload.termination_reason);
@@ -699,6 +701,8 @@ export function Workbench() {
               {!terminal ? <p>{t(copy.description)}</p> : null}
             </div>
           </section>
+
+          {displayPlan.length ? <RunProgress items={displayPlan} /> : null}
 
           {approval ? (
             <div className="inlineApproval">

@@ -3887,6 +3887,146 @@ textarea:disabled {
   background: var(--warning-soft);
 }
 
+.runProgress {
+  margin-left: 43px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.runProgress > header {
+  min-height: 36px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.runProgress h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.runProgress header span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.runProgressList {
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.runProgressItem {
+  min-width: 0;
+  min-height: 68px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.runProgressMarker {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-tertiary);
+  background: var(--surface);
+}
+
+.runProgressItem > div:nth-child(2) {
+  min-width: 0;
+}
+
+.runProgressItem strong,
+.runProgressItem span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runProgressItem strong {
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.runProgressItem span {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.runProgressItem small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 680;
+  white-space: nowrap;
+}
+
+.runProgressItem.done {
+  border-color: color-mix(in srgb, var(--success) 38%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 68%, var(--surface));
+}
+
+.runProgressItem.done .runProgressMarker {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 42%, var(--border));
+  background: var(--success-soft);
+}
+
+.runProgressItem.done small {
+  color: var(--success);
+}
+
+.runProgressItem.active {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.runProgressItem.active .runProgressMarker {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--surface);
+}
+
+.runProgressItem.active small {
+  color: var(--accent);
+}
+
+.runProgressItem.failed {
+  border-color: color-mix(in srgb, var(--danger) 46%, var(--border));
+  background: var(--danger-soft);
+}
+
+.runProgressItem.failed .runProgressMarker,
+.runProgressItem.failed small {
+  color: var(--danger);
+}
+
+.runProgressItem.waiting,
+.runProgressItem.skipped,
+.runProgressItem.cancelled {
+  opacity: 0.64;
+}
+
 .inlineApproval .inspectorSection {
   border: 0;
   background: transparent;
@@ -4083,8 +4223,13 @@ textarea:disabled {
   .activityPanel,
   .completionSummary,
   .followUpComposer,
-  .inlineApproval {
+  .inlineApproval,
+  .runProgress {
     margin-left: 0;
+  }
+
+  .runProgressList {
+    grid-template-columns: 1fr;
   }
 
   .completionSummary {

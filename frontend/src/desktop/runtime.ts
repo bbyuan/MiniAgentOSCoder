@@ -1,4 +1,4 @@
-import { configureDesktopDaemon, getDaemonBase } from "../api/client";
+import { configureDesktopDaemon, daemonApi, getDaemonBase } from "../api/client";
 
 
 export interface DesktopRuntimeStatus {
@@ -15,13 +15,16 @@ export function isDesktopHost(): boolean {
 }
 
 export async function chooseProjectDirectory(): Promise<string | null> {
-  if (!isDesktopHost()) return null;
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  return open({
-    directory: true,
-    multiple: false,
-    title: "Open code project",
-  });
+  if (isDesktopHost()) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    return open({
+      directory: true,
+      multiple: false,
+      title: "Open code project",
+    });
+  }
+  const selected = await daemonApi.selectProjectDirectory();
+  return selected.path;
 }
 
 export async function initializeDesktopRuntime(): Promise<DesktopRuntimeStatus> {
