@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 
 from app.api.store import store
 from app.main import create_app
+from app.models import Checkpoint, RunPhase
+from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import QueuedStaticModelClient
 
 
@@ -723,3 +725,137 @@ def test_terminal_run_sse_stream_supports_event_cursor(tmp_path: Path, monkeypat
     assert "run.finished" in response.text
     assert "report.generated" in response.text
     assert "run.transitioned" in response.text
+
+
+def test_resume_rehydrates_an_interrupted_run_from_checkpoint(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('ready')\n", encoding="utf-8")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    created = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "review app", "mode": "Review"},
+    ).json()
+    run_id = created["run_id"]
+    run = store.runs[run_id]
+    checkpoint = Checkpoint(
+        checkpoint_id="resume-point",
+        run_id=run_id,
+        step=3,
+        status=RunPhase.RUNNING,
+        run_state={**run.to_dict(), "current_step": 3},
+        context_summary="user_task, current_plan, app.py",
+        memory_snapshot={"refs": []},
+        trace_offset=2,
+    )
+    CheckpointStore(tmp_path / "runs").save(checkpoint)
+    run.status = RunPhase.FAILED
+    store.history.update_run(run)
+    store.projects.clear()
+    store.runs.clear()
+    store.contracts.clear()
+    store.contexts.clear()
+    store.artifacts.clear()
+    store.run_projects.clear()
+
+    response = client.post(f"/runs/{run_id}/resume", json={})
+    trace = client.get(f"/runs/{run_id}/trace").json()
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "planning"
+    assert response.json()["checkpoint_id"] == "resume-point"
+    assert response.json()["task"] == "review app"
+    assert response.json()["mode"] == "Review"
+    assert response.json()["project"]["path"] == str(tmp_path)
+    assert store.runs[run_id].current_step == 3
+    assert "resume:resume-point" in store.contexts[run_id].required_items
+    assert store.history.get_run(run_id)["status"] == "planning"
+    assert trace["events"][-1]["event"] == "run.resumed"
+
+
+def test_resume_rejects_completed_run(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    created = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "done", "mode": "Chat"},
+    ).json()
+    run = store.runs[created["run_id"]]
+    run.status = RunPhase.COMPLETED
+    store.history.update_run(run)
+
+    response = client.post(f"/runs/{run.run_id}/resume", json={})
+
+    assert response.status_code == 409
+
+
+def test_resume_rejects_workspace_restore_without_snapshot(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    created = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "resume safely", "mode": "Chat"},
+    ).json()
+    run = store.runs[created["run_id"]]
+    CheckpointStore(tmp_path / "runs").save(
+        Checkpoint(
+            checkpoint_id="metadata-only",
+            run_id=run.run_id,
+            step=1,
+            status=RunPhase.RUNNING,
+            run_state=run.to_dict(),
+            context_summary="task and workspace",
+        )
+    )
+    run.status = RunPhase.FAILED
+    store.history.update_run(run)
+
+    response = client.post(
+        f"/runs/{run.run_id}/resume",
+        json={"checkpoint_id": "metadata-only", "restore_workspace": True},
+    )
+
+    assert response.status_code == 409
+    assert "restorable snapshot" in response.json()["detail"]
+
+
+def test_resumed_run_can_start_through_the_normal_worker_path(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.api.runs.create_model_client",
+        lambda config_path: QueuedStaticModelClient(
+            ['{"type":"finish","rationale":"done","params":{"message":"resumed successfully"}}']
+        ),
+    )
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    created = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "continue chat", "mode": "Chat"},
+    ).json()
+    run_id = created["run_id"]
+    run = store.runs[run_id]
+    CheckpointStore(tmp_path / "runs").save(
+        Checkpoint(
+            checkpoint_id="restart-point",
+            run_id=run_id,
+            step=1,
+            status=RunPhase.RUNNING,
+            run_state=run.to_dict(),
+            context_summary="original task",
+        )
+    )
+    run.status = RunPhase.FAILED
+    store.history.update_run(run)
+    store.projects.clear()
+    store.runs.clear()
+    store.contracts.clear()
+    store.contexts.clear()
+    store.artifacts.clear()
+    store.run_projects.clear()
+
+    resumed = client.post(f"/runs/{run_id}/resume", json={})
+    started = client.post(f"/runs/{run_id}/start")
+    wait_until(lambda: client.get(f"/runs/{run_id}").json()["status"] == "completed")
+
+    assert resumed.status_code == 200
+    assert started.status_code == 202
+    assert client.get(f"/runs/{run_id}").json()["final_message"] == "resumed successfully"

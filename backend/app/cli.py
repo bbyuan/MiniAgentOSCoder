@@ -74,6 +74,11 @@ def build_parser() -> argparse.ArgumentParser:
     compact.add_argument("run_id")
     compact.add_argument("--target", type=float, default=0.55)
     compact.add_argument("--confirm", action="store_true")
+
+    resume = commands.add_parser("resume", help="Rehydrate a stopped run from a persisted checkpoint")
+    resume.add_argument("run_id")
+    resume.add_argument("--checkpoint")
+    resume.add_argument("--restore-workspace", action="store_true")
     return parser
 
 
@@ -112,6 +117,15 @@ def execute(args: argparse.Namespace, client: DaemonClient) -> dict[str, Any]:
         return client.request("POST", f"/runs/{args.run_id}/replay")
     if command == "report":
         return client.request("GET", f"/runs/{args.run_id}/report")
+    if command == "resume":
+        return client.request(
+            "POST",
+            f"/runs/{args.run_id}/resume",
+            {
+                "checkpoint_id": args.checkpoint,
+                "restore_workspace": args.restore_workspace,
+            },
+        )
     raise RuntimeError(f"Unsupported command: {command}")
 
 

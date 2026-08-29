@@ -358,6 +358,18 @@ export interface StartRunResponse {
   events_url: string;
 }
 
+export interface ResumeRunResponse {
+  run_id: string;
+  status: "planning";
+  task: string;
+  mode: RunMode;
+  checkpoint_id: string;
+  workspace_restored: boolean;
+  project: OpenProjectResponse;
+  contract: AgentContract;
+  artifacts: RunArtifacts;
+}
+
 export interface ApprovalRequest {
   approval_id: string;
   run_id: string;
@@ -468,6 +480,12 @@ export interface HistoryRunDetail {
   };
   report: { available: boolean; content: string; truncated: boolean };
   trace: { available: boolean; event_count: number; recent_events: TraceEvent[] };
+  resume: {
+    available: boolean;
+    checkpoint_count: number;
+    latest_checkpoint_id?: string;
+    snapshot_available: boolean;
+  };
 }
 
 export interface HistoryComparison {
@@ -537,6 +555,11 @@ export const daemonApi = {
     }),
   startRun: (runId: string) =>
     request<StartRunResponse>(`/runs/${runId}/start`, { method: "POST" }),
+  resumeRun: (runId: string, checkpointId?: string, restoreWorkspace = false) =>
+    request<ResumeRunResponse>(`/runs/${runId}/resume`, {
+      method: "POST",
+      body: JSON.stringify({ checkpoint_id: checkpointId, restore_workspace: restoreWorkspace }),
+    }),
   cancelRun: (runId: string) =>
     request<{ run_id: string; status: string }>(`/runs/${runId}/cancel`, { method: "POST" }),
   steerRun: (runId: string, message: string) =>

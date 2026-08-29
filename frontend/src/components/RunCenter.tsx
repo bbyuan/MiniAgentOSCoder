@@ -8,6 +8,7 @@ import {
   FileText,
   GitCompareArrows,
   RefreshCw,
+  RotateCcw,
   Search,
   X,
 } from "lucide-react";
@@ -28,6 +29,7 @@ interface RunCenterProps {
   open: boolean;
   initialRunId?: string;
   initialProjectId?: string;
+  onResume: (runId: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -43,7 +45,7 @@ const metricKeys: Record<string, TranslationKey> = {
   repair_attempts: "history.metric.repairs",
 };
 
-export function RunCenter({ open, initialRunId, initialProjectId, onClose }: RunCenterProps) {
+export function RunCenter({ open, initialRunId, initialProjectId, onResume, onClose }: RunCenterProps) {
   const { locale, t } = usePreferences();
   const [projects, setProjects] = useState<HistoryProject[]>([]);
   const [runs, setRuns] = useState<HistoryRun[]>([]);
@@ -163,6 +165,19 @@ export function RunCenter({ open, initialRunId, initialProjectId, onClose }: Run
     }
   }
 
+  async function resumeRun() {
+    if (!detail) return;
+    setDetailLoading(true);
+    setError(undefined);
+    try {
+      await onResume(detail.run.run_id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   if (!open) return null;
 
   return (
@@ -252,7 +267,13 @@ export function RunCenter({ open, initialRunId, initialProjectId, onClose }: Run
 
           <div className="historyDetail" aria-busy={detailLoading}>
             {comparison ? <ComparisonView comparison={comparison} onBack={() => setComparison(undefined)} /> : detail ? (
-              <RunDetail detail={detail} onArchive={() => void toggleArchive()} onBack={() => setDetail(undefined)} />
+              <RunDetail
+                detail={detail}
+                busy={detailLoading}
+                onArchive={() => void toggleArchive()}
+                onResume={() => void resumeRun()}
+                onBack={() => setDetail(undefined)}
+              />
             ) : (
               <div className="historyEmpty historyDetailEmpty"><FileText size={25} /><strong>{t("history.chooseRun")}</strong><span>{t("history.chooseRunHint")}</span></div>
             )}
@@ -263,9 +284,22 @@ export function RunCenter({ open, initialRunId, initialProjectId, onClose }: Run
   );
 }
 
-function RunDetail({ detail, onArchive, onBack }: { detail: HistoryRunDetail; onArchive: () => void; onBack: () => void }) {
+function RunDetail({
+  detail,
+  busy,
+  onArchive,
+  onResume,
+  onBack,
+}: {
+  detail: HistoryRunDetail;
+  busy: boolean;
+  onArchive: () => void;
+  onResume: () => void;
+  onBack: () => void;
+}) {
   const { locale, t } = usePreferences();
   const { run } = detail;
+  const resumeEligible = ["interrupted", "failed", "cancelled"].includes(run.status);
   return (
     <div className="historyDetailContent">
       <header className="historyDetailHeader">
@@ -275,6 +309,20 @@ function RunDetail({ detail, onArchive, onBack }: { detail: HistoryRunDetail; on
           {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
         </button>
       </header>
+      {resumeEligible ? (
+        <section className={`historyResumeBand ${detail.resume.available ? "" : "unavailable"}`}>
+          <div>
+            <strong>{t(detail.resume.available ? "history.resumeTitle" : "history.resumeUnavailableTitle")}</strong>
+            <span>{t(detail.resume.available ? "history.resumeDescription" : "history.resumeUnavailableDescription")}</span>
+          </div>
+          {detail.resume.available ? (
+            <button type="button" disabled={busy} onClick={onResume}>
+              <RotateCcw size={15} className={busy ? "spin" : ""} />
+              {t(busy ? "history.resuming" : "history.resumeAction")}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
       <div className="historyMetricGrid">
         <Metric label={t("history.metric.steps")} value={run.steps} />
         <Metric label={t("history.metric.modelCalls")} value={run.model_calls} />

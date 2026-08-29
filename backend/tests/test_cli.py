@@ -55,3 +55,24 @@ def test_cli_control_commands_use_the_shared_daemon_api() -> None:
     assert client.calls == [
         ("POST", "/runs/run-2/context/compact", {"force": True, "target_ratio": 0.6, "confirmed": True})
     ]
+
+
+def test_cli_resume_selects_checkpoint_and_workspace_restore() -> None:
+    client = FakeClient()
+    args = build_parser().parse_args([
+        "resume",
+        "run-3",
+        "--checkpoint",
+        "checkpoint-2",
+        "--restore-workspace",
+    ])
+
+    execute(args, client)
+
+    assert client.calls == [
+        (
+            "POST",
+            "/runs/run-3/resume",
+            {"checkpoint_id": "checkpoint-2", "restore_workspace": True},
+        )
+    ]

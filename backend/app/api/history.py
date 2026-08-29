@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.api.store import store
+from app.runtime.checkpoint import CheckpointStore
 
 
 router = APIRouter(prefix="/history", tags=["history"])
@@ -86,6 +87,7 @@ def get_history_run(run_id: str) -> dict[str, object]:
         "artifacts": artifacts,
         "report": report,
         "trace": trace,
+        "resume": _resume_metadata(run),
     }
 
 
@@ -183,6 +185,31 @@ def _comparison_summary(run: dict[str, Any]) -> dict[str, object]:
         "test_status": run["test_status"],
         "duration_ms": run["duration_ms"],
         "changed_files": run["changed_files"],
+    }
+
+
+def _resume_metadata(run: dict[str, Any]) -> dict[str, object]:
+    eligible = run["status"] in {"interrupted", "failed", "cancelled"}
+    workspace = Path(str(run["project_path"])).resolve()
+    if not eligible or not workspace.is_dir():
+        return {
+            "available": False,
+            "checkpoint_count": 0,
+            "latest_checkpoint_id": None,
+            "snapshot_available": False,
+        }
+    checkpoints = CheckpointStore(workspace / "runs").list(str(run["run_id"]))
+    latest = checkpoints[-1] if checkpoints else None
+    snapshot_available = False
+    if latest is not None:
+        snapshot_available = (
+            workspace / "runs" / str(run["run_id"]) / "snapshots" / latest.checkpoint_id / "manifest.json"
+        ).is_file()
+    return {
+        "available": latest is not None,
+        "checkpoint_count": len(checkpoints),
+        "latest_checkpoint_id": latest.checkpoint_id if latest is not None else None,
+        "snapshot_available": snapshot_available,
     }
 
 

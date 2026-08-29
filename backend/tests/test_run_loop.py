@@ -285,3 +285,34 @@ def test_run_loop_cancels_after_model_response_before_tool_effect(tmp_path: Path
     events = [event["event"] for event in tracer.read_events("run-cancel-after-model")]
     assert events[-1] == "run.cancelled"
     assert "action.parsed" not in events
+
+
+def test_run_loop_resumes_with_cumulative_contract_usage(tmp_path: Path) -> None:
+    client = QueuedStaticModelClient(
+        ['{"type":"finish","rationale":"done","params":{"message":"continued"}}']
+    )
+    gateway = make_gateway(tmp_path)
+    gateway.used_tool_calls = 2
+    tracer = TraceWriter(tmp_path / "runs")
+
+    result = AgentRunLoop(
+        run_id="run-resumed-budget",
+        gateway=gateway,
+        model_client=client,
+        tracer=tracer,
+    ).run(
+        task="continue",
+        contract=gateway.contract,
+        mode="Chat",
+        initial_steps=3,
+        initial_model_calls=3,
+        initial_token_usage={"input_tokens": 40, "output_tokens": 10, "total_tokens": 50},
+    )
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.steps == 4
+    assert result.model_calls == 4
+    assert result.tool_calls == 2
+    assert result.token_usage["input_tokens"] > 40
+    loop_started = tracer.read_events("run-resumed-budget")[0]
+    assert loop_started["payload"]["resumed_from_step"] == 3

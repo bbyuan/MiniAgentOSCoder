@@ -14,6 +14,7 @@ PROTECTED_TYPES = {
     "current_diff",
     "runtime_budget",
     "project_rules",
+    "resume_checkpoint",
 }
 
 

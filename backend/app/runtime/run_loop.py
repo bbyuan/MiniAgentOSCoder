@@ -51,13 +51,26 @@ class AgentRunLoop:
         context_pack: ContextPack | None = None,
         skills: list[ActiveSkill] | None = None,
         mode: str | None = None,
+        initial_steps: int = 0,
+        initial_model_calls: int = 0,
+        initial_token_usage: dict[str, int] | None = None,
     ) -> RunLoopResult:
         observations: list[ActionObservation] = []
-        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
-        model_calls = 0
+        previous_usage = initial_token_usage or {}
+        token_usage = {
+            "input_tokens": max(0, int(previous_usage.get("input_tokens", 0))),
+            "output_tokens": max(0, int(previous_usage.get("output_tokens", 0))),
+            "total_tokens": max(0, int(previous_usage.get("total_tokens", 0))),
+        }
+        token_usage["total_tokens"] = max(
+            token_usage["total_tokens"],
+            token_usage["input_tokens"] + token_usage["output_tokens"],
+        )
+        model_calls = max(0, initial_model_calls)
         initial_tool_calls = self.gateway.used_tool_calls
         started_at = self.clock()
         max_steps = max(0, min(contract.program.max_steps, contract.cost_envelope.max_steps))
+        starting_step = max(0, initial_steps)
         completion_attempts = 0
         last_completion: CompletionAssessment | None = None
         active_mode = mode or contract.program.mode
@@ -70,10 +83,14 @@ class AgentRunLoop:
                 "task": task,
                 "limits": contract.cost_envelope.to_dict(),
                 "effective_max_steps": max_steps,
+                "resumed_from_step": starting_step,
+                "initial_model_calls": model_calls,
+                "initial_tool_calls": initial_tool_calls,
+                "initial_token_usage": dict(token_usage),
             },
         )
 
-        for step in range(1, max_steps + 1):
+        for step in range(starting_step + 1, max_steps + 1):
             self.on_step(step)
             if self.should_cancel():
                 return self._cancelled_result(
@@ -443,7 +460,7 @@ class AgentRunLoop:
             termination_reason=reason,
             steps=steps,
             model_calls=model_calls,
-            tool_calls=self.gateway.used_tool_calls - initial_tool_calls,
+            tool_calls=self.gateway.used_tool_calls,
             token_usage=dict(token_usage),
             observations=list(observations),
             final_message=final_message,

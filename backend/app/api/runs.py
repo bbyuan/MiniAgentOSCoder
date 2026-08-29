@@ -6,10 +6,11 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.api.store import store
-from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory
+from app.api.store import ProjectRecord, store
+from app.context import MemoryStore, MemoryStoreError, consolidate_run_memory, explain_context_items, refresh_context_pack
 from app.guards import redact_secrets
-from app.models import GovernanceSettings, MemoryScope, RunLoopResult, RunPhase, RunState
+from app.models import ContextItem, GovernanceSettings, MemoryScope, RunLoopResult, RunPhase, RunState
+from app.runtime.checkpoint import CheckpointStore
 from app.runtime.agent_loop import create_runtime_run
 from app.runtime.artifacts import build_run_artifacts
 from app.runtime.contract_compiler import compile_agent_contract
@@ -39,6 +40,11 @@ class RollbackRequest(BaseModel):
 
 class SteerRunRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
+
+
+class ResumeRunRequest(BaseModel):
+    checkpoint_id: str | None = None
+    restore_workspace: bool = False
 
 
 @router.post("")
@@ -260,6 +266,156 @@ def get_run_checkpoints(run_id: str) -> dict[str, object]:
     }
 
 
+@router.post("/{run_id}/resume")
+def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
+    if store.worker.is_active(run_id):
+        raise HTTPException(status_code=409, detail="Cannot resume an active run")
+    if run_id in store.runs and store.runs[run_id].status == RunPhase.COMPLETED:
+        raise HTTPException(status_code=409, detail="Completed runs cannot be resumed")
+
+    historical = store.history.get_run(run_id)
+    if historical is None:
+        raise HTTPException(status_code=404, detail="Historical run not found")
+    if historical["status"] not in {"interrupted", "failed", "cancelled"}:
+        raise HTTPException(status_code=409, detail=f"Run cannot resume from status: {historical['status']}")
+
+    workspace = Path(str(historical["project_path"])).resolve()
+    if not workspace.is_dir():
+        raise HTTPException(status_code=409, detail="Run workspace is no longer available")
+    checkpoints = CheckpointStore(workspace / "runs").list(run_id)
+    checkpoint = next(
+        (item for item in checkpoints if item.checkpoint_id == request.checkpoint_id),
+        checkpoints[-1] if checkpoints and request.checkpoint_id is None else None,
+    )
+    if checkpoint is None:
+        raise HTTPException(status_code=404, detail="Checkpoint not found")
+
+    restored = None
+    recovery = RunRecovery(workspace, run_id)
+    if request.restore_workspace:
+        point = next((item for item in recovery.list_points() if item.checkpoint_id == checkpoint.checkpoint_id), None)
+        if point is None or not point.snapshot_available:
+            raise HTTPException(status_code=409, detail="Checkpoint does not have a restorable snapshot")
+        try:
+            restored = recovery.restore(checkpoint.checkpoint_id)
+        except RecoveryError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    project_id = str(historical["project_id"])
+    profile = historical.get("project_profile", {})
+    project = ProjectRecord(project_id=project_id, path=workspace, profile=profile)
+    store.projects[project_id] = project
+    store.current_project_id = project_id
+
+    state = checkpoint.run_state
+    run = RunState(
+        run_id=run_id,
+        task=str(historical["task"]),
+        status=RunPhase.PLANNING,
+        mode=str(historical["mode"]),
+        current_step=max(checkpoint.step, int(historical.get("steps", 0))),
+        changed_files=list(state.get("changed_files", checkpoint.changed_files)),
+        test_status=state.get("test_status"),
+        budget=dict(state.get("budget", historical.get("budget", {}))),
+        memory_refs=list(checkpoint.memory_snapshot.get("refs", [])),
+        last_observation=dict(state.get("last_observation", {})),
+        repair_attempts=int(state.get("repair_attempts", historical.get("repair_attempts", 0))),
+        repair_status=str(state.get("repair_status", "not_started")),
+        last_checkpoint_id=checkpoint.checkpoint_id,
+        rolled_back_to=checkpoint.checkpoint_id if restored is not None else state.get("rolled_back_to"),
+        applied_patches=int(state.get("applied_patches", historical.get("applied_patches", 0))),
+    )
+    config_path = _find_config_path(workspace)
+    contract = compile_agent_contract(config_path, task_mode=run.mode, project_profile=profile)
+    governance = load_governance_settings(config_path)
+    extension_catalog, extension_settings, skills_registry = load_extension_catalog(
+        workspace,
+        run.mode,
+        fallback_agent_dir=default_agent_dir(),
+    )
+    try:
+        memory_store = MemoryStore(workspace)
+        memories = memory_store.list(MemoryScope.PROJECT) + memory_store.list(MemoryScope.LONG_TERM)
+    except MemoryStoreError:
+        memories = []
+    trace_events = TraceWriter(workspace / "runs").read_events(run_id)
+    run.current_step, run.budget = _resume_usage(
+        trace_events,
+        minimum_step=run.current_step,
+        persisted_budget=run.budget,
+    )
+    artifacts, context_pack = build_run_artifacts(
+        run,
+        profile,
+        trace_events,
+        memories,
+        workspace_root=workspace,
+    )
+    resume_item = ContextItem(
+        id=f"resume:{checkpoint.checkpoint_id}",
+        type="resume_checkpoint",
+        source=f"runs/{run_id}/checkpoints/{checkpoint.checkpoint_id}.json",
+        reason="resume from persisted checkpoint",
+        tokens=max(1, len(checkpoint.context_summary) // 4),
+        priority=1.0,
+        content=checkpoint.context_summary or "Checkpoint context summary was empty",
+        metadata={"step": checkpoint.step, "trace_offset": checkpoint.trace_offset},
+    )
+    context_pack.items.append(resume_item)
+    context_pack.required_items.append(resume_item.id)
+    context_pack.selected_items.append(resume_item.id)
+    refresh_context_pack(context_pack)
+    artifacts.context_explanation = explain_context_items(context_pack.items, context_pack)
+
+    store.runs[run_id] = run
+    store.contracts[run_id] = contract
+    store.contexts[run_id] = context_pack
+    store.artifacts[run_id] = artifacts
+    store.run_projects[run_id] = project_id
+    store.governance[run_id] = governance
+    store.extension_catalogs[run_id] = extension_catalog
+    store.extension_settings[run_id] = extension_settings
+    store.skills_registries[run_id] = skills_registry
+    store.run_results.pop(run_id, None)
+    if not store.history.reopen_run(run, artifacts=artifacts):
+        raise HTTPException(status_code=409, detail="Historical run could not be reopened")
+
+    tracer = TraceWriter(workspace / "runs")
+    tracer.event(
+        run_id,
+        "run.resumed",
+        {
+            "checkpoint_id": checkpoint.checkpoint_id,
+            "step": checkpoint.step,
+            "trace_offset": checkpoint.trace_offset,
+            "workspace_restored": restored is not None,
+            "restored": {
+                "files": restored.files,
+                "restored": restored.restored,
+                "removed": restored.removed,
+            } if restored is not None else None,
+            "status": RunPhase.PLANNING.value,
+        },
+    )
+    return {
+        "run_id": run_id,
+        "status": run.status.value,
+        "task": run.task,
+        "mode": run.mode,
+        "checkpoint_id": checkpoint.checkpoint_id,
+        "workspace_restored": restored is not None,
+        "project": {
+            "project_id": project.project_id,
+            "path": str(project.path),
+            "profile_path": ".agent/project-profile.json",
+            "status": "ready",
+            "profile": project.profile,
+        },
+        "contract": contract.to_dict(),
+        "artifacts": artifacts.to_dict(),
+    }
+
+
 @router.post("/{run_id}/rollback")
 def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
     run = store.runs.get(run_id)
@@ -378,6 +534,40 @@ def steer_run(run_id: str, request: SteerRunRequest) -> dict[str, object]:
         "status": "queued",
         "applies_at": "next_safe_boundary",
     }
+
+
+def _resume_usage(
+    events: list[dict[str, object]],
+    *,
+    minimum_step: int,
+    persisted_budget: dict[str, object],
+) -> tuple[int, dict[str, int]]:
+    steps = sum(1 for event in events if event.get("event") == "run.step.started")
+    model_calls = sum(1 for event in events if event.get("event") == "model.requested")
+    tool_calls = sum(1 for event in events if event.get("event") in {"tool.executed", "tool.failed"})
+    input_tokens = 0
+    output_tokens = 0
+    for event in events:
+        if event.get("event") != "model.responded":
+            continue
+        payload = event.get("payload")
+        response = payload.get("response") if isinstance(payload, dict) else None
+        usage = response.get("usage") if isinstance(response, dict) else None
+        if not isinstance(usage, dict):
+            continue
+        input_tokens += max(0, int(usage.get("input_tokens", usage.get("prompt_tokens", 0))))
+        output_tokens += max(0, int(usage.get("output_tokens", usage.get("completion_tokens", 0))))
+    budget = {
+        "model_calls": max(model_calls, int(persisted_budget.get("model_calls", 0))),
+        "tool_calls": max(tool_calls, int(persisted_budget.get("tool_calls", 0))),
+        "input_tokens": max(input_tokens, int(persisted_budget.get("input_tokens", 0))),
+        "output_tokens": max(output_tokens, int(persisted_budget.get("output_tokens", 0))),
+    }
+    budget["total_tokens"] = max(
+        budget["input_tokens"] + budget["output_tokens"],
+        int(persisted_budget.get("total_tokens", 0)),
+    )
+    return max(minimum_step, steps), budget
 
 
 def _find_config_path(project_path: Path) -> Path:

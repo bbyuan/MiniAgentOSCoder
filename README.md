@@ -25,7 +25,7 @@ Shared daemon API contract:
 openspec/api-contract.md
 ```
 
-The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, replay, and reports.
+The installed backend also provides a `miniagent` CLI companion that calls the same Daemon API. Task inputs accept `/fix`, `/test`, `/review`, `/explain`, and `/spec` mode commands in both the Workbench and CLI; operational CLI commands cover cancellation, steering, approval, context compaction, checkpoint resume, replay, and reports.
 
 ## First Development Target
 
@@ -117,7 +117,7 @@ npm run desktop:build
 
 The build first creates the target-suffixed PyInstaller Daemon sidecar, then packages the Tauri application. macOS artifacts are written under `frontend/src-tauri/target/release/bundle/macos/` and `frontend/src-tauri/target/release/bundle/dmg/`. Local builds are not notarized for distribution.
 
-Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; shows structured completion evidence; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
+Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; shows structured completion evidence; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. Interrupted, failed, or cancelled runs with a persisted checkpoint expose **Prepare to continue**. The Daemon rebuilds the governed session under the original `run_id`, preserves cumulative contract usage, and returns to preflight review without automatically invoking the model. The same operation is available through `miniagent resume RUN_ID`, with optional `--checkpoint` and `--restore-workspace` flags. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
 
 ## Model Provider Configuration
 

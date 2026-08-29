@@ -175,6 +175,38 @@ class HistoryStore:
             )
             return cursor.rowcount
 
+    def reopen_run(self, run: RunState, *, artifacts: RunArtifacts | None = None) -> bool:
+        values = _run_values(run, artifacts=artifacts)
+        with self._transaction() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE runs SET
+                    status=?, phase=?, updated_at=?, completed_at=NULL,
+                    termination_reason='', final_message='', budget_json=?, changed_files_json=?,
+                    applied_patches=?, repair_attempts=?, steps=?, model_calls=?, tool_calls=?,
+                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json='{}'
+                WHERE run_id=? AND status IN ('interrupted', 'failed', 'cancelled')
+                """,
+                (
+                    run.status.value,
+                    run.status.value,
+                    _now(),
+                    values["budget_json"],
+                    values["changed_files_json"],
+                    run.applied_patches,
+                    run.repair_attempts,
+                    values["steps"],
+                    values["model_calls"],
+                    values["tool_calls"],
+                    values["input_tokens"],
+                    values["output_tokens"],
+                    values["total_tokens"],
+                    values["test_status"],
+                    run.run_id,
+                ),
+            )
+            return cursor.rowcount > 0
+
     def list_projects(self) -> list[dict[str, Any]]:
         with self._lock:
             rows = self._connection.execute(

@@ -94,6 +94,40 @@ def test_reopen_marks_non_terminal_runs_interrupted(tmp_path: Path) -> None:
     reopened.close()
 
 
+def test_reopen_run_clears_terminal_result_and_preserves_usage(tmp_path: Path) -> None:
+    store = HistoryStore()
+    project = _project(store, tmp_path)
+    run = RunState(
+        run_id="run-resume",
+        task="Continue safely",
+        status=RunPhase.FAILED,
+        current_step=3,
+        budget={"model_calls": 2, "tool_calls": 1, "total_tokens": 120},
+    )
+    store.record_run(run, str(project["project_id"]), tmp_path)
+    store.update_run(
+        run,
+        result=RunLoopResult(
+            run_id=run.run_id,
+            status=RunPhase.FAILED,
+            termination_reason="worker_error",
+            steps=3,
+            final_message="stopped",
+        ),
+    )
+
+    run.status = RunPhase.PLANNING
+    assert store.reopen_run(run)
+    saved = store.get_run(run.run_id)
+
+    assert saved is not None
+    assert saved["status"] == "planning"
+    assert saved["completed_at"] is None
+    assert saved["termination_reason"] == ""
+    assert saved["final_message"] == ""
+    assert saved["steps"] == 3
+
+
 def test_existing_database_adds_completion_column_without_losing_runs(tmp_path: Path) -> None:
     database = tmp_path / "legacy.db"
     store = HistoryStore(database)

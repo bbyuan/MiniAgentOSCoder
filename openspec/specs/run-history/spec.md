@@ -63,3 +63,24 @@ The Daemon SHALL persist the final CompletionAssessment as structured JSON and S
 - WHEN history detail is requested
 - THEN the response SHALL include its verdict, mode, attempt, checks, and evidence
 - AND the deterministic Markdown report SHALL contain the same final assessment
+
+### RH-006 Checkpoint Resume After Restart
+
+The Runtime SHALL rebuild an interrupted Run from persisted history and a saved Checkpoint without replacing its existing Trace history.
+
+#### Scenario: Resume an interrupted Run
+
+- GIVEN the Daemon marked an active historical Run as interrupted during restart
+- AND the workspace and at least one Checkpoint remain available
+- WHEN the user requests resume
+- THEN the Runtime SHALL rebuild Project, Contract, Context, Memory, Governance, and Extension state
+- AND transition the Run to planning without invoking a model or tool
+- AND append a `run.resumed` event containing the Checkpoint and restoration decision
+- AND allow the normal start API to continue execution
+
+#### Scenario: Restore a Checkpoint snapshot before resume
+
+- GIVEN the selected Checkpoint has a restorable workspace Snapshot
+- WHEN the user explicitly requests workspace restoration
+- THEN the Runtime SHALL restore the Snapshot before rebuilding the Run
+- AND record restored, removed, and affected file counts in Trace

@@ -154,6 +154,7 @@ class RunWorker:
                 gateway = ToolGateway(
                     workspace_root=job.workspace,
                     contract=job.contract,
+                    used_tool_calls=max(0, int(job.run.budget.get("tool_calls", 0))),
                     approval_handler=lambda action, descriptor, preview: self._request_approval(
                         job,
                         cancel_event,
@@ -210,6 +211,13 @@ class RunWorker:
                     context_pack=job.context_pack,
                     skills=active_skills,
                     mode=job.run.mode,
+                    initial_steps=job.run.current_step,
+                    initial_model_calls=max(0, int(job.run.budget.get("model_calls", 0))),
+                    initial_token_usage={
+                        "input_tokens": max(0, int(job.run.budget.get("input_tokens", 0))),
+                        "output_tokens": max(0, int(job.run.budget.get("output_tokens", 0))),
+                        "total_tokens": max(0, int(job.run.budget.get("total_tokens", 0))),
+                    },
                 )
                 hook_pipeline.execute(HookEvent.RUN_AFTER)
             except Exception as exc:

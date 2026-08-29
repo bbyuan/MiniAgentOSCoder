@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 
 from app.api.store import store
 from app.main import create_app
-from app.models import RunLoopResult, RunPhase
+from app.models import Checkpoint, RunLoopResult, RunPhase
+from app.runtime.checkpoint import CheckpointStore
 
 
 def _client() -> TestClient:
@@ -61,6 +62,35 @@ def test_history_lists_stable_projects_and_run_details(tmp_path: Path) -> None:
     assert detail.json()["report"]["available"] is True
     assert "Persistent evidence" in detail.json()["report"]["content"]
     assert detail.json()["trace"]["event_count"] >= 2
+    assert detail.json()["resume"]["available"] is False
+
+
+def test_history_detail_exposes_checkpoint_resume_availability(tmp_path: Path) -> None:
+    client = _client()
+    project = _open(client, tmp_path)
+    created = _create(client, str(project["project_id"]), "continue after restart")
+    run = store.runs[str(created["run_id"])]
+    checkpoint = Checkpoint(
+        checkpoint_id="latest-safe-point",
+        run_id=run.run_id,
+        step=2,
+        status=RunPhase.RUNNING,
+        run_state=run.to_dict(),
+        context_summary="workspace and task",
+    )
+    CheckpointStore(tmp_path / "runs").save(checkpoint)
+    run.status = RunPhase.FAILED
+    store.history.update_run(run)
+
+    detail = client.get(f"/history/runs/{run.run_id}")
+
+    assert detail.status_code == 200
+    assert detail.json()["resume"] == {
+        "available": True,
+        "checkpoint_count": 1,
+        "latest_checkpoint_id": "latest-safe-point",
+        "snapshot_available": False,
+    }
 
 
 def test_history_compares_and_archives_runs(tmp_path: Path) -> None:

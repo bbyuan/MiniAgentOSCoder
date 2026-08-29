@@ -194,6 +194,69 @@ export function Workbench() {
     setHistoryOpen(true);
   }
 
+  async function resumeHistoricalRun(historicalRunId: string) {
+    setBusy(true);
+    setError(null);
+    streamCleanup.current?.();
+    streamCleanup.current = null;
+    try {
+      const resumed = await daemonApi.resumeRun(historicalRunId);
+      const [
+        contextResponse,
+        traceResponse,
+        recoveryResponse,
+        reportResponse,
+        memoryResponse,
+        governanceResponse,
+        extensionResponse,
+        providerStatus,
+      ] = await Promise.all([
+        daemonApi.getContext(resumed.run_id),
+        daemonApi.getTrace(resumed.run_id),
+        daemonApi.getCheckpoints(resumed.run_id),
+        daemonApi.getReport(resumed.run_id),
+        daemonApi.getMemory(resumed.run_id),
+        daemonApi.getGovernance(resumed.run_id),
+        daemonApi.getExtensions(resumed.run_id),
+        daemonApi.getModelStatus(resumed.project.project_id).catch(() => undefined),
+      ]);
+
+      setProject(resumed.project);
+      setWorkspacePath(resumed.project.path);
+      setTask(resumed.task);
+      setMode(resumed.mode);
+      setRunId(resumed.run_id);
+      setRunStatus(resumed.status);
+      setContract(resumed.contract);
+      setContextPack(contextResponse);
+      setArtifacts(resumed.artifacts);
+      setRecovery(recoveryResponse);
+      setReport(reportResponse);
+      setMemory(memoryResponse);
+      setGovernance(governanceResponse);
+      setExtensions(extensionResponse);
+      setTraceEvents(traceResponse.events);
+      setModelStatus(providerStatus);
+      setFinalMessage("");
+      setTerminationReason("");
+      setLastObservation({});
+      setCompletion(undefined);
+      setApproval(null);
+      setRollbackBusy(undefined);
+      setRuntimeDetailsOpen(false);
+      setRuntimePanelTarget("overview");
+      setConnection("connected");
+      setHistoryOpen(false);
+      setHistoryRunId(undefined);
+      void loadProjectRuns(resumed.project.project_id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+      throw caught;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function browseWorkspace() {
     try {
       const selected = await chooseProjectDirectory();
@@ -947,6 +1010,7 @@ export function Workbench() {
         open={historyOpen}
         initialRunId={historyRunId}
         initialProjectId={project?.project_id}
+        onResume={resumeHistoricalRun}
         onClose={() => {
           setHistoryOpen(false);
           setHistoryRunId(undefined);
