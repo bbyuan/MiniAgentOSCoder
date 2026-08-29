@@ -52,14 +52,41 @@ Response:
 ```json
 {
   "run_id": "run-001",
-  "status": "created",
-  "contract": {}
+  "status": "planning",
+  "contract": {},
+  "completion_expectations": [
+    "final_message",
+    "applied_change",
+    "changed_files",
+    "tests_after_change"
+  ]
 }
 ```
 
 ### `GET /runs/{run_id}`
 
-Return run status, active phase, budget, current plan, and latest observation.
+Return run status, active phase, budget, current plan, latest observation, mode-specific `completion_expectations`, and the final `completion` assessment when available.
+
+```json
+{
+  "run_id": "run-001",
+  "status": "completed",
+  "completion": {
+    "verdict": "passed",
+    "mode": "Bugfix",
+    "attempt": 2,
+    "summary": "All 4 required completion checks passed",
+    "checks": [
+      {
+        "id": "tests_after_change",
+        "required": true,
+        "passed": true,
+        "evidence": "1 successful test run(s) after the latest patch"
+      }
+    ]
+  }
+}
+```
 
 ### `POST /runs/{run_id}/start`
 
@@ -318,7 +345,7 @@ Return stable local Project identities ordered by most recent open time, includi
 
 ### `GET /history/runs`
 
-Return compact Run summaries ordered by latest update. Optional `project_id`, `status`, `query`, and `include_archived` filters can be combined with bounded `limit` and `offset` pagination.
+Return compact Run summaries ordered by latest update, including the persisted final `completion` assessment or `null` for legacy and non-terminal Runs. Optional `project_id`, `status`, `query`, and `include_archived` filters can be combined with bounded `limit` and `offset` pagination.
 
 ### `GET /history/runs/{run_id}`
 

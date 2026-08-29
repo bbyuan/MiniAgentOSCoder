@@ -247,3 +247,20 @@ The desktop host SHALL store model credentials in the operating system credentia
 - WHEN model setup is opened
 - THEN it SHALL explain the ignored `.env` development flow
 - AND SHALL NOT persist the credential in browser storage
+
+### DW-019 Completion Evidence Workbench
+
+The workbench SHALL explain mode-specific completion expectations before execution and SHALL display the runtime's structured CompletionAssessment for live and historical Runs.
+
+#### Scenario: Review a prepared Bugfix
+
+- GIVEN a Bugfix Run is prepared
+- WHEN the user reviews preflight
+- THEN the workbench SHALL show that a summary, applied change, changed files, and a successful test after the latest change are required
+
+#### Scenario: Review a terminal result
+
+- GIVEN a terminal Run exposes a CompletionAssessment
+- WHEN the result is displayed in the live canvas or Run Center
+- THEN every check SHALL show its localized state and evidence
+- AND an older Run without an assessment SHALL be identified as unavailable rather than passed

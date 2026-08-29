@@ -45,3 +45,21 @@ The Daemon SHALL compare exactly two distinct known Runs using aligned metrics a
 - WHEN the client archives it
 - THEN default queries SHALL omit it
 - AND queries that include archived Runs SHALL still return it
+
+### RH-005 Persisted Completion Evidence
+
+The Daemon SHALL persist the final CompletionAssessment as structured JSON and SHALL return it with Run summaries and details without reconstructing it from model prose.
+
+#### Scenario: Migrate an existing catalog
+
+- GIVEN a local history database predates Completion Guard
+- WHEN the Daemon opens it
+- THEN the schema SHALL add completion storage without deleting existing Runs
+- AND older Runs SHALL return a null assessment
+
+#### Scenario: Inspect a verified run
+
+- GIVEN a terminal Run has a CompletionAssessment
+- WHEN history detail is requested
+- THEN the response SHALL include its verdict, mode, attempt, checks, and evidence
+- AND the deterministic Markdown report SHALL contain the same final assessment

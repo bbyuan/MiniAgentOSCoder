@@ -17,7 +17,7 @@ Contract-first, context-aware, traceable coding-agent runtime.
 
 ## Current Stage
 
-The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
+The repository now includes the local Daemon API, guarded Tool Gateway, executable Context Pack, three-scope Memory Manager, deterministic Context Compression, Patch Pipeline, general tool approval, repair and rollback, mode-aware Completion Guard, deterministic run reports, controlled Trace Replay, model Action IR executor, bounded autonomous Agent Loop, ordered policy evaluation, portable process sandboxing, progressive Skill activation, governed stdio MCP tools, trusted lifecycle Hooks, a persistent SQLite Run Center, and a Tauri desktop host with a bundled Python sidecar. Active changes remain documented under `openspec/changes/`.
 
 Shared daemon API contract:
 
@@ -32,7 +32,8 @@ P0 must deliver a real local coding-agent loop:
 ```text
 open project -> scan workspace -> compile AgentContract -> plan -> build context
 -> emit Action IR -> guard -> tool gateway -> patch -> approve -> test
--> observe/compact -> repair -> consolidate memory -> report -> trace/replay
+-> observe/compact -> repair -> completion guard -> consolidate memory
+-> report -> trace/replay
 ```
 
 ## Development Commands
@@ -81,6 +82,8 @@ open project -> describe task -> analyze without edits -> review preflight
 
 Inactive runtime panels stay hidden until a Run exists. The desktop app uses the system folder picker; browser development retains an absolute-path field. Recently opened projects come from the local Run Center.
 
+Before execution, the workbench shows the completion contract for the selected mode. Bugfix, Feature, and Spec Runs require a recorded change plus a successful test after the latest patch. Review Runs require read-only inspection and forbid applied patches; Chat Runs require an answer and a read-only workspace. A model `finish` action is only a completion request: the runtime rejects it with structured missing checks and lets the same Agent Loop continue while budget remains. The final assessment is visible in the result view, Run Center, `report.md`, `trace.jsonl`, and the Run API.
+
 Desktop development:
 
 ```text
@@ -102,7 +105,7 @@ npm run desktop:build
 
 The build first creates the target-suffixed PyInstaller Daemon sidecar, then packages the Tauri application. macOS artifacts are written under `frontend/src-tauri/target/release/bundle/macos/` and `frontend/src-tauri/target/release/bundle/dmg/`. Local builds are not notarized for distribution.
 
-Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
+Use the History control in the top bar to open Run Center. It searches persisted runs by project, status, task, and archive state; shows structured completion evidence; reads reports and recent Trace evidence from the workspace; and compares exactly two runs across steps, model/tool calls, tokens, patches, repairs, tests, and changed files. The Daemon stores the local catalog at `~/.miniagentos-coder/state.db` by default. Set `MINIAGENTOS_HOME` to relocate it; reports, traces, patches, checkpoints, and snapshots remain under each workspace's `runs/{run_id}/` directory.
 
 ## Model Provider Configuration
 

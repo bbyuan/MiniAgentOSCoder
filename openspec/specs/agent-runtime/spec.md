@@ -79,7 +79,7 @@ The runtime SHALL execute parsed effectful actions only through the Tool Gateway
 
 ### AR-008 Bounded Autonomous Run Loop
 
-The runtime SHALL repeatedly plan one Action IR, execute it through the guarded runtime, and feed typed observations into the next model request until explicit completion or budget exhaustion.
+The runtime SHALL repeatedly plan one Action IR, execute it through the guarded runtime, and feed typed observations into the next model request until validated completion or budget exhaustion.
 
 #### Scenario: Complete a multi-step run
 
@@ -176,3 +176,28 @@ The runtime SHALL allow a prepared run to select a sandbox profile and tighten r
 - WHEN a client attempts to update its governance settings
 - THEN the Daemon SHALL reject the mutation
 - AND the execution evidence SHALL remain unchanged
+
+### AR-014 Mode-Aware Completion Guard
+
+The runtime SHALL treat `finish` as a completion request and SHALL only transition a Run to completed after deterministic requirements for its task mode pass against recorded Action Observations.
+
+#### Scenario: Reject an unverified code task
+
+- GIVEN a Bugfix, Feature, or Spec Run has not applied a change or has no successful test after its latest patch
+- WHEN the model requests finish
+- THEN the runtime SHALL append a blocked CompletionAssessment
+- AND return failed check ids to the next planning step without ending the Run
+
+#### Scenario: Accept a read-only review
+
+- GIVEN a Review Run has inspected project code and has not applied a patch
+- WHEN the model provides a non-empty review result
+- THEN Completion Guard SHALL pass
+- AND the terminal result SHALL retain every check and its evidence
+
+#### Scenario: Exhaust budget after rejection
+
+- GIVEN Completion Guard rejected the latest finish request
+- WHEN the Run exhausts a contract budget before satisfying the missing checks
+- THEN the Run SHALL fail
+- AND its result SHALL preserve the last blocked assessment
