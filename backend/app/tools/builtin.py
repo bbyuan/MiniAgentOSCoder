@@ -6,6 +6,7 @@ from typing import Callable
 from app.guards import check_command, redact_secrets, resolve_workspace_path
 from app.models import ApprovalPolicy, RiskLevel, ToolDescriptor, ToolResult
 from app.runtime.sandbox import SandboxExecutor
+from app.context.workspace_scan import IGNORED_DIRS
 from app.tools.patch_pipeline import PatchPipeline, PatchPipelineError
 
 
@@ -94,9 +95,9 @@ def read_file(workspace_root: Path, path: str) -> ToolResult:
 
 def search_code(workspace_root: Path, query: str) -> ToolResult:
     matches: list[str] = []
-    ignored = {".git", ".venv", "node_modules", "dist", "__pycache__"}
     for path in workspace_root.rglob("*"):
-        if any(part in ignored for part in path.parts):
+        relative = path.relative_to(workspace_root)
+        if any(part in IGNORED_DIRS for part in relative.parts):
             continue
         if not path.is_file():
             continue
@@ -105,7 +106,6 @@ def search_code(workspace_root: Path, query: str) -> ToolResult:
         except UnicodeDecodeError:
             continue
         if query in text:
-            relative = path.relative_to(workspace_root)
             matches.append(str(relative))
     return ToolResult(ok=True, tool="search_code", output="\n".join(matches), metadata={"matches": matches})
 
@@ -137,7 +137,9 @@ def preview_patch(workspace_root: Path, patch: str) -> ToolResult:
             metadata={"preflight": True},
         )
     try:
-        summary = PatchPipeline(workspace_root).check_apply(patch)
+        pipeline = PatchPipeline(workspace_root)
+        normalized_patch = pipeline.normalize(patch)
+        summary = pipeline.check_apply(normalized_patch)
     except PatchPipelineError as exc:
         return ToolResult(ok=False, tool="apply_patch", error=str(exc), metadata={"preflight": True})
     return ToolResult(
@@ -155,7 +157,9 @@ def preview_patch(workspace_root: Path, patch: str) -> ToolResult:
 
 def apply_patch(workspace_root: Path, patch: str) -> ToolResult:
     try:
-        summary = PatchPipeline(workspace_root).apply(patch)
+        pipeline = PatchPipeline(workspace_root)
+        normalized_patch = pipeline.normalize(patch)
+        summary = pipeline.apply(normalized_patch)
     except PatchPipelineError as exc:
         return ToolResult(ok=False, tool="apply_patch", error=str(exc))
     return ToolResult(

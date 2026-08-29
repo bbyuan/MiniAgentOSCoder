@@ -230,6 +230,7 @@ class RunWorker:
 
             self._record_result_data(job.run, result)
             self._consolidate_memory(job, result)
+            self._finalize_plan(job, result)
             self._write_final_report(job, result)
             job.tracer.event(job.run.run_id, "run.transitioned", {"status": result.status.value})
             self._set_result_status(job.run, result.status)
@@ -431,7 +432,7 @@ class RunWorker:
                 job.run.applied_patches += 1
                 try:
                     patch_path = RunArtifactWriter(job.workspace, job.run.run_id).append_patch(
-                        str(action.params.get("patch", "")),
+                        PatchPipeline(job.workspace).normalize(str(action.params.get("patch", ""))),
                         job.run.applied_patches,
                     )
                     job.tracer.event(
@@ -567,6 +568,25 @@ class RunWorker:
                 "report.failed",
                 {"error": redact_secrets(str(exc))},
             )
+
+    @staticmethod
+    def _finalize_plan(job: RunJob, result: RunLoopResult) -> None:
+        if job.artifacts is None:
+            return
+
+        terminal_state = {
+            RunPhase.COMPLETED: "skipped",
+            RunPhase.FAILED: "failed",
+            RunPhase.CANCELLED: "cancelled",
+        }.get(result.status, "skipped")
+        for step in job.artifacts.plan:
+            if step.id == "report" or step.state == "done":
+                continue
+            if step.state == "active":
+                step.state = terminal_state
+                step.detail = result.termination_reason
+            elif step.state == "waiting":
+                step.state = "skipped" if result.status != RunPhase.CANCELLED else "cancelled"
 
     @staticmethod
     def _set_result_status(run: RunState, status: RunPhase) -> None:

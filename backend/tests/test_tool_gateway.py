@@ -47,6 +47,20 @@ def test_search_code_returns_matching_files(tmp_path: Path) -> None:
     assert "src/service.py" in result.output
 
 
+def test_search_code_excludes_runtime_and_agent_metadata(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "service.py").write_text("needle\n", encoding="utf-8")
+    (tmp_path / ".agent").mkdir()
+    (tmp_path / ".agent" / "memory.md").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "runs" / "old-run").mkdir(parents=True)
+    (tmp_path / "runs" / "old-run" / "report.md").write_text("needle\n", encoding="utf-8")
+    gateway = make_gateway(tmp_path)
+
+    result = gateway.call(ActionIR(type="search_code", rationale="find", params={"query": "needle"}))
+
+    assert result.metadata["matches"] == ["src/service.py"]
+
+
 def test_run_test_tool_executes_allowed_command(tmp_path: Path) -> None:
     gateway = make_gateway(tmp_path)
 
@@ -95,6 +109,24 @@ def test_patch_pipeline_summarizes_unified_diff(tmp_path: Path) -> None:
     assert summary.files == ["app.py"]
     assert summary.additions == 1
     assert summary.deletions == 1
+
+
+def test_patch_pipeline_removes_repeated_workspace_prefix(tmp_path: Path) -> None:
+    workspace = tmp_path / "examples" / "python-bugfix"
+    workspace.mkdir(parents=True)
+    (workspace / "app.py").write_text("old\n", encoding="utf-8")
+    diff = """--- a/examples/python-bugfix/app.py
++++ b/examples/python-bugfix/app.py
+@@ -1 +1 @@
+-old
++new
+"""
+
+    summary = PatchPipeline(workspace).apply(diff)
+
+    assert summary.files == ["app.py"]
+    assert (workspace / "app.py").read_text(encoding="utf-8") == "new\n"
+    assert not (workspace / "examples").exists()
 
 
 def test_apply_patch_runs_preflight_and_requires_approval(tmp_path: Path) -> None:

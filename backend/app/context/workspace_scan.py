@@ -7,7 +7,19 @@ from pathlib import Path
 from app.models.base import Serializable
 
 
-IGNORED_DIRS = {".git", ".venv", "node_modules", "dist", "__pycache__", ".pytest_cache"}
+IGNORED_DIRS = {
+    ".agent",
+    ".git",
+    ".pytest_cache",
+    ".tmp-runtime",
+    ".venv",
+    "__pycache__",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "runs",
+}
 
 LANGUAGE_BY_SUFFIX = {
     ".py": "python",
@@ -83,4 +95,3 @@ def _iter_files(root: Path) -> list[Path]:
         if path.is_file():
             files.append(path)
     return files
-

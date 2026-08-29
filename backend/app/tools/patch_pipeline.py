@@ -55,10 +55,31 @@ class PatchPipeline:
             raise PatchPipelineError("Patch does not include target files")
         return summary
 
+    def normalize(self, unified_diff: str) -> str:
+        """Normalize diff headers to paths relative to the selected workspace."""
+        normalized: list[str] = []
+        for line in unified_diff.splitlines(keepends=True):
+            marker = next((candidate for candidate in ("--- ", "+++ ") if line.startswith(candidate)), None)
+            if marker is None:
+                normalized.append(line)
+                continue
+
+            value = line[len(marker):]
+            ending = "\n" if value.endswith("\n") else ""
+            value = value.removesuffix("\n")
+            path, separator, metadata = value.partition("\t")
+            normalized_path = self._normalize_diff_path(path)
+            if normalized_path is None:
+                normalized.append(line)
+                continue
+            normalized.append(f"{marker}{normalized_path}{separator}{metadata}{ending}")
+        return "".join(normalized)
+
     def dry_run(self, unified_diff: str) -> PatchSummary:
         return self.summarize(unified_diff)
 
     def check_apply(self, unified_diff: str) -> PatchSummary:
+        unified_diff = self.normalize(unified_diff)
         summary = self.summarize(unified_diff)
         completed = subprocess.run(
             ["git", "apply", "--check", "--no-index", "--unsafe-paths", "-"],
@@ -73,6 +94,7 @@ class PatchPipeline:
         return summary
 
     def apply(self, unified_diff: str) -> PatchSummary:
+        unified_diff = self.normalize(unified_diff)
         summary = self.check_apply(unified_diff)
         completed = subprocess.run(
             ["git", "apply", "--no-index", "--unsafe-paths", "-"],
@@ -152,11 +174,28 @@ class PatchPipeline:
         except PermissionError as exc:
             raise PatchPipelineError(str(exc)) from exc
 
-    @staticmethod
-    def _normalize_diff_path(value: str) -> str | None:
+    def _normalize_diff_path(self, value: str) -> str | None:
         path = value.split("\t", 1)[0].strip()
         if path == "/dev/null":
             return None
         if path.startswith(("a/", "b/")):
             path = path[2:]
+        path = self._strip_repeated_workspace_prefix(path)
         return path
+
+    def _strip_repeated_workspace_prefix(self, value: str) -> str:
+        path = Path(value)
+        parts = path.parts
+        if self.workspace_root.name not in parts:
+            return value
+
+        workspace_index = len(parts) - 1 - list(reversed(parts)).index(self.workspace_root.name)
+        candidate = Path(*parts[workspace_index + 1:])
+        if not candidate.parts:
+            return value
+
+        original_parent = (self.workspace_root / path).parent
+        candidate_parent = (self.workspace_root / candidate).parent
+        if not original_parent.exists() and candidate_parent.exists():
+            return candidate.as_posix()
+        return value

@@ -46,6 +46,18 @@ def test_workspace_index_extracts_symbols_relations_and_snippets(tmp_path: Path)
     assert (tmp_path / ".agent" / "index" / "snippets.jsonl").exists()
 
 
+def test_workspace_index_excludes_generated_agent_and_run_files(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text("def run(): pass\n", encoding="utf-8")
+    (tmp_path / ".agent").mkdir()
+    (tmp_path / ".agent" / "memory.py").write_text("def stale(): pass\n", encoding="utf-8")
+    (tmp_path / "runs" / "old").mkdir(parents=True)
+    (tmp_path / "runs" / "old" / "report.py").write_text("def stale(): pass\n", encoding="utf-8")
+
+    index = build_workspace_index(tmp_path)
+
+    assert [item["path"] for item in index.files] == ["service.py"]
+
+
 def test_context_pack_selects_required_and_prioritized_items() -> None:
     required = [
         ContextCandidate(

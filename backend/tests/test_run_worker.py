@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from app.models import ApprovalRequest, ContextPack, RunArtifacts, RunLoopResult, RunPhase, RunState
+from app.models import ApprovalRequest, ContextPack, PlanStep, RunArtifacts, RunLoopResult, RunPhase, RunState
 from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.model_client import QueuedStaticModelClient
 from app.runtime.run_worker import RunJob, RunWorker, RunWorkerConflict
@@ -62,6 +62,26 @@ def test_run_worker_executes_prepared_run_and_updates_state(tmp_path: Path) -> N
     assert events[0] == "run.transitioned"
     assert events[-4:] == ["run.finished", "memory.written", "report.generated", "run.transitioned"]
     assert (tmp_path / "runs" / job.run.run_id / "report.md").exists()
+
+
+def test_run_worker_finalizes_active_and_waiting_plan_steps(tmp_path: Path) -> None:
+    job, _ = make_job(tmp_path, run_id="run-worker-plan")
+    job.artifacts = RunArtifacts(
+        run_id=job.run.run_id,
+        plan=[
+            PlanStep("scan", "Scan", "done"),
+            PlanStep("context", "Context", "active"),
+            PlanStep("test", "Test", "waiting"),
+            PlanStep("report", "Report", "waiting"),
+        ],
+    )
+    worker = RunWorker()
+
+    worker.prepare(job)
+    worker.execute(job)
+
+    states = {step.id: step.state for step in job.artifacts.plan}
+    assert states == {"scan": "done", "context": "skipped", "test": "skipped", "report": "done"}
 
 
 def test_run_worker_rejects_duplicate_prepare(tmp_path: Path) -> None:
