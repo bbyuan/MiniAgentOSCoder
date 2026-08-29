@@ -94,3 +94,28 @@ Process-based tools SHALL execute through the configured Sandbox Executor with a
 - THEN the process SHALL use the strict timeout and output limits
 - AND Trace SHALL record sandbox start and finish evidence
 - AND the API SHALL disclose that kernel network isolation, syscall filtering, and read-only mounts are not provided by the portable backend
+
+### TG-008 Complete Built-In Tool Registry
+
+The runtime SHALL expose workspace discovery, code inspection, validation, patching, and explicitly approved command execution through one governed built-in Tool Registry.
+
+#### Scenario: Inspect the built-in catalog
+
+- GIVEN a Run has been prepared
+- WHEN the Workbench requests Governance details
+- THEN it SHALL receive descriptors for file reading, directory listing, code search, tests, lint, patching, read-only Git inspection, and approved commands
+- AND each descriptor SHALL expose its Effect, risk, declared policy, effective policy, timeout, and Sandbox metadata
+
+#### Scenario: Execute an arbitrary safe-looking command
+
+- GIVEN the model requests `run_command`
+- WHEN schema, command, contract, budget, sandbox, and policy guards pass
+- THEN the Runtime SHALL still require explicit one-time user approval
+- AND SHALL execute argv without a shell only after approval
+
+#### Scenario: Inspect Git state
+
+- GIVEN the workspace is a Git repository
+- WHEN `git_status` or `git_diff` executes
+- THEN the Runtime SHALL use fixed read-only Git arguments
+- AND SHALL return redacted bounded output without allowing model-provided Git subcommands
