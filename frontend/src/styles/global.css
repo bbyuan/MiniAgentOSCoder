@@ -3811,6 +3811,192 @@ button.statusChip:hover {
   font-size: 13px;
 }
 
+.agentControlPlane {
+  min-width: 0;
+  margin-left: 43px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.agentControlPlane.variant-manifest {
+  margin: 0 0 20px;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+
+.controlPlaneHeader {
+  min-height: 50px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface-subtle);
+}
+
+.controlPlaneIdentity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.controlPlaneMark {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.controlPlaneIdentity strong,
+.controlPlaneIdentity span {
+  display: block;
+}
+
+.controlPlaneIdentity strong {
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.controlPlaneIdentity div > span {
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.controlPlaneState {
+  min-height: 24px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 5px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.controlPlaneSignals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 1px;
+  border-top: 1px solid var(--border);
+  background: var(--border);
+}
+
+.controlSignal {
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: 19px minmax(0, 1fr);
+  align-content: center;
+  column-gap: 7px;
+  border: 0;
+  border-radius: 0;
+  color: var(--text-tertiary);
+  background: var(--surface-raised);
+  text-align: left;
+}
+
+button.controlSignal {
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+button.controlSignal:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+button.controlSignal.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+button.controlSignal:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.controlSignal > svg {
+  margin-top: 1px;
+}
+
+.controlSignal > span {
+  min-width: 0;
+}
+
+.controlSignal small,
+.controlSignal strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controlSignal small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 620;
+}
+
+.controlSignal strong {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 690;
+}
+
+.controlSignal.tone-success > svg {
+  color: var(--success);
+}
+
+.controlSignal.tone-warning > svg,
+.controlSignal.tone-warning strong {
+  color: var(--warning);
+}
+
+.controlSignal.tone-danger > svg,
+.controlSignal.tone-danger strong {
+  color: var(--danger);
+}
+
+.controlSignalProgress {
+  grid-column: 1 / -1;
+  height: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.controlSignalProgress > b {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.controlSignal.tone-warning .controlSignalProgress > b {
+  background: var(--warning);
+}
+
+.controlSignal.tone-danger .controlSignalProgress > b {
+  background: var(--danger);
+}
+
 .inlineApproval {
   margin-left: 43px;
   overflow: hidden;
@@ -4198,6 +4384,7 @@ button.statusChip:hover {
   }
 
   .activityPanel,
+  .agentControlPlane,
   .completionSummary,
   .followUpComposer,
   .inlineApproval,

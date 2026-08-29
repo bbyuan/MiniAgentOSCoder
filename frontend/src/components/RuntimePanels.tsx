@@ -16,6 +16,7 @@ import type {
 } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
+import type { ControlPlaneTarget } from "./AgentOSControlPlane";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { RunReportPanel } from "./RunReportPanel";
 import { TraceReplayPanel } from "./TraceReplayPanel";
@@ -28,6 +29,7 @@ type InspectorTab = "overview" | "changes" | "diagnostics";
 type DiagnosticView = "context" | "memory" | "extensions" | "governance" | "trace";
 
 interface RuntimePanelsProps {
+  initialTarget?: ControlPlaneTarget;
   contract: {
     effects: string[];
     policies: string[];
@@ -68,6 +70,7 @@ interface RuntimePanelsProps {
 }
 
 export function RuntimePanels({
+  initialTarget = "overview",
   contract,
   context,
   contextBusy,
@@ -93,8 +96,12 @@ export function RuntimePanels({
   onSaveGovernance,
   onSaveExtensions,
 }: RuntimePanelsProps) {
-  const [activeTab, setActiveTab] = useState<InspectorTab>("overview");
-  const [diagnosticView, setDiagnosticView] = useState<DiagnosticView>("context");
+  const [activeTab, setActiveTab] = useState<InspectorTab>(
+    initialTarget === "overview" || initialTarget === "changes" ? initialTarget : "diagnostics",
+  );
+  const [diagnosticView, setDiagnosticView] = useState<DiagnosticView>(
+    initialTarget === "overview" || initialTarget === "changes" ? "context" : initialTarget,
+  );
   const { locale, t } = usePreferences();
   const tabs: Array<{ id: InspectorTab; label: string }> = [
     { id: "overview", label: t("inspector.overview") },

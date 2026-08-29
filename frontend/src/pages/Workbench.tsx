@@ -25,6 +25,7 @@ import {
   type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { ApprovalPanel } from "../components/ApprovalPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
@@ -96,6 +97,7 @@ export function Workbench() {
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
+  const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -220,6 +222,7 @@ export function Workbench() {
     setExtensions(undefined);
     setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
+    setRuntimePanelTarget("overview");
     streamCleanup.current?.();
     streamCleanup.current = null;
     try {
@@ -311,6 +314,7 @@ export function Workbench() {
         if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
           setApproval(event.payload.approval);
           setRunStatus("waiting_approval");
+          setRuntimePanelTarget("governance");
           setRuntimeDetailsOpen(true);
         } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
           setApproval(null);
@@ -452,6 +456,7 @@ export function Workbench() {
     setReport(undefined);
     setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
+    setRuntimePanelTarget("overview");
     setError(null);
     if (clearTask) setTask("");
   }
@@ -643,6 +648,11 @@ export function Workbench() {
     await prepareRun(true, nextTask);
   }
 
+  function openControlPlaneTarget(target: ControlPlaneTarget) {
+    setRuntimePanelTarget(target);
+    setRuntimeDetailsOpen(true);
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -713,6 +723,16 @@ export function Workbench() {
                   onLaunch={launchRun}
                   onConfigureModel={() => setModelSetupOpen(true)}
                 >
+                  <AgentOSControlPlane
+                    variant="manifest"
+                    mode={mode}
+                    contract={contract}
+                    context={contextPack}
+                    memory={memory}
+                    governance={governance}
+                    extensions={extensions}
+                    recovery={recovery}
+                  />
                   <AdvancedSetupPanel
                     governance={governance}
                     governanceBusy={governanceBusy}
@@ -732,7 +752,14 @@ export function Workbench() {
               <p>{basename(project.path)} · {translateMode(locale, mode)}</p>
             </div>
             <div className="runHeaderControls">
-              <button type="button" className="runDetailsAction" onClick={() => setRuntimeDetailsOpen((current) => !current)}>
+              <button
+                type="button"
+                className="runDetailsAction"
+                onClick={() => {
+                  if (!runtimeDetailsOpen) setRuntimePanelTarget("overview");
+                  setRuntimeDetailsOpen((current) => !current);
+                }}
+              >
                 {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
                 {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
               </button>
@@ -755,6 +782,19 @@ export function Workbench() {
               {!terminal ? <p>{t(copy.description)}</p> : null}
             </div>
           </section>
+
+          <AgentOSControlPlane
+            variant="runtime"
+            mode={mode}
+            contract={contract}
+            context={contextPack}
+            memory={memory}
+            governance={governance}
+            extensions={extensions}
+            recovery={recovery}
+            activeTarget={runtimeDetailsOpen ? runtimePanelTarget : undefined}
+            onOpen={openControlPlaneTarget}
+          />
 
           {displayPlan.length ? <RunProgress items={displayPlan} /> : null}
 
@@ -817,6 +857,8 @@ export function Workbench() {
         </section>
 
         {!runIsPrepared && runtimeDetailsOpen ? <RuntimePanels
+          key={`${runId}-${runtimePanelTarget}`}
+          initialTarget={runtimePanelTarget}
           contract={displayContract}
           context={contextPack}
           contextBusy={contextBusy}
