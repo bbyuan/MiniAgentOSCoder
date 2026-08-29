@@ -4074,26 +4074,10 @@ button.statusChip:hover {
 
 .completionFailureReason {
   grid-column: 1 / -1;
-  grid-row: 2;
   padding: 13px 14px;
   border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
   border-radius: 7px;
   background: var(--danger-soft);
-}
-
-.completionSummary > .completionLead {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.completionSummary > .completionSignals {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.completionSummary > .secondaryTextAction {
-  grid-column: 3;
-  grid-row: 1;
 }
 
 .completionFailureReason strong,
@@ -4225,22 +4209,6 @@ button.statusChip:hover {
     grid-template-columns: 1fr;
   }
 
-  .completionSummary {
-    grid-template-columns: 1fr;
-  }
-
-  .completionSummary > .completionLead,
-  .completionSummary > .completionSignals,
-  .completionSummary > .secondaryTextAction,
-  .completionSummary > .completionFailureReason,
-  .completionSummary > .completionEvidence {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .completionSignals {
-    border-left: 0;
-  }
 }
 
 /* Guided workbench */
@@ -5490,11 +5458,31 @@ button.statusChip:hover {
 .completionSummary {
   padding: 16px 18px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px 24px;
   border-block: 1px solid var(--border);
   background: var(--surface-subtle);
+}
+
+.completionSummary.tone-completed {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--success) 82%, transparent);
+}
+
+.completionSummary.tone-failed {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--border));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--danger) 76%, transparent);
+}
+
+.completionSummary > .completionLead {
+  grid-column: 1;
+}
+
+.completionSummary > .secondaryTextAction {
+  grid-column: 2;
+  align-self: start;
+  white-space: nowrap;
 }
 
 .completionSummary > .completionEvidence {
@@ -5508,6 +5496,10 @@ button.statusChip:hover {
   display: flex;
   align-items: flex-start;
   gap: 11px;
+}
+
+.completionLead > div {
+  min-width: 0;
 }
 
 .completionLead > svg {
@@ -5529,21 +5521,26 @@ button.statusChip:hover {
 }
 
 .completionLead p {
+  max-width: 72ch;
   margin: 4px 0 0;
+  overflow-wrap: anywhere;
   color: var(--text-secondary);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
 .completionSignals {
-  display: flex;
+  grid-column: 1 / -1;
+  padding-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 180px));
   align-items: stretch;
-  border-left: 1px solid var(--border);
+  gap: 24px;
+  border-top: 1px solid var(--border);
 }
 
 .completionSignals > div {
-  min-width: 100px;
-  padding: 0 13px;
+  min-width: 0;
   display: grid;
   grid-template-columns: 18px auto;
   column-gap: 5px;
@@ -5562,6 +5559,49 @@ button.statusChip:hover {
 .completionSignals strong {
   margin-top: 3px;
   font-size: 12px;
+}
+
+.completionDetails {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.completionDetails summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.completionDetails summary::-webkit-details-marker {
+  display: none;
+}
+
+.completionDetails summary svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.completionDetails[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.completionDetails p {
+  margin: 10px 0 1px;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .completionEvidence {
@@ -5751,17 +5791,6 @@ button.statusChip:hover {
     border-bottom: 1px solid var(--border);
   }
 
-  .completionSummary {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .completionSignals {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-    border-left: 0;
-  }
 }
 
 @media (max-width: 620px) {
@@ -5906,13 +5935,23 @@ button.statusChip:hover {
     grid-template-columns: 1fr;
   }
 
+  .completionSummary > .completionLead,
   .completionSignals,
-  .completionSummary > button {
+  .completionSummary > button,
+  .completionDetails,
+  .completionSummary > .completionFailureReason,
+  .completionSummary > .completionEvidence {
     grid-column: 1;
   }
 
   .completionSignals {
-    overflow-x: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .completionSummary > button {
+    width: 100%;
+    justify-content: center;
   }
 
   .completionEvidence > header {

@@ -149,3 +149,11 @@ def test_planner_receives_selected_and_compressed_context_content() -> None:
     assert "Fix the parser" in prompt
     assert "Run parser tests first" in prompt
     assert "[compressed] memory" in prompt
+
+
+def test_planner_requests_a_concise_completion_in_the_task_language() -> None:
+    request = build_action_request("修复计算器并运行测试", AgentContract("agent"), [])
+    system_prompt = request.messages[0].content
+
+    assert "same language as the user's task" in system_prompt
+    assert "result, changed files, and verification outcome" in system_prompt
