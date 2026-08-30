@@ -13699,3 +13699,233 @@ button.controlSignal.active {
     justify-self: start;
   }
 }
+
+/* Stable product layout contract */
+.productFrame {
+  width: min(100%, 1760px);
+  min-height: calc(100vh - 74px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
+  border-inline: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--canvas) 78%, var(--surface));
+}
+
+.projectSidebar {
+  width: 248px;
+  min-width: 248px;
+  max-width: 248px;
+  min-height: calc(100vh - 74px);
+  height: calc(100vh - 74px);
+  position: sticky;
+  top: 74px;
+  align-self: start;
+  overflow: hidden;
+  border-right: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--canvas));
+}
+
+.projectSidebar .sidebarRuns {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.productContent {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.productContent > .guidedStage,
+.productContent > .workbenchLayout {
+  min-width: 0;
+}
+
+.productContent .workbenchLayout {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: calc(100vh - 74px);
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(380px, 30vw, 460px);
+  align-items: stretch;
+  border-inline: 0;
+  background: transparent;
+}
+
+.productContent .workbenchLayout.runSimpleLayout,
+.productContent .workbenchLayout.preflightSimpleLayout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.productContent .runCanvas {
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(26px, 3vw, 48px) clamp(22px, 3.2vw, 52px) 48px;
+  overflow: visible;
+}
+
+.productContent .runSimpleLayout .runCanvas,
+.productContent .preflightSimpleLayout .runCanvas {
+  width: min(100%, 1120px);
+  justify-self: center;
+}
+
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .runCanvas {
+  padding-right: clamp(22px, 2.6vw, 40px);
+}
+
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .conversationTurn,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .runStatusDeck,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .runProgress,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .activityPanel,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .completionSummary,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .runSteeringComposer,
+.productContent .workbenchLayout:not(.runSimpleLayout):not(.preflightSimpleLayout) .followUpComposer {
+  width: min(100%, 880px);
+  margin-left: 0;
+}
+
+.productContent .runSimpleLayout .conversationTurn,
+.productContent .runSimpleLayout .runStatusDeck,
+.productContent .runSimpleLayout .runProgress,
+.productContent .runSimpleLayout .activityPanel,
+.productContent .runSimpleLayout .completionSummary,
+.productContent .runSimpleLayout .runSteeringComposer,
+.productContent .runSimpleLayout .followUpComposer {
+  width: min(100%, 880px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.productContent .preflightCanvas > * {
+  width: min(100%, 980px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.productContent .preflightCanvas .preflightControlDeck {
+  width: min(100%, 1060px);
+}
+
+.productContent .inspector {
+  width: clamp(380px, 30vw, 460px);
+  min-width: 380px;
+  max-width: 460px;
+  min-height: calc(100vh - 74px);
+  height: calc(100vh - 74px);
+  position: sticky;
+  top: 74px;
+  align-self: start;
+  overflow: hidden;
+  border-left: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 94%, var(--canvas));
+}
+
+.productContent .inspectorBody {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.productContent .preflightDecisionGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1280px) {
+  .productFrame {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .projectSidebar {
+    width: 224px;
+    min-width: 224px;
+    max-width: 224px;
+  }
+
+  .productContent .workbenchLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
+  }
+
+  .productContent .inspector {
+    width: min(400px, 32vw);
+    min-width: 360px;
+    max-width: 400px;
+  }
+
+  .productContent .preflightDecisionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .productFrame {
+    width: 100%;
+    grid-template-columns: 1fr;
+    border-inline: 0;
+  }
+
+  .projectSidebar {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: auto;
+    height: auto;
+    max-height: 184px;
+    position: sticky;
+    top: 74px;
+    z-index: 12;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+    overflow: auto;
+  }
+
+  .productContent .workbenchLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productContent .inspector {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: auto;
+    height: auto;
+    position: static;
+    border-left: 0;
+    border-top: 1px solid var(--hairline);
+  }
+}
+
+@media (max-width: 760px) {
+  .projectSidebar {
+    top: 74px;
+    max-height: 164px;
+  }
+
+  .productContent .runCanvas {
+    padding: 20px 16px 34px;
+  }
+
+  .productContent .runSimpleLayout .conversationTurn,
+  .productContent .runSimpleLayout .runStatusDeck,
+  .productContent .runSimpleLayout .runProgress,
+  .productContent .runSimpleLayout .activityPanel,
+  .productContent .runSimpleLayout .completionSummary,
+  .productContent .runSimpleLayout .runSteeringComposer,
+  .productContent .runSimpleLayout .followUpComposer {
+    width: 100%;
+  }
+
+  .productContent .preflightDecisionGrid {
+    grid-template-columns: 1fr;
+  }
+}
