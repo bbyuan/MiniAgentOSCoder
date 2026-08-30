@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Check, CircleSlash2, Gauge, Save, ShieldCheck, Wrench } from "lucide-react";
+import { Box, Check, CircleSlash2, Gauge, LockKeyhole, Save, ShieldCheck, Wrench } from "lucide-react";
+import type { ReactNode } from "react";
 import type {
   GovernanceResponse,
   SandboxProfile,
@@ -25,6 +26,11 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
   );
   const executions = governance?.executions ?? [];
   const lastExecution = executions.length > 0 ? executions[executions.length - 1] : undefined;
+  const approvalTools = (governance?.tools ?? []).filter((tool) => tool.effective_policy === "approval_required").length;
+  const deniedTools = (governance?.tools ?? []).filter((tool) => tool.effective_policy === "deny").length;
+  const guardDecisions = (governance?.evaluations ?? []).flatMap((evaluation) => evaluation.decisions);
+  const deniedDecisions = guardDecisions.filter((decision) => decision.status === "deny").length;
+  const failedExecutions = executions.filter((execution) => execution.timed_out || (execution.returncode ?? 0) !== 0).length;
 
   useEffect(() => {
     if (!governance) return;
@@ -48,6 +54,32 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
           <span>{setupMode ? t("governance.setupDescription") : governance?.editable ? t("governance.editable") : t("governance.readOnly")}</span>
         </div>
         <ShieldCheck size={15} />
+      </div>
+
+      <div className="governanceSignalGrid">
+        <GovernanceSignal
+          icon={<Wrench size={15} />}
+          label={t("governance.signal.tools")}
+          value={String(governance?.tools.length ?? 0)}
+          detail={t("governance.signal.toolPolicies", { approval: approvalTools, denied: deniedTools })}
+          tone={deniedTools > 0 ? "warning" : "ready"}
+        />
+        <GovernanceSignal
+          icon={<ShieldCheck size={15} />}
+          label={t("governance.signal.guards")}
+          value={String(guardDecisions.length)}
+          detail={t("governance.signal.guardDenied", { count: deniedDecisions })}
+          tone={deniedDecisions > 0 ? "failed" : guardDecisions.length > 0 ? "ready" : "pending"}
+        />
+        <GovernanceSignal
+          icon={<LockKeyhole size={15} />}
+          label={t("governance.signal.sandbox")}
+          value={String(executions.length)}
+          detail={failedExecutions > 0
+            ? t("governance.signal.executionFailed", { count: failedExecutions })
+            : lastExecution?.backend ?? t("governance.signal.notRun")}
+          tone={failedExecutions > 0 ? "failed" : executions.length > 0 ? "ready" : "pending"}
+        />
       </div>
 
       <div className="governanceBlock sandboxBlock">
@@ -162,5 +194,28 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
         ) : null}
       </div> : null}
     </section>
+  );
+}
+
+function GovernanceSignal({
+  icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  tone: "ready" | "pending" | "warning" | "failed";
+}) {
+  return (
+    <div className={`governanceSignal tone-${tone}`}>
+      <span>{icon}</span>
+      <small>{label}</small>
+      <strong title={value}>{value}</strong>
+      <em title={detail}>{detail}</em>
+    </div>
   );
 }

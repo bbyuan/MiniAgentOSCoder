@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw, ShieldCheck, Terminal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { daemonApi, type ReplayResponse, type TraceEvent } from "../api/client";
-import { translateKnownText } from "../i18n";
+import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface TraceReplayPanelProps {
@@ -23,6 +23,12 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
   const canReplay = Boolean(runId) && TERMINAL_STATUSES.has(runStatus);
   const replayEvents = snapshot?.events ?? [];
   const current = replayEvents[cursor];
+  const eventGroups = useMemo(() => [
+    { label: "replay.group.model" as TranslationKey, count: events.filter((event) => event.event.startsWith("model.")).length },
+    { label: "replay.group.tools" as TranslationKey, count: events.filter((event) => event.event.startsWith("tool.") || event.event.startsWith("action.")).length },
+    { label: "replay.group.governance" as TranslationKey, count: events.filter((event) => event.event.startsWith("policy.") || event.event.startsWith("approval.") || event.event.startsWith("sandbox.")).length },
+    { label: "replay.group.extensions" as TranslationKey, count: events.filter((event) => event.event.startsWith("skill.") || event.event.startsWith("mcp.") || event.event.startsWith("hook.")).length },
+  ], [events]);
 
   useEffect(() => {
     setSnapshot(undefined);
@@ -76,6 +82,15 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
           <span>{t("trace.events", { count: events.length })}</span>
         </div>
         <Terminal size={15} />
+      </div>
+
+      <div className="traceOverviewGrid">
+        {eventGroups.map((group) => (
+          <div key={group.label}>
+            <span>{t(group.label)}</span>
+            <strong>{group.count}</strong>
+          </div>
+        ))}
       </div>
 
       {!snapshot ? (
