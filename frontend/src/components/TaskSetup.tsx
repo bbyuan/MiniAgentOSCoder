@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUp, Boxes, CheckCircle2, ChevronDown, ClipboardCheck, FileCheck2, GitBranch, KeyRound, Layers3, ScrollText, ShieldCheck, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
+import { AlertTriangle, ArrowUp, Boxes, CheckCircle2, ChevronDown, GitBranch, KeyRound, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
 import type { ReactNode } from "react";
 import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
@@ -48,28 +48,14 @@ export function TaskSetup({
   const { locale, t } = usePreferences();
   const modelReady = model?.configured === true;
   const tests = project.profile.test_commands ?? [];
-  const languages = project.profile.languages ?? [];
   const packState = agentPackDrift
     ? agentPackDrift.has_versions
       ? agentPackDrift.drift ? "changed" : "stable"
       : "empty"
     : "loading";
-  const suggestedTasks = [
-    { mode: "Bugfix" as RunMode, label: t("task.quickFix"), prompt: t("task.example.bugfix") },
-    { mode: "Review" as RunMode, label: t("task.quickReview"), prompt: t("task.example.review") },
-    { mode: "Chat" as RunMode, label: t("task.quickExplore"), prompt: t("task.example.chat") },
-  ];
   const protocolCount = protocols?.summary.total ?? 0;
   const modelState = modelReady ? "ready" : model ? "blocked" : "checking";
-  const protocolDetail = protocols
-    ? protocolCount
-      ? t("task.protocolDetail", {
-        agents: protocols.summary.agent_docs,
-        specs: protocols.summary.openspec_specs + protocols.summary.openspec_changes,
-        skills: protocols.summary.skills,
-      })
-      : t("task.protocolMissingHint")
-    : t("task.protocolChecking");
+
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
       <header className="taskIntro productTaskIntro">
@@ -157,115 +143,50 @@ export function TaskSetup({
         </div>
       </div>
 
-      <details className="guidedTaskStarts">
-        <summary>
-          <span><ClipboardCheck size={14} />{t("task.quickStart")}</span>
-          <ChevronDown size={15} />
-        </summary>
-        <div>
-          {suggestedTasks.map((item) => (
-            <button
-              type="button"
-              key={item.mode}
-              disabled={busy}
-              onClick={() => {
-                onModeChange(item.mode);
-                onTaskChange(item.prompt);
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </details>
-
       <details className="setupDetails compactSetupDetails">
         <summary>
           <span>{t("task.setupDetails")}</span>
           <ChevronDown size={15} />
         </summary>
-        <section className="projectReadiness" aria-label={t("task.readinessTitle")}>
-          <header>
-            <div>
-              <span className="stageEyebrow">{t("task.readinessEyebrow")}</span>
-              <h2>{t("task.readinessTitle")}</h2>
-            </div>
-            <div className="projectStackPills">
-              {(languages.length ? languages : [t("agentPack.unknown")]).slice(0, 4).map((language) => <span key={language}>{language}</span>)}
-            </div>
-          </header>
-          <div className="readinessGrid">
-            <ReadinessTile
-              icon={modelReady ? <CheckCircle2 size={16} /> : <KeyRound size={16} />}
-              tone={modelReady ? "ready" : "blocked"}
-              title={t("task.readinessModel")}
-              value={modelReady ? model?.model || t("preflight.ready") : t("preflight.needsSetup")}
-              detail={modelReady ? t("task.readinessModelReady") : t("task.readinessModelMissing")}
-              actionLabel={modelReady ? undefined : t("task.configureModel")}
-              onAction={modelReady ? undefined : onConfigureModel}
-            />
-            <ReadinessTile
-              icon={<TerminalSquare size={16} />}
-              tone={tests.length ? "ready" : "warn"}
-              title={t("task.readinessTests")}
-              value={tests.length ? t("task.testCommands", { count: tests.length }) : t("task.noTests")}
-              detail={tests[0] || t("task.noTestsHint")}
-            />
-            <ReadinessTile
-              icon={packState === "changed" ? <GitBranch size={16} /> : <Boxes size={16} />}
-              tone={packState === "changed" ? "warn" : packState === "empty" ? "info" : "ready"}
-              title={t("task.readinessAgentPack")}
-              value={t(packState === "changed" ? "task.agentPackChanged" : packState === "empty" ? "task.agentPackEmpty" : packState === "stable" ? "task.agentPackStable" : "task.agentPackChecking")}
-              detail={agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("task.agentPackHint")}
-              actionLabel={t("preflightDeck.openAgentPack")}
-              onAction={onOpenAgentPack}
-            />
-            <ReadinessTile
-              icon={<ScrollText size={16} />}
-              tone={protocolCount ? "ready" : "info"}
-              title={t("task.readinessProtocols")}
-              value={protocolCount ? t("task.protocolCount", { count: protocolCount }) : t("task.protocolMissing")}
-              detail={protocolDetail}
-              actionLabel={t("task.useSpecMode")}
-              onAction={() => {
-                onModeChange("Spec");
-                onTaskChange(t("task.protocolPrompt"));
-              }}
-            />
-          </div>
-          {protocols?.items.length ? (
-            <div className="protocolPreview">
-              <span>{t("task.protocolPreview")}</span>
-              <div>
-                {protocols.items.slice(0, 4).map((item) => (
-                  <code title={item.path} key={item.id}>{item.path}</code>
-                ))}
-              </div>
-            </div>
-          ) : null}
+        <section className="compactProjectChecks" aria-label={t("task.readinessTitle")}>
+          <ProjectCheckRow
+            icon={modelReady ? <CheckCircle2 size={16} /> : <KeyRound size={16} />}
+            tone={modelReady ? "ready" : "blocked"}
+            title={t("task.readinessModel")}
+            value={modelReady ? t("task.checkReady") : t("preflight.needsSetup")}
+            detail={modelReady ? model?.model || t("preflight.ready") : t("task.readinessModelMissing")}
+            actionLabel={modelReady ? undefined : t("task.configureModel")}
+            onAction={modelReady ? undefined : onConfigureModel}
+          />
+          <ProjectCheckRow
+            icon={<TerminalSquare size={16} />}
+            tone={tests.length ? "ready" : "warn"}
+            title={t("task.readinessTests")}
+            value={tests.length ? t("task.testCommands", { count: tests.length }) : t("task.noTests")}
+            detail={tests[0] || t("task.noTestsHint")}
+          />
+          <ProjectCheckRow
+            icon={packState === "changed" ? <GitBranch size={16} /> : <Boxes size={16} />}
+            tone={packState === "changed" ? "warn" : packState === "empty" ? "info" : "ready"}
+            title={t("task.readinessAgentPack")}
+            value={t(packState === "changed" ? "task.agentPackChanged" : packState === "empty" ? "task.agentPackEmpty" : packState === "stable" ? "task.agentPackStable" : "task.agentPackChecking")}
+            detail={agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("task.agentPackHint")}
+            actionLabel={t("preflightDeck.openAgentPack")}
+            onAction={onOpenAgentPack}
+          />
+          <ProjectCheckRow
+            icon={<ScrollText size={16} />}
+            tone={protocolCount ? "ready" : "info"}
+            title={t("task.readinessProtocols")}
+            value={protocolCount ? t("task.protocolCount", { count: protocolCount }) : t("task.protocolMissing")}
+            detail={protocolCount ? t("task.protocolDetectedHint") : t("task.protocolMissingShortHint")}
+            actionLabel={protocolCount ? undefined : t("task.useSpecMode")}
+            onAction={protocolCount ? undefined : () => {
+              onModeChange("Spec");
+              onTaskChange(t("task.protocolPrompt"));
+            }}
+          />
         </section>
-        <div className="taskRunPreview" aria-label={t("task.flowTitle")}>
-          <div>
-            <Layers3 size={15} />
-            <strong>{t("task.flow.context")}</strong>
-            <span>{t("task.flow.contextHint")}</span>
-          </div>
-          <div>
-            <ShieldCheck size={15} />
-            <strong>{t("task.flow.govern")}</strong>
-            <span>{t("task.flow.governHint")}</span>
-          </div>
-          <div>
-            <GitBranch size={15} />
-            <strong>{t("task.flow.execute")}</strong>
-            <span>{t("task.flow.executeHint")}</span>
-          </div>
-          <div>
-            <FileCheck2 size={15} />
-            <strong>{t("task.flow.verify")}</strong>
-            <span>{t("task.flow.verifyHint")}</span>
-          </div>
-        </div>
       </details>
     </section>
   );
@@ -333,7 +254,7 @@ function StartReadinessBrief({
   );
 }
 
-function ReadinessTile({
+function ProjectCheckRow({
   icon,
   tone,
   title,
@@ -351,7 +272,7 @@ function ReadinessTile({
   onAction?: () => void;
 }) {
   return (
-    <article className={`readinessTile tone-${tone}`}>
+    <article className={`projectCheckRow tone-${tone}`}>
       <span>{icon}</span>
       <div>
         <small>{title}</small>

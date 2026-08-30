@@ -15273,3 +15273,140 @@ button.controlSignal.active {
     flex: 0 0 30px;
   }
 }
+
+/* Project checks as quiet diagnostics */
+.productTaskSetup .compactSetupDetails {
+  width: min(100%, 900px);
+  margin-top: 12px;
+}
+
+.productTaskSetup .compactSetupDetails > summary {
+  min-height: 40px;
+  padding: 0 12px;
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+  color: var(--text-secondary);
+}
+
+.compactProjectChecks {
+  margin-top: 8px;
+  display: grid;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 80%, transparent);
+  overflow: hidden;
+}
+
+.projectCheckRow {
+  min-width: 0;
+  min-height: 58px;
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
+}
+
+.projectCheckRow:last-child {
+  border-bottom: 0;
+}
+
+.projectCheckRow > span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent);
+}
+
+.projectCheckRow.tone-ready > span {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 68%, transparent);
+}
+
+.projectCheckRow.tone-warn > span {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning-soft) 70%, transparent);
+}
+
+.projectCheckRow.tone-blocked > span {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger-soft) 70%, transparent);
+}
+
+.projectCheckRow div,
+.projectCheckRow small,
+.projectCheckRow strong,
+.projectCheckRow em {
+  min-width: 0;
+}
+
+.projectCheckRow small {
+  display: block;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectCheckRow strong {
+  display: inline;
+  margin-right: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 740;
+}
+
+.projectCheckRow em {
+  display: inline;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectCheckRow button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.guidedTaskStarts,
+.taskRunPreview {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .projectCheckRow {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .projectCheckRow button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .projectCheckRow strong,
+  .projectCheckRow em {
+    display: block;
+  }
+
+  .projectCheckRow em {
+    margin-top: 3px;
+  }
+}
