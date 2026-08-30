@@ -945,6 +945,7 @@ export function Workbench() {
             newTaskDisabled={runIsActive}
             navigationLocked={runIsActive || runIsPrepared}
             loading={recentRunsBusy}
+            agentPackDrift={agentPackDrift}
             onNewTask={startNewTask}
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
@@ -957,15 +958,18 @@ export function Workbench() {
         <div className="guidedStage taskStage">
           {error ? <ErrorBanner message={error} /> : null}
           <TaskSetup
+            project={project}
             task={task}
             mode={mode}
             busy={busy}
             model={modelStatus}
+            agentPackDrift={agentPackDrift}
             onTaskChange={setTask}
             onModeChange={setMode}
             onStart={() => prepareRun(true)}
             onReviewSettings={() => prepareRun(false)}
             onConfigureModel={() => setModelSetupOpen(true)}
+            onOpenAgentPack={() => void openAgentPack()}
           />
         </div>
       ) : (

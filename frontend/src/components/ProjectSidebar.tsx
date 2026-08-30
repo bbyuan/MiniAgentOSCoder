@@ -1,6 +1,6 @@
 import { Boxes, CheckCircle2, CircleAlert, Clock3, FolderGit2, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
-import type { HistoryRun, OpenProjectResponse } from "../api/client";
-import { translateStatus } from "../i18n";
+import type { AgentPackDrift, HistoryRun, OpenProjectResponse } from "../api/client";
+import { translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ProjectSidebarProps {
@@ -10,6 +10,7 @@ interface ProjectSidebarProps {
   newTaskDisabled: boolean;
   navigationLocked: boolean;
   loading: boolean;
+  agentPackDrift?: AgentPackDrift;
   onNewTask: () => void;
   onChangeProject: () => void;
   onOpenRun: (runId: string) => void;
@@ -17,6 +18,13 @@ interface ProjectSidebarProps {
   onOpenAgentPack: () => void;
   onRefresh: () => void;
 }
+
+const agentPackBadgeLabels: Record<string, TranslationKey> = {
+  stable: "sidebar.agentPack.stable",
+  changed: "sidebar.agentPack.changed",
+  empty: "sidebar.agentPack.empty",
+  loading: "sidebar.agentPack.loading",
+};
 
 function RunIcon({ status }: { status: string }) {
   if (status === "completed") return <CheckCircle2 size={14} />;
@@ -34,6 +42,7 @@ export function ProjectSidebar({
   newTaskDisabled,
   navigationLocked,
   loading,
+  agentPackDrift,
   onNewTask,
   onChangeProject,
   onOpenRun,
@@ -42,6 +51,11 @@ export function ProjectSidebar({
   onRefresh,
 }: ProjectSidebarProps) {
   const { locale, t } = usePreferences();
+  const packState = agentPackDrift
+    ? agentPackDrift.has_versions
+      ? agentPackDrift.drift ? "changed" : "stable"
+      : "empty"
+    : "loading";
 
   return (
     <aside className="projectSidebar">
@@ -87,6 +101,7 @@ export function ProjectSidebar({
       <button className="sidebarAgentPack" type="button" onClick={onOpenAgentPack}>
         <Boxes size={15} />
         <span>{t("sidebar.agentPack")}</span>
+        <small className={`sidebarAgentPackBadge state-${packState}`}>{t(agentPackBadgeLabels[packState])}</small>
       </button>
     </aside>
   );

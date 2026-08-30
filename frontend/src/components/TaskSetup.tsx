@@ -1,18 +1,22 @@
-import { ArrowUp, KeyRound, SlidersHorizontal, Sparkles } from "lucide-react";
-import type { ModelProviderStatus, RunMode } from "../api/client";
+import { ArrowUp, Boxes, CheckCircle2, ClipboardCheck, GitBranch, KeyRound, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
+import type { ReactNode } from "react";
+import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface TaskSetupProps {
+  project: OpenProjectResponse;
   task: string;
   mode: RunMode;
   busy: boolean;
   model?: ModelProviderStatus;
+  agentPackDrift?: AgentPackDrift;
   onTaskChange: (task: string) => void;
   onModeChange: (mode: RunMode) => void;
   onStart: () => void;
   onReviewSettings: () => void;
   onConfigureModel: () => void;
+  onOpenAgentPack: () => void;
 }
 
 const taskModes: RunMode[] = ["Bugfix", "Feature", "Review", "Spec", "Chat"];
@@ -26,18 +30,33 @@ const examples: Record<RunMode, "task.example.bugfix" | "task.example.feature" |
 };
 
 export function TaskSetup({
+  project,
   task,
   mode,
   busy,
   model,
+  agentPackDrift,
   onTaskChange,
   onModeChange,
   onStart,
   onReviewSettings,
   onConfigureModel,
+  onOpenAgentPack,
 }: TaskSetupProps) {
   const { locale, t } = usePreferences();
   const modelReady = model?.configured === true;
+  const tests = project.profile.test_commands ?? [];
+  const languages = project.profile.languages ?? [];
+  const packState = agentPackDrift
+    ? agentPackDrift.has_versions
+      ? agentPackDrift.drift ? "changed" : "stable"
+      : "empty"
+    : "loading";
+  const suggestedTasks = [
+    { mode: "Bugfix" as RunMode, label: t("task.quickFix"), prompt: t("task.example.bugfix") },
+    { mode: "Review" as RunMode, label: t("task.quickReview"), prompt: t("task.example.review") },
+    { mode: "Chat" as RunMode, label: t("task.quickExplore"), prompt: t("task.example.chat") },
+  ];
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
@@ -45,6 +64,61 @@ export function TaskSetup({
         <h1 id="task-setup-title">{t("task.title")}</h1>
         <p>{t("task.description")}</p>
       </header>
+
+      <section className="projectReadiness" aria-label={t("task.readinessTitle")}>
+        <header>
+          <div>
+            <span className="stageEyebrow">{t("task.readinessEyebrow")}</span>
+            <h2>{t("task.readinessTitle")}</h2>
+          </div>
+          <div className="projectStackPills">
+            {(languages.length ? languages : [t("agentPack.unknown")]).slice(0, 4).map((language) => <span key={language}>{language}</span>)}
+          </div>
+        </header>
+        <div className="readinessGrid">
+          <ReadinessTile
+            icon={modelReady ? <CheckCircle2 size={16} /> : <KeyRound size={16} />}
+            tone={modelReady ? "ready" : "blocked"}
+            title={t("task.readinessModel")}
+            value={modelReady ? model?.model || t("preflight.ready") : t("preflight.needsSetup")}
+            detail={modelReady ? t("task.readinessModelReady") : t("task.readinessModelMissing")}
+            actionLabel={modelReady ? undefined : t("task.configureModel")}
+            onAction={modelReady ? undefined : onConfigureModel}
+          />
+          <ReadinessTile
+            icon={<TerminalSquare size={16} />}
+            tone={tests.length ? "ready" : "warn"}
+            title={t("task.readinessTests")}
+            value={tests.length ? t("task.testCommands", { count: tests.length }) : t("task.noTests")}
+            detail={tests[0] || t("task.noTestsHint")}
+          />
+          <ReadinessTile
+            icon={packState === "changed" ? <GitBranch size={16} /> : <Boxes size={16} />}
+            tone={packState === "changed" ? "warn" : packState === "empty" ? "info" : "ready"}
+            title={t("task.readinessAgentPack")}
+            value={t(packState === "changed" ? "task.agentPackChanged" : packState === "empty" ? "task.agentPackEmpty" : packState === "stable" ? "task.agentPackStable" : "task.agentPackChecking")}
+            detail={agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("task.agentPackHint")}
+            actionLabel={t("preflightDeck.openAgentPack")}
+            onAction={onOpenAgentPack}
+          />
+        </div>
+        <div className="guidedTaskStarts">
+          <span><ClipboardCheck size={14} />{t("task.quickStart")}</span>
+          {suggestedTasks.map((item) => (
+            <button
+              type="button"
+              key={item.mode}
+              disabled={busy}
+              onClick={() => {
+                onModeChange(item.mode);
+                onTaskChange(item.prompt);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {model && !model.configured ? (
         <div className="taskModelNotice">
@@ -116,5 +190,35 @@ export function TaskSetup({
         </div>
       </div>
     </section>
+  );
+}
+
+function ReadinessTile({
+  icon,
+  tone,
+  title,
+  value,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  icon: ReactNode;
+  tone: "ready" | "warn" | "blocked" | "info";
+  title: string;
+  value: string;
+  detail: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <article className={`readinessTile tone-${tone}`}>
+      <span>{icon}</span>
+      <div>
+        <small>{title}</small>
+        <strong title={value}>{value}</strong>
+        <em title={detail}>{detail}</em>
+      </div>
+      {actionLabel && onAction ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
+    </article>
   );
 }

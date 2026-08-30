@@ -5639,6 +5639,48 @@ button.controlSignal:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
 }
 
+.sidebarAgentPack span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarAgentPackBadge {
+  max-width: 82px;
+  padding: 3px 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: var(--surface);
+  font-size: 9px;
+  font-weight: 760;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarAgentPackBadge.state-stable {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border));
+}
+
+.sidebarAgentPackBadge.state-changed {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+}
+
+.sidebarAgentPackBadge.state-empty {
+  color: var(--accent);
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+
 .guidedStage {
   width: min(100%, 1180px);
   min-height: calc(100vh - 68px);
@@ -8518,6 +8560,192 @@ button.controlSignal:focus-visible {
   font-size: 15px;
 }
 
+.projectReadiness {
+  margin-top: 28px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 88%, var(--accent-soft)), var(--surface));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+
+.projectReadiness > header {
+  min-height: 72px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.projectReadiness h2 {
+  margin: 4px 0 0;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.projectStackPills {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.projectStackPills span {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.readinessGrid {
+  padding: 0 18px 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.readinessTile {
+  min-width: 0;
+  min-height: 136px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.readinessTile > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.readinessTile.tone-ready > span {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.readinessTile.tone-warn > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.readinessTile.tone-blocked > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.readinessTile div,
+.readinessTile small,
+.readinessTile strong,
+.readinessTile em {
+  min-width: 0;
+  display: block;
+}
+
+.readinessTile small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 780;
+  text-transform: uppercase;
+}
+
+.readinessTile strong {
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readinessTile em {
+  margin-top: 6px;
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.readinessTile button {
+  min-height: 32px;
+  padding: 0 10px;
+  grid-column: 1 / -1;
+  justify-self: start;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.readinessTile button:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.guidedTaskStarts {
+  min-height: 58px;
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--surface));
+}
+
+.guidedTaskStarts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.guidedTaskStarts > span svg {
+  color: var(--accent);
+}
+
+.guidedTaskStarts button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.guidedTaskStarts button:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--surface) 82%, var(--accent-soft));
+}
+
 .taskComposerProduct {
   margin-top: 28px;
   border: 1px solid var(--border-strong);
@@ -9686,6 +9914,24 @@ button.controlSignal:focus-visible {
   }
 
   .preflightDeckModel {
+    width: 100%;
+  }
+
+  .projectReadiness > header,
+  .guidedTaskStarts {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .projectStackPills {
+    justify-content: flex-start;
+  }
+
+  .readinessGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .guidedTaskStarts button {
     width: 100%;
   }
 
