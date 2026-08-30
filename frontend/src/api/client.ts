@@ -454,6 +454,31 @@ export interface ModelProviderStatus {
   total_profiles?: number;
 }
 
+export interface ModelConfigurationSnapshot {
+  project_id: string;
+  config_path: string;
+  source: "project" | "default";
+  routing: {
+    enabled: boolean;
+    strategy: "single" | "policy";
+    default_profile_id: string;
+    phase_routes: Record<string, string>;
+    mode_routes: Record<string, string>;
+    fallback_profile_ids: string[];
+  };
+  profiles: Array<{
+    profile_id: string;
+    provider: string;
+    model: string;
+    api_key_env: string;
+    base_url: string;
+    configured: boolean;
+    issues: string[];
+    context_window?: number | null;
+    pricing_configured: boolean;
+  }>;
+}
+
 export interface StartRunResponse {
   run_id: string;
   status: string;
@@ -776,6 +801,8 @@ export const daemonApi = {
   replayRun: (runId: string) => request<ReplayResponse>(`/runs/${runId}/replay`, { method: "POST" }),
   getModelStatus: (projectId?: string) =>
     request<ModelProviderStatus>(`/models/status${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
+  getModelConfig: (projectId?: string) =>
+    request<ModelConfigurationSnapshot>(`/models/config${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
   getHistoryProjects: () =>
     request<{ projects: HistoryProject[]; total: number }>("/history/projects"),
   getHistoryRuns: (filters: HistoryRunFilters = {}) => {

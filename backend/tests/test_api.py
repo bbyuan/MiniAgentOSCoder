@@ -206,6 +206,46 @@ models:
     assert "economy-secret" not in json.dumps(route)
 
 
+def test_model_config_endpoint_exposes_safe_profile_snapshot(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        """models:
+  provider: openai-compatible
+  default_model: primary-model
+  api_key_env: ROUTE_PRIMARY_KEY
+  base_url: https://provider.example/v1
+  routing:
+    enabled: true
+    default_profile: default
+    phase_routes:
+      inspect: economy
+    fallback_profiles: [default]
+  profiles:
+    economy:
+      model: economy-model
+      api_key_env: ROUTE_ECONOMY_KEY
+      context_window: 64000
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROUTE_PRIMARY_KEY", "primary-secret")
+    monkeypatch.setenv("ROUTE_ECONOMY_KEY", "economy-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.get(f"/models/config?project_id={project['project_id']}")
+    snapshot = response.json()
+
+    assert response.status_code == 200
+    assert snapshot["source"] == "project"
+    assert snapshot["routing"]["enabled"] is True
+    assert snapshot["routing"]["phase_routes"] == {"inspect": "economy"}
+    assert {profile["profile_id"] for profile in snapshot["profiles"]} == {"default", "economy"}
+    assert "primary-secret" not in json.dumps(snapshot)
+    assert "economy-secret" not in json.dumps(snapshot)
+
+
 def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()

@@ -15,6 +15,7 @@ import {
   type HistoryRun,
   type MemoryInput,
   type MemoryResponse,
+  type ModelConfigurationSnapshot,
   type ModelProviderStatus,
   type ModelRoutePlan,
   type OpenProjectResponse,
@@ -92,6 +93,7 @@ export function Workbench() {
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
+  const [modelConfig, setModelConfig] = useState<ModelConfigurationSnapshot | undefined>();
   const [finalMessage, setFinalMessage] = useState("");
   const [terminationReason, setTerminationReason] = useState("");
   const [lastObservation, setLastObservation] = useState<Record<string, unknown>>({});
@@ -172,10 +174,14 @@ export function Workbench() {
     setError(null);
     try {
       const opened = await daemonApi.openProject(path.trim());
-      const providerStatus = await daemonApi.getModelStatus(opened.project_id).catch(() => undefined);
+      const [providerStatus, configurationSnapshot] = await Promise.all([
+        daemonApi.getModelStatus(opened.project_id).catch(() => undefined),
+        daemonApi.getModelConfig(opened.project_id).catch(() => undefined),
+      ]);
       setProject(opened);
       setWorkspacePath(opened.path);
       setModelStatus(providerStatus);
+      setModelConfig(configurationSnapshot);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
       if (history) setRecentProjects(history.projects);
@@ -221,6 +227,7 @@ export function Workbench() {
         governanceResponse,
         extensionResponse,
         providerStatus,
+        configurationSnapshot,
         conversationResponse,
       ] = await Promise.all([
         daemonApi.getContext(resumed.run_id),
@@ -231,6 +238,7 @@ export function Workbench() {
         daemonApi.getGovernance(resumed.run_id),
         daemonApi.getExtensions(resumed.run_id),
         daemonApi.getModelStatus(resumed.project.project_id).catch(() => undefined),
+        daemonApi.getModelConfig(resumed.project.project_id).catch(() => undefined),
         daemonApi.getConversation(resumed.run_id),
       ]);
 
@@ -252,6 +260,7 @@ export function Workbench() {
       setExtensions(extensionResponse);
       setTraceEvents(traceResponse.events);
       setModelStatus(providerStatus);
+      setModelConfig(configurationSnapshot);
       setFinalMessage("");
       setTerminationReason("");
       setLastObservation({});
@@ -289,9 +298,13 @@ export function Workbench() {
     try {
       await saveDesktopModelCredential(apiKey);
       const reopened = await daemonApi.openProject(project.path);
-      const providerStatus = await daemonApi.getModelStatus(reopened.project_id);
+      const [providerStatus, configurationSnapshot] = await Promise.all([
+        daemonApi.getModelStatus(reopened.project_id),
+        daemonApi.getModelConfig(reopened.project_id).catch(() => undefined),
+      ]);
       setProject(reopened);
       setModelStatus(providerStatus);
+      setModelConfig(configurationSnapshot);
       if (runId) resetRunState(false);
       setModelSetupOpen(false);
     } catch (caught) {
@@ -619,6 +632,7 @@ export function Workbench() {
     setProject(undefined);
     setWorkspacePath("");
     setModelStatus(undefined);
+    setModelConfig(undefined);
     setRecentRuns([]);
   }
 
@@ -1103,6 +1117,8 @@ export function Workbench() {
         desktop={isDesktopHost()}
         busy={modelSetupBusy}
         error={modelSetupError}
+        status={modelStatus}
+        config={modelConfig}
         onClose={() => {
           if (!modelSetupBusy) {
             setModelSetupOpen(false);

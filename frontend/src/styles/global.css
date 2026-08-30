@@ -7391,7 +7391,9 @@ button.controlSignal:focus-visible {
 }
 
 .modelSetupDialog {
-  width: min(100%, 500px);
+  width: min(100%, 680px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
   padding: 21px;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
@@ -7427,6 +7429,185 @@ button.controlSignal:focus-visible {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.modelConfigSnapshot {
+  margin-top: 17px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.modelConfigSnapshot > header {
+  min-height: 48px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.modelConfigSnapshot > header > div,
+.modelConfigSnapshot > header > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.modelConfigSnapshot > header strong {
+  font-size: 12px;
+}
+
+.modelConfigSnapshot > header > span {
+  padding: 4px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.modelConfigSnapshot > header > span.ready {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.modelConfigSnapshot > header > span.missing {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.modelConfigFacts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+
+.modelConfigFacts > div {
+  min-width: 0;
+  min-height: 64px;
+  padding: 11px 12px;
+  border-right: 1px solid var(--border);
+}
+
+.modelConfigFacts > div:last-child {
+  border-right: 0;
+}
+
+.modelConfigFacts small,
+.modelConfigFacts strong {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelConfigFacts small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.modelConfigFacts strong {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.modelConfigProfiles {
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.modelConfigProfiles article {
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+}
+
+.modelConfigProfiles article > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.modelConfigProfiles article.missing > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.modelConfigProfiles div,
+.modelConfigProfiles strong,
+.modelConfigProfiles small {
+  min-width: 0;
+  display: block;
+}
+
+.modelConfigProfiles strong {
+  font-size: 12px;
+}
+
+.modelConfigProfiles small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelConfigProfiles em {
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 10px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.modelConfigRoutes {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modelConfigRoutes span {
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 10px;
+}
+
+.modelConfigRoutes b {
+  color: var(--text);
+}
+
+.modelConfigEmpty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .secretField {
@@ -7540,6 +7721,30 @@ button.controlSignal:focus-visible {
 
   .modelSetupDialog {
     padding: 17px;
+  }
+
+  .modelConfigFacts,
+  .modelConfigProfiles {
+    grid-template-columns: 1fr;
+  }
+
+  .modelConfigFacts > div {
+    min-height: 56px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modelConfigFacts > div:last-child {
+    border-bottom: 0;
+  }
+
+  .modelConfigProfiles article {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .modelConfigProfiles em {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .modelSetupDialog > footer {
