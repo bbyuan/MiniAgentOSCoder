@@ -13578,3 +13578,124 @@ button.controlSignal.active {
     justify-content: center;
   }
 }
+
+/* Preflight alignment and default signal simplification */
+.preflightControlDeck {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.preflightDeckHero {
+  align-items: center;
+}
+
+.preflightDeckModel {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+.preflightDeckModel > svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  align-self: center;
+}
+
+.preflightDecisionGrid {
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+}
+
+.preflightDecisionTile {
+  min-height: 126px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+}
+
+.preflightDecisionTile > span {
+  width: 38px;
+  height: 38px;
+  align-self: start;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+
+.preflightDecisionTile > span svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.preflightDecisionTile small {
+  padding-top: 1px;
+  text-transform: none;
+  font-size: 12px;
+}
+
+.preflightDecisionTile strong {
+  margin-top: 8px;
+  font-size: 19px;
+}
+
+.preflightDecisionTile em {
+  min-height: 32px;
+  margin-top: 7px;
+  font-size: 12px;
+}
+
+.preflightDecisionTile > i {
+  left: 70px;
+  right: 18px;
+  bottom: 15px;
+  border-radius: 8px;
+}
+
+.preflightAgentPackStrip {
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  padding: 14px 16px;
+}
+
+.preflightAgentPackStrip > span {
+  width: 38px;
+  height: 38px;
+  align-self: center;
+}
+
+.preflightAgentPackStrip > span svg {
+  display: block;
+}
+
+.preflightAgentPackStrip em {
+  border-radius: 8px;
+}
+
+.preflightRouteNode > span {
+  border-radius: 8px;
+}
+
+.activityPanel {
+  opacity: 0.92;
+}
+
+@media (max-width: 1120px) {
+  .preflightDecisionGrid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .preflightDecisionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .preflightDeckHero {
+    align-items: stretch;
+  }
+
+  .preflightAgentPackStrip {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .preflightAgentPackStrip em {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

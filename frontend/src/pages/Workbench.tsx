@@ -1224,7 +1224,7 @@ export function Workbench() {
             </section>
           ) : null}
 
-          <ActivityFeed events={traceEvents} status={runStatus} />
+          {!displayPlan.length && !terminal ? <ActivityFeed events={traceEvents} status={runStatus} /> : null}
 
           {error ? <ErrorBanner message={error} /> : null}
               </>
