@@ -140,7 +140,7 @@ export function Workbench() {
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowSplash(false), 1600);
+    const timer = window.setTimeout(() => setShowSplash(false), 2850);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -1305,8 +1305,8 @@ function SplashScreen() {
   return (
     <div className="splashScreen" aria-hidden="true">
       <div className="splashHello">
-        <svg viewBox="0 0 900 190" role="img">
-          <text x="50%" y="118" textAnchor="middle">hello, world</text>
+        <svg viewBox="0 0 1060 210" role="img">
+          <text x="50%" y="128" textAnchor="middle">{t("splash.title")}</text>
         </svg>
         <span>{t("splash.subtitle")}</span>
       </div>
