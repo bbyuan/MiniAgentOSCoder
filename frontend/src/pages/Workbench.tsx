@@ -48,6 +48,7 @@ import { ProjectSidebar } from "../components/ProjectSidebar";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { RunProgress } from "../components/RunProgress";
+import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
@@ -1066,6 +1067,18 @@ export function Workbench() {
               {!terminal ? <p>{t(copy.description)}</p> : null}
             </div>
           </section>
+
+          <RunStatusDeck
+            status={runStatus}
+            phase={artifacts?.diff_summary.status === "Applied" ? "applying_patch" : runStatus}
+            plan={displayPlan}
+            trace={traceEvents}
+            context={contextPack}
+            onOpenControlPlane={() => {
+              setRuntimePanelTarget("overview");
+              setRuntimeDetailsOpen(true);
+            }}
+          />
 
           <AgentOSControlPlane
             variant="runtime"
