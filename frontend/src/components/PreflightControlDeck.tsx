@@ -1,9 +1,6 @@
 import {
-  AlertTriangle,
   Boxes,
-  BrainCircuit,
   CheckCircle2,
-  CircleDollarSign,
   Gauge,
   GitBranch,
   KeyRound,
@@ -16,60 +13,41 @@ import type {
   AgentContract,
   AgentPackDrift,
   ContextPack,
-  ExtensionResponse,
   GovernanceResponse,
   ModelProviderStatus,
-  ModelRoutePlan,
   RunAdmission,
-  RunMode,
 } from "../api/client";
 import type { TranslationKey } from "../i18n";
-import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface PreflightControlDeckProps {
-  mode: RunMode;
-  task: string;
   model?: ModelProviderStatus;
   admission?: RunAdmission;
-  modelRoute?: ModelRoutePlan;
   contract?: AgentContract;
   context?: ContextPack;
   governance?: GovernanceResponse;
-  extensions?: ExtensionResponse;
   agentPackDrift?: AgentPackDrift;
   onConfigureModel: () => void;
   onOpenAgentPack: () => void;
 }
 
-const routePhases = ["inspect", "work", "verify", "repair"] as const;
-
 export function PreflightControlDeck({
-  mode,
-  task,
   model,
   admission,
-  modelRoute,
   contract,
   context,
   governance,
-  extensions,
   agentPackDrift,
   onConfigureModel,
   onOpenAgentPack,
 }: PreflightControlDeckProps) {
-  const { locale, t } = usePreferences();
+  const { t } = usePreferences();
   const modelReady = model?.configured === true;
   const admissionReady = admission?.decision === "ready";
   const admissionBlocked = admission?.decision === "blocked";
   const contextBudget = context?.budget_report;
   const contextPercent = contextBudget?.max_tokens
     ? Math.min(100, Math.round((contextBudget.used_tokens / contextBudget.max_tokens) * 100))
-    : 0;
-  const enabledExtensions = extensions
-    ? extensions.settings.active_skill_ids.length
-      + extensions.settings.enabled_mcp_server_ids.length
-      + extensions.settings.enabled_hook_ids.length
     : 0;
   const sandbox = governance?.settings.sandbox_profile ?? "standard";
   const decisionKey = admissionBlocked
@@ -106,60 +84,50 @@ export function PreflightControlDeck({
         </button>
       </header>
 
-      <div className="preflightDeckTask">
-        <span>{translateMode(locale, mode)}</span>
-        <p>{task}</p>
-      </div>
-
-      <div className="preflightDecisionGrid">
-        <DecisionTile
-          icon={<CheckCircle2 size={17} />}
+      <div className="preflightQuickChecks">
+        <PreflightCheckRow
+          icon={modelReady ? <Sparkles size={16} /> : <KeyRound size={16} />}
+          tone={modelReady ? "success" : "danger"}
+          title={t("preflightDeck.model")}
+          value={modelReady ? t("task.checkReady") : t("preflight.needsSetup")}
+          detail={modelReady ? model?.model || t("preflight.ready") : t("task.readinessModelMissing")}
+          actionLabel={modelReady ? undefined : t("task.configureModel")}
+          onAction={modelReady ? undefined : onConfigureModel}
+        />
+        <PreflightCheckRow
+          icon={<CheckCircle2 size={16} />}
+          tone={admissionBlocked ? "danger" : admission?.decision === "warning" ? "warning" : "success"}
           title={t("preflightDeck.admission")}
           value={admission ? t(`admission.badge.${admission.decision}` as TranslationKey) : t("status.checking")}
           detail={admission ? t(`admission.basis.${admission.basis}` as TranslationKey, { count: admission.sample_size }) : t("preflightDeck.waiting")}
-          tone={admissionBlocked ? "danger" : admission?.decision === "warning" ? "warning" : "success"}
         />
-        <DecisionTile
-          icon={<Gauge size={17} />}
+        <PreflightCheckRow
+          icon={<Gauge size={16} />}
+          tone="normal"
           title={t("preflightDeck.budget")}
           value={t("preflightDeck.budgetValue", {
             models: contract?.cost_envelope.max_model_calls ?? 0,
             tools: contract?.cost_envelope.max_tool_calls ?? 0,
           })}
           detail={t("preflightDeck.stopLimit")}
-          tone="normal"
         />
-        <DecisionTile
-          icon={<Layers3 size={17} />}
+        <PreflightCheckRow
+          icon={<Layers3 size={16} />}
+          tone={contextPercent > 90 ? "danger" : contextPercent > 75 ? "warning" : "normal"}
           title={t("preflightDeck.context")}
           value={t("control.contextPercent", { percent: contextPercent })}
           detail={t("preflightDeck.contextValue", {
             used: contextBudget?.used_tokens ?? 0,
             max: contextBudget?.max_tokens ?? 0,
           })}
-          tone={contextPercent > 90 ? "danger" : contextPercent > 75 ? "warning" : "normal"}
           progress={contextPercent}
         />
-        <DecisionTile
-          icon={<ShieldCheck size={17} />}
+        <PreflightCheckRow
+          icon={<ShieldCheck size={16} />}
+          tone="success"
           title={t("preflightDeck.governance")}
           value={t(`control.sandbox.${sandbox}` as TranslationKey)}
           detail={t("preflightDeck.effects", { count: contract?.effects.allow.length ?? 0 })}
-          tone="success"
-        />
-        <DecisionTile
-          icon={<BrainCircuit size={17} />}
-          title={t("preflightDeck.extensions")}
-          value={t("control.extensionCount", { count: enabledExtensions })}
-          detail={t("preflightDeck.optional")}
-          tone="normal"
-        />
-        <DecisionTile
-          icon={<CircleDollarSign size={17} />}
-          title={t("admission.cost")}
-          value={formatCost(admission)}
-          detail={admission?.cost.configured ? t("admission.ceiling", { value: formatCost(admission, "ceiling") }) : t("admission.costHint")}
-          tone={admission?.cost.configured ? "normal" : "muted"}
         />
       </div>
 
@@ -171,40 +139,19 @@ export function PreflightControlDeck({
         </div>
         <em>{agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("preflightDeck.openAgentPack")}</em>
       </button>
-
-      <div className="preflightRouteDeck">
-        <div className="preflightRouteHeader">
-          <GitBranch size={16} />
-          <div>
-            <strong>{t("preflightDeck.routeTitle")}</strong>
-            <span>{t(modelRoute?.enabled ? "modelRoute.policyHint" : "modelRoute.compatibilityHint")}</span>
-          </div>
-        </div>
-        <div className="preflightRouteRail">
-          {routePhases.map((phase) => {
-            const route = modelRoute?.routes[phase];
-            const blocked = route?.configured === false;
-            return (
-              <div className={`preflightRouteNode ${blocked ? "blocked" : route?.fallback ? "fallback" : ""}`} key={phase}>
-                <span>{blocked ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}</span>
-                <small>{t(`modelRoute.phase.${phase}` as TranslationKey)}</small>
-                <strong title={route?.model || ""}>{route?.model || t("modelRoute.unavailable")}</strong>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </section>
   );
 }
 
-function DecisionTile({
+function PreflightCheckRow({
   icon,
   title,
   value,
   detail,
   tone,
   progress,
+  actionLabel,
+  onAction,
 }: {
   icon: ReactNode;
   title: string;
@@ -212,30 +159,21 @@ function DecisionTile({
   detail: string;
   tone: "success" | "warning" | "danger" | "normal" | "muted";
   progress?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   return (
-    <article className={`preflightDecisionTile tone-${tone}`}>
+    <article className={`preflightCheckRow tone-${tone}`}>
       <span>{icon}</span>
       <div>
         <small>{title}</small>
         <strong title={value}>{value}</strong>
         <em>{detail}</em>
       </div>
+      {actionLabel && onAction ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
       {typeof progress === "number" ? (
         <i aria-hidden="true"><b style={{ width: `${progress}%` }} /></i>
       ) : null}
     </article>
   );
-}
-
-function formatCost(admission?: RunAdmission, field: "expected" | "ceiling" = "expected"): string {
-  if (!admission?.cost.configured) return "-";
-  const value = admission.cost[field];
-  if (value === null || value === undefined) return "-";
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: admission.cost.currency,
-    minimumFractionDigits: value < 0.01 ? 4 : 2,
-    maximumFractionDigits: value < 0.01 ? 4 : 2,
-  }).format(value);
 }

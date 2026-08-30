@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, CheckCircle2, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -1047,38 +1047,42 @@ export function Workbench() {
                   onConfigureModel={() => setModelSetupOpen(true)}
                 >
                   <PreflightControlDeck
-                    mode={mode}
-                    task={task}
                     model={modelStatus}
                     admission={admission}
-                    modelRoute={modelRoute}
                     contract={contract}
                     context={contextPack}
                     governance={governance}
-                    extensions={extensions}
                     agentPackDrift={agentPackDrift}
                     onConfigureModel={() => setModelSetupOpen(true)}
                     onOpenAgentPack={() => void openAgentPack()}
                   />
-                  <AdmissionSummary admission={admission} />
-                  <ModelRouteSummary plan={modelRoute} />
-                  <AgentOSControlPlane
-                    variant="manifest"
-                    mode={mode}
-                    contract={contract}
-                    context={contextPack}
-                    memory={memory}
-                    governance={governance}
-                    extensions={extensions}
-                  />
-                  <AdvancedSetupPanel
-                    governance={governance}
-                    governanceBusy={governanceBusy}
-                    extensions={extensions}
-                    extensionsBusy={extensionsBusy}
-                    onSaveGovernance={saveGovernance}
-                    onSaveExtensions={saveExtensions}
-                  />
+                  <details className="preflightAdvancedDetails">
+                    <summary>
+                      <span>{t("runSettings.advancedDetails")}</span>
+                      <ChevronDown size={15} />
+                    </summary>
+                    <div>
+                      <AdmissionSummary admission={admission} />
+                      <ModelRouteSummary plan={modelRoute} />
+                      <AgentOSControlPlane
+                        variant="manifest"
+                        mode={mode}
+                        contract={contract}
+                        context={contextPack}
+                        memory={memory}
+                        governance={governance}
+                        extensions={extensions}
+                      />
+                      <AdvancedSetupPanel
+                        governance={governance}
+                        governanceBusy={governanceBusy}
+                        extensions={extensions}
+                        extensionsBusy={extensionsBusy}
+                        onSaveGovernance={saveGovernance}
+                        onSaveExtensions={saveExtensions}
+                      />
+                    </div>
+                  </details>
                 </PreflightSummary>
               </>
             ) : (

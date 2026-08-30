@@ -165,6 +165,28 @@ export function RuntimePanels({
               <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
             </div>
 
+            <div className="runtimeFocusSummary">
+              <article>
+                <small>{t("control.currentStatus")}</small>
+                <strong>{translateStatus(locale, runStatus)}</strong>
+              </article>
+              <article>
+                <small>{t("control.changedFiles")}</small>
+                <strong>{t("diff.files", { count: diff.files })}</strong>
+              </article>
+              <article>
+                <small>{t("control.testStatus")}</small>
+                <strong>{translateKnownText(locale, tests.status)}</strong>
+              </article>
+              <article>
+                <small>{t("control.evidenceReady")}</small>
+                <strong>{evidence ? t("evidence.score", { ready: evidence.ready, total: evidence.items.length }) : t("evidence.pending")}</strong>
+              </article>
+            </div>
+
+            <details className="runtimeAdvancedDetails">
+              <summary>{t("control.advancedRuntime")}</summary>
+
             <div className="evidenceLedger">
               <header>
                 <div className="modelGateHeading"><ShieldCheck size={15} /><strong>{t("evidence.title")}</strong></div>
@@ -276,6 +298,7 @@ export function RuntimePanels({
                   </li>
                 ))}
               </ul>
+            </details>
             </details>
           </section>
         ) : null}
