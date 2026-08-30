@@ -1149,6 +1149,8 @@ export function Workbench() {
               status={runStatus}
               busy={steeringBusy}
               stopping={runStatus === "cancellation_requested"}
+              queuedCount={steeringMessages.filter((guidance) => !guidance.applied).length}
+              appliedCount={steeringMessages.filter((guidance) => guidance.applied).length}
               onSend={steerRun}
               onStop={() => void cancelRun()}
             />

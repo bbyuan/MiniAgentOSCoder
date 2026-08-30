@@ -7,6 +7,8 @@ Users should not feel locked out after starting a coding task. The running sessi
 ## What Changes
 
 - Promote run steering into a visible dialogue control area.
+- Add intent selection so users can distinguish adding requirements, redirecting, inspecting first, and verifying.
+- Show queued and applied guidance counts beside the active control surface.
 - Make stop and send actions explicit with localized labels.
 - Add quick guidance chips for common steering intents.
 - Preserve safe-boundary semantics for active runs and approval replacement semantics for approval waits.
