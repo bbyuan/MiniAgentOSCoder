@@ -22,6 +22,7 @@ import {
   type ModelProviderStatus,
   type ModelRoutePlan,
   type OpenProjectResponse,
+  type ProjectProtocols,
   type RecoveryResponse,
   type RunArtifacts,
   type RunAdmission,
@@ -123,6 +124,7 @@ export function Workbench() {
   const [agentPack, setAgentPack] = useState<AgentPackManifest>();
   const [agentPackVersions, setAgentPackVersions] = useState<AgentPackVersion[]>([]);
   const [agentPackDrift, setAgentPackDrift] = useState<AgentPackDrift>();
+  const [projectProtocols, setProjectProtocols] = useState<ProjectProtocols>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
@@ -142,13 +144,20 @@ export function Workbench() {
   useEffect(() => {
     if (!project) return;
     let cancelled = false;
-    daemonApi
-      .getAgentPackDrift(project.project_id, mode)
-      .then((drift) => {
-        if (!cancelled) setAgentPackDrift(drift);
+    Promise.all([
+      daemonApi.getAgentPackDrift(project.project_id, mode).catch(() => undefined),
+      daemonApi.getProjectProtocols(project.project_id).catch(() => undefined),
+    ])
+      .then(([drift, protocols]) => {
+        if (cancelled) return;
+        setAgentPackDrift(drift);
+        setProjectProtocols(protocols);
       })
       .catch(() => {
-        if (!cancelled) setAgentPackDrift(undefined);
+        if (!cancelled) {
+          setAgentPackDrift(undefined);
+          setProjectProtocols(undefined);
+        }
       });
     return () => {
       cancelled = true;
@@ -213,6 +222,7 @@ export function Workbench() {
       setAgentPack(undefined);
       setAgentPackVersions([]);
       setAgentPackDrift(undefined);
+      setProjectProtocols(undefined);
       setAgentPackError(undefined);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
@@ -668,6 +678,7 @@ export function Workbench() {
     setAgentPack(undefined);
     setAgentPackVersions([]);
     setAgentPackDrift(undefined);
+    setProjectProtocols(undefined);
     setAgentPackError(undefined);
     setAgentPackOpen(false);
     setRecentRuns([]);
@@ -965,6 +976,7 @@ export function Workbench() {
             busy={busy}
             model={modelStatus}
             agentPackDrift={agentPackDrift}
+            protocols={projectProtocols}
             onTaskChange={setTask}
             onModeChange={setMode}
             onStart={() => prepareRun(true)}

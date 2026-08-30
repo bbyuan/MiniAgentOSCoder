@@ -8978,7 +8978,7 @@ button.controlSignal:focus-visible {
 .readinessGrid {
   padding: 0 18px 18px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -9074,6 +9074,46 @@ button.controlSignal:focus-visible {
 .readinessTile button:hover {
   color: var(--text);
   border-color: var(--border-strong);
+}
+
+.protocolPreview {
+  margin: -4px 18px 18px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-subtle));
+}
+
+.protocolPreview > span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 780;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.protocolPreview > div {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.protocolPreview code {
+  max-width: 240px;
+  padding: 4px 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .guidedTaskStarts {
@@ -10299,8 +10339,12 @@ button.controlSignal:focus-visible {
     justify-content: flex-start;
   }
 
-  .readinessGrid {
+  .protocolPreview {
     grid-template-columns: 1fr;
+  }
+
+  .readinessGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .guidedTaskStarts button {
@@ -10393,6 +10437,10 @@ button.controlSignal:focus-visible {
     min-height: 190px;
     padding: 17px;
     font-size: 15px;
+  }
+
+  .readinessGrid {
+    grid-template-columns: 1fr;
   }
 
   .taskComposerOptions,

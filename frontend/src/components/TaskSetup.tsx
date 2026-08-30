@@ -1,6 +1,6 @@
-import { ArrowUp, Boxes, CheckCircle2, ClipboardCheck, GitBranch, KeyRound, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
+import { ArrowUp, Boxes, CheckCircle2, ClipboardCheck, GitBranch, KeyRound, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
 import type { ReactNode } from "react";
-import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, RunMode } from "../api/client";
+import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -11,6 +11,7 @@ interface TaskSetupProps {
   busy: boolean;
   model?: ModelProviderStatus;
   agentPackDrift?: AgentPackDrift;
+  protocols?: ProjectProtocols;
   onTaskChange: (task: string) => void;
   onModeChange: (mode: RunMode) => void;
   onStart: () => void;
@@ -36,6 +37,7 @@ export function TaskSetup({
   busy,
   model,
   agentPackDrift,
+  protocols,
   onTaskChange,
   onModeChange,
   onStart,
@@ -57,6 +59,16 @@ export function TaskSetup({
     { mode: "Review" as RunMode, label: t("task.quickReview"), prompt: t("task.example.review") },
     { mode: "Chat" as RunMode, label: t("task.quickExplore"), prompt: t("task.example.chat") },
   ];
+  const protocolCount = protocols?.summary.total ?? 0;
+  const protocolDetail = protocols
+    ? protocolCount
+      ? t("task.protocolDetail", {
+        agents: protocols.summary.agent_docs,
+        specs: protocols.summary.openspec_specs + protocols.summary.openspec_changes,
+        skills: protocols.summary.skills,
+      })
+      : t("task.protocolMissingHint")
+    : t("task.protocolChecking");
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
@@ -101,7 +113,29 @@ export function TaskSetup({
             actionLabel={t("preflightDeck.openAgentPack")}
             onAction={onOpenAgentPack}
           />
+          <ReadinessTile
+            icon={<ScrollText size={16} />}
+            tone={protocolCount ? "ready" : "info"}
+            title={t("task.readinessProtocols")}
+            value={protocolCount ? t("task.protocolCount", { count: protocolCount }) : t("task.protocolMissing")}
+            detail={protocolDetail}
+            actionLabel={t("task.useSpecMode")}
+            onAction={() => {
+              onModeChange("Spec");
+              onTaskChange(t("task.protocolPrompt"));
+            }}
+          />
         </div>
+        {protocols?.items.length ? (
+          <div className="protocolPreview">
+            <span>{t("task.protocolPreview")}</span>
+            <div>
+              {protocols.items.slice(0, 4).map((item) => (
+                <code title={item.path} key={item.id}>{item.path}</code>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="guidedTaskStarts">
           <span><ClipboardCheck size={14} />{t("task.quickStart")}</span>
           {suggestedTasks.map((item) => (

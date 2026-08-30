@@ -16,6 +16,7 @@ from app.runtime.model_provider import ModelConfigurationError
 from app.runtime.model_routing import ModelRoutingError
 from app.runtime.native_dialog import NativeDialogUnavailable, choose_local_directory
 from app.runtime.paths import default_agent_dir
+from app.runtime.protocols import discover_project_protocols
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -92,6 +93,21 @@ def get_agent_pack(project_id: str, mode: str = "Feature") -> dict[str, object]:
         )
     except (ModelConfigurationError, ModelRoutingError, ValueError, OSError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/{project_id}/protocols")
+def get_project_protocols(project_id: str) -> dict[str, object]:
+    project = store.projects.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        protocols = discover_project_protocols(project.path)
+    except OSError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "project_id": project.project_id,
+        **protocols,
+    }
 
 
 @router.get("/{project_id}/agent-pack/versions")

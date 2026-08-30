@@ -582,6 +582,31 @@ export interface AgentPackDrift {
   recommendation: "create_first_version" | "up_to_date" | "save_version" | string;
 }
 
+export interface ProjectProtocolItem {
+  id: string;
+  type: "agent_doc" | "skill" | "openspec_spec" | "openspec_change" | string;
+  title: string;
+  path: string;
+  status: "active" | "draft" | string;
+  summary: string;
+}
+
+export interface ProjectProtocols {
+  project_id: string;
+  workspace: string;
+  summary: {
+    total: number;
+    active: number;
+    draft: number;
+    agent_docs: number;
+    skills: number;
+    openspec_specs: number;
+    openspec_changes: number;
+  };
+  items: ProjectProtocolItem[];
+  recommendations: string[];
+}
+
 export interface StartRunResponse {
   run_id: string;
   status: string;
@@ -827,6 +852,8 @@ export const daemonApi = {
     request<{ project_id: string; versions: AgentPackVersion[] }>(`/projects/${projectId}/agent-pack/versions`),
   getAgentPackDrift: (projectId: string, mode?: RunMode) =>
     request<AgentPackDrift>(`/projects/${projectId}/agent-pack/drift${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
+  getProjectProtocols: (projectId: string) =>
+    request<ProjectProtocols>(`/projects/${projectId}/protocols`),
   saveAgentPackVersion: (projectId: string, mode?: RunMode) =>
     request<{ project_id: string; version: AgentPackVersion }>(
       `/projects/${projectId}/agent-pack/versions${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`,

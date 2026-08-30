@@ -380,6 +380,42 @@ models:
     assert "drift-secret" not in json.dumps(changed_drift)
 
 
+def test_project_protocols_detect_development_guides_without_returning_contents(tmp_path: Path) -> None:
+    (tmp_path / "AGENTS.md").write_text("secret project rule", encoding="utf-8")
+    skill_dir = tmp_path / ".agent" / "skills" / "reviewer"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("private skill instructions", encoding="utf-8")
+    spec_dir = tmp_path / "openspec" / "specs" / "context"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec.md").write_text("accepted context spec", encoding="utf-8")
+    change_dir = tmp_path / "openspec" / "changes" / "add-memory"
+    change_dir.mkdir(parents=True)
+    (change_dir / "proposal.md").write_text("draft memory proposal", encoding="utf-8")
+    (change_dir / "tasks.md").write_text("- [ ] task", encoding="utf-8")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.get(f"/projects/{project['project_id']}/protocols")
+    payload = response.json()
+    text = json.dumps(payload)
+
+    assert response.status_code == 200
+    assert payload["summary"]["agent_docs"] == 1
+    assert payload["summary"]["skills"] == 1
+    assert payload["summary"]["openspec_specs"] == 1
+    assert payload["summary"]["openspec_changes"] == 1
+    assert payload["summary"]["total"] == 4
+    assert payload["recommendations"] == []
+    assert {item["path"] for item in payload["items"]} == {
+        "AGENTS.md",
+        ".agent/skills/reviewer/SKILL.md",
+        "openspec/specs/context/spec.md",
+        "openspec/changes/add-memory/proposal.md",
+    }
+    assert "secret project rule" not in text
+    assert "private skill instructions" not in text
+
+
 def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()
