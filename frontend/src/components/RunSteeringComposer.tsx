@@ -1,4 +1,4 @@
-import { ArrowUp, GitBranch, MessageSquarePlus, Radio, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
+import { ArrowUp, GitBranch, MessageSquarePlus, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -57,35 +57,25 @@ export function RunSteeringComposer({
 
   return (
     <section className="runSteeringComposer" aria-label={t("steering.title")}>
-      <header className="steeringTopline">
-        <div>
-          <span className="steeringEyebrow"><Radio size={12} />{t("steering.liveControl")}</span>
-          <strong>{t("steering.title")}</strong>
-          <span>{statusCopy}</span>
-        </div>
-        <div className="steeringHeaderStats" aria-label={t("steering.queueStatus")}>
-          <span><ShieldCheck size={13} />{t("steering.queuedCount", { count: queuedCount })}</span>
-          <span>{t("steering.appliedCount", { count: appliedCount })}</span>
-        </div>
-        <button
-          type="button"
-          className="steeringStop"
-          disabled={busy || stopping}
-          onClick={onStop}
-          title={t("composer.cancel")}
-        >
-          <Square size={12} fill="currentColor" />
-          {t("steering.stop")}
-        </button>
-      </header>
-
       <div className="steeringInputFrame">
-        <div className="steeringInputLabel">
-          <span>{t("steering.chatLabel")}</span>
-          <small>{t("steering.safeBoundaryShort")}</small>
+        <div className="steeringComposerHead">
+          <div>
+            <span className="steeringEyebrow"><ShieldCheck size={12} />{t("steering.liveControl")}</span>
+            <strong>{t("steering.chatLabel")}</strong>
+          </div>
+          <button
+            type="button"
+            className="steeringStop"
+            disabled={busy || stopping}
+            onClick={onStop}
+            title={t("composer.cancel")}
+          >
+            <Square size={12} fill="currentColor" />
+            {t("steering.stop")}
+          </button>
         </div>
         <textarea
-          rows={3}
+          rows={2}
           value={message}
           disabled={stopping}
           placeholder={t(`steering.placeholder.${intent}`)}
@@ -98,10 +88,22 @@ export function RunSteeringComposer({
           }}
         />
         <div className="steeringInlineActions">
-          <span className={`steeringState state-${status}`}>
-            <i aria-hidden="true" />
-            {message.trim() ? t("steering.readyToSend") : t("steering.interruptible")}
-          </span>
+          <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
+            {intentOptions.map(({ intent: option, icon: Icon }) => (
+              <button
+                type="button"
+                className={intent === option ? "selected" : ""}
+                aria-pressed={intent === option}
+                disabled={busy || stopping}
+                onClick={() => setIntent(option)}
+                title={t(`steering.intentHelp.${option}`)}
+                key={option}
+              >
+                <Icon size={14} />
+                <span>{t(`steering.intent.${option}`)}</span>
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="steeringSend"
@@ -115,25 +117,11 @@ export function RunSteeringComposer({
         </div>
       </div>
 
-      <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
-        {intentOptions.map(({ intent: option, icon: Icon }) => (
-          <button
-            type="button"
-            className={intent === option ? "selected" : ""}
-            aria-pressed={intent === option}
-            disabled={busy || stopping}
-            onClick={() => setIntent(option)}
-            key={option}
-          >
-            <Icon size={14} />
-            <span>{t(`steering.intent.${option}`)}</span>
-            <small>{t(`steering.intentHelp.${option}`)}</small>
-          </button>
-        ))}
-      </div>
-
-      <footer>
-        <span>{t("steering.quickActions")}</span>
+      <footer className="steeringQuickStrip">
+        <span className={`steeringState state-${status}`}>
+          <i aria-hidden="true" />
+          {stopping ? t("steering.stopping") : message.trim() ? t("steering.readyToSend") : statusCopy}
+        </span>
         <div>
           {suggestions.map(({ key, icon: Icon, intent: suggestionIntent }) => (
             <button
@@ -151,6 +139,11 @@ export function RunSteeringComposer({
             </button>
           ))}
         </div>
+        {queuedCount || appliedCount ? (
+          <small className="steeringQueueState" aria-label={t("steering.queueStatus")}>
+            {t("steering.queuedCount", { count: queuedCount })} · {t("steering.appliedCount", { count: appliedCount })}
+          </small>
+        ) : null}
       </footer>
     </section>
   );

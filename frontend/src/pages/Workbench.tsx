@@ -49,7 +49,6 @@ import { ProjectLauncher } from "../components/ProjectLauncher";
 import { ProjectSidebar } from "../components/ProjectSidebar";
 import { RunCenter } from "../components/RunCenter";
 import { RuntimePanels } from "../components/RuntimePanels";
-import { RunProgress } from "../components/RunProgress";
 import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
@@ -1137,8 +1136,6 @@ export function Workbench() {
               setRuntimeDetailsOpen(true);
             }}
           />
-
-          {displayPlan.length ? <RunProgress items={displayPlan} /> : null}
 
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>

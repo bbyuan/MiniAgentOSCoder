@@ -1,7 +1,7 @@
 import {
   Activity,
-  ArrowRight,
   BarChart3,
+  Check,
   CircleAlert,
   Gauge,
   GitBranch,
@@ -50,6 +50,7 @@ export function RunStatusDeck({ status, phase, plan, trace, context, onOpenContr
   const modelCalls = trace.filter((event) => event.event.startsWith("model.")).length;
   const toolCalls = trace.filter((event) => event.event.startsWith("tool.")).length;
   const guardedEvents = trace.filter((event) => event.event.startsWith("policy.") || event.event.startsWith("approval.")).length;
+  const completedSteps = plan.filter((item) => item.state === "done").length;
   const tone = ["failed", "cancelled"].includes(status)
     ? "danger"
     : status === "waiting_approval"
@@ -74,19 +75,34 @@ export function RunStatusDeck({ status, phase, plan, trace, context, onOpenContr
         </button>
       </header>
 
-      <div className="runStatusFocus">
+      <div className="runStatusFocus runStatusFocusCompact">
         <article>
           <small>{t("runStatus.currentStep")}</small>
           <strong>{currentStep ? translateKnownText(locale, currentStep.title) : t("runStatus.noActiveStep")}</strong>
           <span>{currentStep?.detail ? translateKnownText(locale, currentStep.detail) : t("runStatus.safeBoundary")}</span>
         </article>
-        <ArrowRight size={16} />
         <article>
           <small>{t("runStatus.nextStep")}</small>
           <strong>{nextStep ? translateKnownText(locale, nextStep.title) : t("runStatus.waitingForRuntime")}</strong>
           <span>{lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}</span>
         </article>
       </div>
+
+      {plan.length ? (
+        <div className="runStatusStepStrip" aria-label={t("progress.title")}>
+          <div className="runStatusStepSummary">
+            <span>{t("progress.summary", { completed: completedSteps, total: plan.length })}</span>
+          </div>
+          <ol>
+            {plan.map((item) => (
+              <li className={`state-${item.state}`} key={item.id ?? item.title}>
+                <span><StepIcon state={item.state} /></span>
+                <strong>{translateKnownText(locale, item.title)}</strong>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
 
       <div className="runStatusActions">
         <button type="button" onClick={() => setShowMetrics((current) => !current)}>
@@ -104,6 +120,13 @@ export function RunStatusDeck({ status, phase, plan, trace, context, onOpenContr
       </div> : null}
     </section>
   );
+}
+
+function StepIcon({ state }: { state: string }) {
+  if (state === "done") return <Check size={13} strokeWidth={2.5} />;
+  if (state === "active") return <LoaderCircle className="spin" size={13} />;
+  if (state === "failed") return <CircleAlert size={13} />;
+  return <span aria-hidden="true" />;
 }
 
 function StatusMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

@@ -13929,3 +13929,295 @@ button.controlSignal.active {
     grid-template-columns: 1fr;
   }
 }
+
+/* Session simplification pass */
+.runStatusDeck {
+  border-left-width: 1px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface) 94%, transparent));
+}
+
+.runStatusDeck > header {
+  min-height: 62px;
+  padding: 13px 15px;
+}
+
+.runStatusIdentity > span {
+  width: 34px;
+  height: 34px;
+}
+
+.runStatusFocusCompact {
+  padding: 12px 15px 0;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 10px;
+}
+
+.runStatusFocusCompact article {
+  min-height: 78px;
+  padding: 12px;
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+}
+
+.runStatusFocusCompact strong {
+  margin-top: 6px;
+}
+
+.runStatusFocusCompact span {
+  -webkit-line-clamp: 1;
+}
+
+.runStatusStepStrip {
+  padding: 13px 15px 2px;
+}
+
+.runStatusStepSummary {
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.runStatusStepStrip ol {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 7px;
+  list-style: none;
+}
+
+.runStatusStepStrip li {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+}
+
+.runStatusStepStrip li > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+}
+
+.runStatusStepStrip li > span > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.runStatusStepStrip li strong {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusStepStrip li.state-done {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 48%, var(--surface));
+}
+
+.runStatusStepStrip li.state-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 60%, transparent);
+}
+
+.runStatusStepStrip li.state-failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 55%, var(--surface));
+}
+
+.runStatusActions {
+  min-height: 36px;
+  padding: 9px 15px 13px;
+}
+
+.runStatusActions button {
+  border-radius: 8px;
+}
+
+.runSteeringComposer {
+  margin-top: 18px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.steeringInputFrame {
+  margin-top: 0;
+  padding: 12px;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface) 94%, transparent));
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.steeringComposerHead {
+  min-height: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.steeringComposerHead > div {
+  min-width: 0;
+}
+
+.steeringComposerHead strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steeringEyebrow {
+  margin-bottom: 3px;
+  text-transform: none;
+}
+
+.runSteeringComposer textarea {
+  min-height: 56px;
+  max-height: 160px;
+  margin-top: 8px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.steeringInlineActions {
+  min-height: 34px;
+  margin-top: 7px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.steeringIntentGroup {
+  min-width: 0;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.runSteeringComposer .steeringIntentGroup button {
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 9px;
+  display: inline-flex;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.runSteeringComposer .steeringIntentGroup button svg {
+  margin: 0;
+}
+
+.runSteeringComposer .steeringIntentGroup button span {
+  font-size: 11px;
+}
+
+.runSteeringComposer .steeringIntentGroup button small {
+  display: none;
+}
+
+.steeringSend {
+  min-width: 72px;
+  min-height: 34px;
+  border-radius: 8px;
+}
+
+.steeringStop {
+  min-height: 30px;
+  padding: 0 9px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+}
+
+.steeringQuickStrip {
+  margin-top: 8px;
+  padding: 0 2px;
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.steeringQuickStrip > div {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.steeringQuickStrip .steeringSuggestion {
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 68%, transparent);
+}
+
+.steeringQueueState {
+  grid-column: 1 / -1;
+  justify-self: end;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .runStatusFocusCompact {
+    grid-template-columns: 1fr;
+  }
+
+  .runStatusStepStrip ol {
+    grid-template-columns: 1fr;
+  }
+
+  .steeringInlineActions,
+  .steeringQuickStrip {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .steeringInlineActions {
+    flex-direction: column;
+  }
+
+  .steeringIntentGroup,
+  .steeringQuickStrip > div {
+    justify-content: flex-start;
+  }
+
+  .steeringSend,
+  .steeringStop {
+    width: 100%;
+  }
+}
