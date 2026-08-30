@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrainCircuit, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { BrainCircuit, Check, Clock3, Database, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { MemoryEntry, MemoryInput, MemoryResponse, MemoryScope } from "../api/client";
 import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -23,6 +23,11 @@ export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: Memo
   const [confirmed, setConfirmed] = useState(false);
   const [editingId, setEditingId] = useState<string>();
   const entries = memory?.entries[scope] ?? [];
+  const totalEntries = memory ? Object.values(memory.counts).reduce((sum, value) => sum + value, 0) : 0;
+  const durableEntries = (memory?.counts.project ?? 0) + (memory?.counts.long_term ?? 0);
+  const latestEntry = Object.values(memory?.entries ?? {})
+    .flat()
+    .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
 
   useEffect(() => {
     setEditingId(undefined);
@@ -79,9 +84,30 @@ export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: Memo
       <div className="sectionHeader memoryHeading">
         <div>
           <h3>{t("memory.title")}</h3>
-          <span>{t("memory.total", { count: memory ? Object.values(memory.counts).reduce((sum, value) => sum + value, 0) : 0 })}</span>
+          <span>{t("memory.total", { count: totalEntries })}</span>
         </div>
         <BrainCircuit size={15} />
+      </div>
+
+      <div className="memoryInsightGrid">
+        <div className="memoryInsight">
+          <span><Clock3 size={15} /></span>
+          <small>{t("memory.insight.short")}</small>
+          <strong>{memory?.counts.short_term ?? 0}</strong>
+          <em>{t("memory.insight.shortHint")}</em>
+        </div>
+        <div className="memoryInsight">
+          <span><Database size={15} /></span>
+          <small>{t("memory.insight.durable")}</small>
+          <strong>{durableEntries}</strong>
+          <em>{t("memory.insight.durableHint")}</em>
+        </div>
+        <div className="memoryInsight">
+          <span><BrainCircuit size={15} /></span>
+          <small>{t("memory.insight.latest")}</small>
+          <strong title={latestEntry?.kind}>{latestEntry ? translateKnownText(locale, latestEntry.kind) : t("memory.insight.none")}</strong>
+          <em title={latestEntry?.source}>{latestEntry?.source ?? t("memory.insight.noneHint")}</em>
+        </div>
       </div>
 
       <div className="memoryScopes" role="tablist" aria-label={t("memory.title")}>

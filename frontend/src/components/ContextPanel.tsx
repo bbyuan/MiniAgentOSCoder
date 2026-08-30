@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { FileStack, Minimize2, ShieldAlert } from "lucide-react";
+import { Archive, FileStack, Gauge, Layers3, Minimize2, ShieldAlert } from "lucide-react";
+import type { ReactNode } from "react";
 import type { ContextCompactionResponse, ContextPack } from "../api/client";
 import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -23,6 +24,13 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
     () => Object.entries(context?.composition ?? {}).sort((left, right) => right[1] - left[1]),
     [context],
   );
+  const compositionTotal = composition.reduce((sum, [, tokens]) => sum + tokens, 0);
+  const selectedCount = context?.selected_items.length ?? 0;
+  const compressedCount = context?.compressed_items.length ?? 0;
+  const omittedCount = context?.omitted_items.length ?? 0;
+  const retainedPercent = context?.explanation?.length
+    ? Math.round((selectedCount / Math.max(1, context.explanation.length)) * 100)
+    : 0;
 
   async function compact() {
     try {
@@ -42,6 +50,30 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
           <span>{t("context.compactions", { count: context?.compaction_count ?? 0 })}</span>
         </div>
         <FileStack size={15} />
+      </div>
+
+      <div className="contextInsightGrid">
+        <ContextInsight
+          icon={<Gauge size={15} />}
+          label={t("context.insight.health")}
+          value={t(`context.state.${context?.threshold_state ?? "normal"}` as TranslationKey)}
+          detail={t("context.insight.remaining", { count: budget?.remaining_tokens ?? 0 })}
+          tone={context?.threshold_state ?? "normal"}
+        />
+        <ContextInsight
+          icon={<Layers3 size={15} />}
+          label={t("context.insight.retained")}
+          value={`${retainedPercent}%`}
+          detail={t("context.insight.items", { selected: selectedCount, total: context?.explanation?.length ?? 0 })}
+          tone="normal"
+        />
+        <ContextInsight
+          icon={<Archive size={15} />}
+          label={t("context.insight.compressed")}
+          value={String(compressedCount + omittedCount)}
+          detail={t("context.insight.compaction", { compressed: compressedCount, omitted: omittedCount })}
+          tone={compressedCount + omittedCount > 0 ? "warning" : "normal"}
+        />
       </div>
 
       <div className="contextBudget">
@@ -68,6 +100,7 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
         {composition.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : composition.map(([type, tokens], index) => (
           <div className={`compositionRow tone-${index % 5}`} key={type}>
             <span><i />{translateKnownText(locale, type)}</span>
+            <em aria-hidden="true"><b style={{ width: `${compositionTotal ? Math.max(3, Math.round((tokens / compositionTotal) * 100)) : 0}%` }} /></em>
             <strong>{t("context.tokens", { count: tokens })}</strong>
           </div>
         ))}
@@ -133,5 +166,28 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ContextInsight({
+  icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className={`contextInsight tone-${tone}`}>
+      <span>{icon}</span>
+      <small>{label}</small>
+      <strong title={value}>{value}</strong>
+      <em title={detail}>{detail}</em>
+    </div>
   );
 }

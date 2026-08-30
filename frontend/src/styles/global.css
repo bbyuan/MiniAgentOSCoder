@@ -2359,6 +2359,102 @@ button.statusChip:hover {
   border-block: 1px solid var(--border);
 }
 
+.contextInsightGrid,
+.memoryInsightGrid {
+  margin: 6px 0 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.contextInsight,
+.memoryInsight {
+  min-width: 0;
+  min-height: 78px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "icon value"
+    "detail detail";
+  align-items: center;
+  gap: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+  box-shadow: 0 10px 26px rgba(15, 18, 24, 0.04);
+}
+
+.contextInsight > span,
+.memoryInsight > span {
+  width: 24px;
+  height: 24px;
+  grid-area: icon;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.contextInsight small,
+.contextInsight strong,
+.contextInsight em,
+.memoryInsight small,
+.memoryInsight strong,
+.memoryInsight em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contextInsight small,
+.memoryInsight small {
+  grid-area: label;
+  color: var(--text-tertiary);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.contextInsight strong,
+.memoryInsight strong {
+  grid-area: value;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.contextInsight em,
+.memoryInsight em {
+  grid-area: detail;
+  color: var(--text-tertiary);
+  font-size: 7px;
+  font-style: normal;
+}
+
+.contextInsight.tone-warning,
+.contextInsight.tone-high {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+}
+
+.contextInsight.tone-warning > span,
+.contextInsight.tone-high > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.contextInsight.tone-critical {
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+}
+
+.contextInsight.tone-critical > span {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
 .contextBudget > div:first-child,
 .compactionTarget,
 .memoryEditorHeader,
@@ -2433,9 +2529,9 @@ button.statusChip:hover {
 
 .compositionRow {
   min-height: 25px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(42px, 92px) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
@@ -2463,6 +2559,25 @@ button.statusChip:hover {
 .compositionRow.tone-2 i { background: var(--warning); }
 .compositionRow.tone-3 i { background: var(--success); }
 .compositionRow.tone-4 i { background: var(--model); }
+
+.compositionRow em {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+}
+
+.compositionRow em b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--accent) 72%, var(--text));
+}
+
+.compositionRow.tone-1 em b { background: var(--tool); }
+.compositionRow.tone-2 em b { background: var(--warning); }
+.compositionRow.tone-3 em b { background: var(--success); }
+.compositionRow.tone-4 em b { background: var(--model); }
 
 .compositionRow strong {
   color: var(--text-tertiary);
@@ -8119,6 +8234,11 @@ button.controlSignal:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .contextInsightGrid,
+  .memoryInsightGrid {
+    grid-template-columns: 1fr;
+  }
+
   .guidedStage {
     padding-inline: 24px;
   }
