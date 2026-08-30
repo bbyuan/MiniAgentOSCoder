@@ -7,6 +7,7 @@ from app.context import (
     ContextCandidate,
     build_context_pack,
     build_workspace_index,
+    discover_project_protocol_context,
     discover_project_rules,
     load_workspace_index,
     retrieve_workspace_context,
@@ -135,6 +136,46 @@ def test_project_rules_are_redacted_bounded_and_protected(tmp_path: Path) -> Non
     assert "[REDACTED_SECRET]" in rules[0].content
     assert rules[0].metadata["bounded"] is True
     assert rules[0].id in pack.required_items
+
+
+def test_project_protocol_context_includes_openspec_and_skills(tmp_path: Path) -> None:
+    skill_dir = tmp_path / ".agent" / "skills" / "reviewer"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "Review memory changes before editing.\napi_key=unsafe-value\n",
+        encoding="utf-8",
+    )
+    change_dir = tmp_path / "openspec" / "changes" / "add-memory"
+    change_dir.mkdir(parents=True)
+    (change_dir / "proposal.md").write_text("Add project memory governance.\n", encoding="utf-8")
+    (change_dir / "tasks.md").write_text("- [ ] Persist scoped memory\n", encoding="utf-8")
+    spec_dir = tmp_path / "openspec" / "specs" / "memory"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec.md").write_text("Memory SHALL be scoped per workspace.\n", encoding="utf-8")
+
+    candidates = discover_project_protocol_context(tmp_path, "实现 memory 管理", max_items=10)
+
+    sources = {candidate.source for candidate in candidates}
+    assert ".agent/skills/reviewer/SKILL.md" in sources
+    assert "openspec/changes/add-memory/proposal.md" in sources
+    assert "openspec/changes/add-memory/tasks.md" in sources
+    assert "openspec/specs/memory/spec.md" in sources
+    assert all(candidate.type == "project_protocol" for candidate in candidates)
+    assert all(candidate.metadata["trusted"] is True for candidate in candidates)
+    assert "unsafe-value" not in "\n".join(candidate.content for candidate in candidates)
+    assert any(candidate.metadata["matched_terms"] for candidate in candidates)
+
+
+def test_project_protocol_context_bounds_long_documents(tmp_path: Path) -> None:
+    changes_dir = tmp_path / "openspec" / "changes" / "large-change"
+    changes_dir.mkdir(parents=True)
+    (changes_dir / "proposal.md").write_text("Header\n" + "x" * 5000, encoding="utf-8")
+
+    [candidate] = discover_project_protocol_context(tmp_path, max_item_chars=800)
+
+    assert candidate.metadata["bounded"] is True
+    assert len(candidate.content) < 1000
+    assert "...[openspec_change bounded]..." in candidate.content
 
 
 def test_task_aware_retrieval_ranks_source_and_related_test(tmp_path: Path) -> None:

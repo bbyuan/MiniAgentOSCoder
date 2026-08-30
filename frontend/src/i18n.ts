@@ -1839,6 +1839,7 @@ const knownText: Record<Locale, Record<string, string>> = {
     "user_task": "用户任务",
     "project_profile": "项目画像",
     "current_plan": "当前计划",
+    "project_protocol": "开发协议",
     "project_rules": "项目规则",
     "file_snippet": "源码片段",
     "test_snippet": "测试片段",

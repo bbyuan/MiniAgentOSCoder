@@ -13,6 +13,7 @@ PROTECTED_TYPES = {
     "latest_observation",
     "current_diff",
     "runtime_budget",
+    "project_protocol",
     "project_rules",
     "resume_checkpoint",
 }

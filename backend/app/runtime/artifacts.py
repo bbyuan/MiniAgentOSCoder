@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.context import discover_project_rules, retrieve_workspace_context
+from app.context import discover_project_protocol_context, discover_project_rules, retrieve_workspace_context
 from app.context.pack_builder import ContextCandidate, build_context_pack, explain_context_items
 from app.guards import redact_secrets
 from app.models import ContextPack, DiffSummary, MemoryEntry, PlanStep, RunArtifacts, RunState, TestSummary, TraceEvent
@@ -62,6 +62,7 @@ def build_initial_context(
     candidates: list[ContextCandidate] = []
     if workspace_root is not None:
         required.extend(discover_project_rules(workspace_root))
+        candidates.extend(discover_project_protocol_context(workspace_root, run.task))
         candidates.extend(retrieve_workspace_context(workspace_root, run.task, project_profile))
     candidates.extend(
         ContextCandidate(

@@ -32,6 +32,27 @@ def test_build_run_artifacts_includes_context_and_trace_summary() -> None:
     assert context_pack.required_items == ["user_task", "project_profile", "current_plan"]
 
 
+def test_build_run_artifacts_injects_project_protocol_context(tmp_path: Path) -> None:
+    change_dir = tmp_path / "openspec" / "changes" / "add-memory"
+    change_dir.mkdir(parents=True)
+    (change_dir / "proposal.md").write_text("Add memory governance before editing.\n", encoding="utf-8")
+    run = RunState(run_id="run-protocol", task="实现 memory 管理", mode="Feature")
+
+    artifacts, context_pack = build_run_artifacts(
+        run,
+        {"test_commands": ["pytest"], "entrypoints": []},
+        [],
+        workspace_root=tmp_path,
+    )
+
+    protocol_items = [item for item in context_pack.items if item.type == "project_protocol"]
+    assert len(protocol_items) == 1
+    assert protocol_items[0].source == "openspec/changes/add-memory/proposal.md"
+    assert protocol_items[0].id in context_pack.selected_items
+    assert context_pack.composition["project_protocol"] > 0
+    assert any(item["type"] == "project_protocol" for item in artifacts.context_explanation)
+
+
 def test_follow_up_context_contains_one_bounded_prior_run_handoff() -> None:
     run = RunState(run_id="run-child", task="Now add tests", mode="Feature")
     prior_message = "Previous result " + "x" * 6000 + " api_key=unsafe-value"

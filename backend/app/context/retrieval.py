@@ -16,6 +16,7 @@ STOP_TERMS = {
     "代码", "功能", "实现", "项目", "当前", "进行", "这个", "需要",
 }
 LOW_SIGNAL_TERMS = {"fix", "repair", "run", "spec", "test", "tests", "修复", "运行", "测试"}
+PROTOCOL_CHANGE_FILES = ("proposal.md", "design.md", "tasks.md")
 TERM_ALIASES = {
     "计算器": {"calculator"},
     "加法": {"add", "addition"},
@@ -53,6 +54,56 @@ def discover_project_rules(workspace_root: str | Path, *, max_chars: int = 12000
             )
         )
     return candidates
+
+
+def discover_project_protocol_context(
+    workspace_root: str | Path,
+    task: str = "",
+    *,
+    max_items: int = 8,
+    max_chars: int = 16000,
+    max_item_chars: int = 3200,
+) -> list[ContextCandidate]:
+    root = Path(workspace_root).resolve()
+    terms = _task_terms(task) if task else set()
+    protocol_items: list[tuple[float, str, ContextCandidate]] = []
+    used_chars = 0
+
+    for path, protocol_type, base_priority, reason in _protocol_candidate_paths(root):
+        try:
+            content = redact_secrets(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            continue
+        relative = _relative_path(path, root)
+        match_score, matched = _score_protocol(relative, content, terms)
+        priority = min(0.98, base_priority + match_score * 0.02)
+        bounded = _bound_protocol_text(content, max_item_chars, protocol_type)
+        used_chars += len(bounded)
+        if used_chars > max_chars and not matched:
+            continue
+        protocol_items.append(
+            (
+                priority,
+                relative,
+                ContextCandidate(
+                    id=f"project-protocol:{relative}",
+                    type="project_protocol",
+                    source=relative,
+                    reason=reason,
+                    content=f"{relative}\n{bounded}",
+                    priority=priority,
+                    metadata={
+                        "trusted": True,
+                        "bounded": len(bounded) < len(content),
+                        "protocol_type": protocol_type,
+                        "matched_terms": sorted(matched),
+                    },
+                ),
+            )
+        )
+
+    ordered = sorted(protocol_items, key=lambda item: (-item[0], item[1]))
+    return [candidate for _, _, candidate in ordered[:max_items]]
 
 
 def retrieve_workspace_context(
@@ -218,6 +269,74 @@ def _fallback_snippets(
     return [(0.8, snippet, set()) for snippet in preferred[:4]]
 
 
+def _protocol_candidate_paths(root: Path) -> list[tuple[Path, str, float, str]]:
+    candidates: list[tuple[Path, str, float, str]] = []
+    seen: set[Path] = set()
+
+    def add(path: Path, protocol_type: str, priority: float, reason: str) -> None:
+        resolved = path.resolve()
+        if resolved in seen or not path.is_file():
+            return
+        seen.add(resolved)
+        candidates.append((path, protocol_type, priority, reason))
+
+    for skill_path in (root / "SKILL.md", root / ".agent" / "SKILL.md"):
+        add(skill_path, "skill", 0.88, "reusable skill instruction")
+    skills_dir = root / ".agent" / "skills"
+    if skills_dir.is_dir():
+        for skill_path in sorted(skills_dir.glob("*/SKILL.md")):
+            add(skill_path, "skill", 0.88, "reusable skill instruction")
+
+    changes_dir = root / "openspec" / "changes"
+    if changes_dir.is_dir():
+        for change_dir in sorted(path for path in changes_dir.iterdir() if path.is_dir()):
+            for filename in PROTOCOL_CHANGE_FILES:
+                add(
+                    change_dir / filename,
+                    "openspec_change",
+                    0.94 if filename == "proposal.md" else 0.92,
+                    "active OpenSpec change guidance",
+                )
+            specs_dir = change_dir / "specs"
+            if specs_dir.is_dir():
+                for spec_path in sorted(specs_dir.glob("*/spec.md")):
+                    add(spec_path, "openspec_change_spec", 0.91, "pending OpenSpec capability delta")
+
+    specs_dir = root / "openspec" / "specs"
+    if specs_dir.is_dir():
+        for spec_path in sorted(specs_dir.glob("*/spec.md")):
+            add(spec_path, "openspec_spec", 0.9, "accepted OpenSpec capability specification")
+
+    return candidates
+
+
+def _score_protocol(path: str, content: str, terms: set[str]) -> tuple[float, set[str]]:
+    if not terms:
+        return 0.0, set()
+    path_lower = path.lower()
+    content_lower = content.lower()
+    score = 0.0
+    matched: set[str] = set()
+    for term in terms:
+        if term in LOW_SIGNAL_TERMS:
+            continue
+        if term in path_lower:
+            score += 5.0
+            matched.add(term)
+        occurrences = content_lower.count(term)
+        if occurrences:
+            score += min(2, occurrences) * 0.75
+            matched.add(term)
+    return score, matched
+
+
+def _relative_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return path.name
+
+
 def _entrypoints(project_profile: dict[str, object] | None) -> set[str]:
     if not project_profile:
         return set()
@@ -235,3 +354,11 @@ def _bound_text(content: str, max_chars: int) -> str:
     tail_size = max(0, max_chars // 4)
     head_size = max_chars - tail_size - 48
     return f"{content[:head_size]}\n...[project rules bounded]...\n{content[-tail_size:]}"
+
+
+def _bound_protocol_text(content: str, max_chars: int, protocol_type: str) -> str:
+    if len(content) <= max_chars:
+        return content
+    tail_size = max(0, max_chars // 4)
+    head_size = max_chars - tail_size - 52
+    return f"{content[:head_size]}\n...[{protocol_type} bounded]...\n{content[-tail_size:]}"
