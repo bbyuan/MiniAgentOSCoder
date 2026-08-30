@@ -479,6 +479,76 @@ export interface ModelConfigurationSnapshot {
   }>;
 }
 
+export interface AgentPackManifest {
+  manifest_version: string;
+  project_id: string;
+  digest: string;
+  workspace: {
+    name: string;
+    profile: {
+      languages?: string[];
+      package_managers?: string[];
+      test_commands?: string[];
+      entrypoints?: string[];
+      [key: string]: unknown;
+    };
+  };
+  agent: {
+    id: string;
+    name: string;
+    mode: string;
+    roles: string[];
+  };
+  contract: AgentContract;
+  governance: {
+    sandbox_profile: SandboxProfile;
+    effect_policy_count: number;
+    tool_policy_count: number;
+  };
+  models: {
+    routing_enabled: boolean;
+    strategy: "single" | "policy";
+    default_profile_id: string;
+    phase_routes: Record<string, string>;
+    mode_routes: Record<string, string>;
+    fallback_profile_ids: string[];
+    profiles: Array<{
+      profile_id: string;
+      provider: string;
+      model: string;
+      api_key_env: string;
+      configured: boolean;
+      issues: string[];
+      context_window?: number | null;
+      pricing_configured: boolean;
+    }>;
+  };
+  extensions: {
+    skills_registry: string;
+    skills: {
+      available: number;
+      recommended: number;
+      active_by_default: string[];
+    };
+    mcp_servers: {
+      available: number;
+      valid: number;
+    };
+    hooks: {
+      available: number;
+      valid: number;
+    };
+    diagnostics: string[];
+  };
+  provenance: {
+    generated_at: string;
+    config_source: "project" | "default";
+    config_path: string;
+    config_digest: string;
+    project_profile_digest: string;
+  };
+}
+
 export interface StartRunResponse {
   run_id: string;
   status: string;
@@ -718,6 +788,8 @@ export const daemonApi = {
       method: "POST",
       body: JSON.stringify({ path }),
     }),
+  getAgentPack: (projectId: string, mode?: RunMode) =>
+    request<AgentPackManifest>(`/projects/${projectId}/agent-pack${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
   createRun: (body: CreateRunRequest) =>
     request<RunSummary>("/runs", {
       method: "POST",

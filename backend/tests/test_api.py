@@ -246,6 +246,52 @@ def test_model_config_endpoint_exposes_safe_profile_snapshot(tmp_path: Path, mon
     assert "economy-secret" not in json.dumps(snapshot)
 
 
+def test_project_agent_pack_manifest_is_non_sensitive(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        """agent:
+  id: pack-agent
+  name: Pack Agent
+  mode: orchestrator
+  roles: [Planner, Tester]
+runtime:
+  max_steps: 8
+  max_model_calls: 9
+  max_tool_calls: 10
+effects:
+  allow: [fs.read, test.run]
+  deny: [net.public]
+models:
+  default_model: pack-model
+  api_key_env: PACK_MODEL_KEY
+  routing:
+    enabled: true
+    default_profile: default
+    phase_routes:
+      verify: default
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PACK_MODEL_KEY", "pack-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.get(f"/projects/{project['project_id']}/agent-pack?mode=Bugfix")
+    manifest = response.json()
+
+    assert response.status_code == 200
+    assert manifest["manifest_version"] == "agentpack.v1"
+    assert manifest["agent"]["id"] == "pack-agent"
+    assert manifest["contract"]["program"]["mode"] == "Bugfix"
+    assert manifest["contract"]["cost_envelope"]["max_steps"] == 8
+    assert manifest["models"]["routing_enabled"] is True
+    assert manifest["models"]["phase_routes"] == {"verify": "default"}
+    assert manifest["provenance"]["config_source"] == "project"
+    assert manifest["digest"]
+    assert "pack-secret" not in json.dumps(manifest)
+
+
 def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()

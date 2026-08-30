@@ -3,6 +3,7 @@ import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, UserRound }
 import {
   daemonApi,
   type AgentContract,
+  type AgentPackManifest,
   type ApprovalRequest,
   type ContextPack,
   type CompletionAssessment,
@@ -29,6 +30,7 @@ import {
   type ToolOverride,
 } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { AgentPackDialog } from "../components/AgentPackDialog";
 import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
@@ -111,6 +113,10 @@ export function Workbench() {
   const [modelSetupOpen, setModelSetupOpen] = useState(false);
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
+  const [agentPackOpen, setAgentPackOpen] = useState(false);
+  const [agentPackBusy, setAgentPackBusy] = useState(false);
+  const [agentPackError, setAgentPackError] = useState<string>();
+  const [agentPack, setAgentPack] = useState<AgentPackManifest>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
@@ -182,6 +188,8 @@ export function Workbench() {
       setWorkspacePath(opened.path);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
+      setAgentPack(undefined);
+      setAgentPackError(undefined);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
       if (history) setRecentProjects(history.projects);
@@ -633,6 +641,9 @@ export function Workbench() {
     setWorkspacePath("");
     setModelStatus(undefined);
     setModelConfig(undefined);
+    setAgentPack(undefined);
+    setAgentPackError(undefined);
+    setAgentPackOpen(false);
     setRecentRuns([]);
   }
 
@@ -830,6 +841,20 @@ export function Workbench() {
     setRuntimeDetailsOpen(true);
   }
 
+  async function openAgentPack() {
+    if (!project) return;
+    setAgentPackOpen(true);
+    setAgentPackBusy(true);
+    setAgentPackError(undefined);
+    try {
+      setAgentPack(await daemonApi.getAgentPack(project.project_id, mode));
+    } catch (caught) {
+      setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.loadError"));
+    } finally {
+      setAgentPackBusy(false);
+    }
+  }
+
   return (
     <main className="appShell">
       <TopBar
@@ -871,6 +896,7 @@ export function Workbench() {
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
             onOpenHistory={() => openHistory()}
+            onOpenAgentPack={() => void openAgentPack()}
             onRefresh={() => void loadProjectRuns()}
           />
           <div className="productContent">
@@ -1126,6 +1152,14 @@ export function Workbench() {
           }
         }}
         onSave={saveModelCredential}
+      />
+      <AgentPackDialog
+        open={agentPackOpen}
+        loading={agentPackBusy}
+        error={agentPackError}
+        manifest={agentPack}
+        onClose={() => setAgentPackOpen(false)}
+        onRefresh={() => void openAgentPack()}
       />
     </main>
   );

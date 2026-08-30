@@ -6,7 +6,11 @@ from pydantic import BaseModel
 
 from app.api.store import ProjectRecord, store
 from app.context import build_workspace_index, scan_workspace, write_project_profile
+from app.runtime.agent_pack import build_agent_pack_manifest
+from app.runtime.model_provider import ModelConfigurationError
+from app.runtime.model_routing import ModelRoutingError
 from app.runtime.native_dialog import NativeDialogUnavailable, choose_local_directory
+from app.runtime.paths import default_agent_dir
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -62,3 +66,24 @@ def current_project() -> dict[str, object]:
         "profile": project.profile,
         "status": "ready",
     }
+
+
+@router.get("/{project_id}/agent-pack")
+def get_agent_pack(project_id: str, mode: str = "Feature") -> dict[str, object]:
+    project = store.projects.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    config_path = project.path / ".agent" / "config.yaml"
+    if not config_path.exists():
+        config_path = default_agent_dir() / "config.yaml"
+    try:
+        return build_agent_pack_manifest(
+            project_id=project.project_id,
+            workspace=project.path,
+            project_profile=project.profile,
+            config_path=config_path,
+            mode=mode,
+        )
+    except (ModelConfigurationError, ModelRoutingError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
