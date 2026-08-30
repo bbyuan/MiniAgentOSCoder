@@ -57,6 +57,7 @@ Frontend:
 cd frontend
 npm install
 npm run dev
+npm run check
 npm run build
 ```
 
@@ -239,6 +240,12 @@ One-command verification after dependencies are installed:
 
 ```text
 make verify
+```
+
+For a focused Web demo walkthrough and talking points, see:
+
+```text
+docs/演示脚本与汇报要点.md
 ```
 
 ## How To Work In This Repo
