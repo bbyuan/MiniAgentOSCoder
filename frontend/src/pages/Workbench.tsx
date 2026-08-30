@@ -1122,6 +1122,10 @@ export function Workbench() {
               artifacts={artifacts}
               completion={completion}
               onNewTask={() => resetRunState(true)}
+              onInspectRun={() => {
+                setRuntimePanelTarget("overview");
+                setRuntimeDetailsOpen(true);
+              }}
             />
           ) : null}
           <ActivityFeed events={traceEvents} status={runStatus} />

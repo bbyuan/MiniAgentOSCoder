@@ -5545,6 +5545,105 @@ button.controlSignal:focus-visible {
   white-space: pre-wrap;
 }
 
+.completionDiagnosis {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warning-soft) 58%, var(--surface)), var(--surface));
+}
+
+.completionDiagnosis > header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.completionDiagnosis > header > svg {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--warning) 32%, var(--border));
+  border-radius: 8px;
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.completionDiagnosis strong,
+.completionDiagnosis span {
+  min-width: 0;
+  display: block;
+}
+
+.completionDiagnosis > header strong {
+  font-size: 13px;
+}
+
+.completionDiagnosis > header span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.diagnosisActions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.diagnosisActions article {
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.diagnosisActions svg {
+  color: var(--success);
+}
+
+.diagnosisActions span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.completionDiagnosis > button {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.completionDiagnosis > button:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+}
+
 .followUpComposer {
   margin: 2px 0 0 43px;
   padding: 12px;
@@ -6985,6 +7084,10 @@ button.controlSignal:focus-visible {
   border-top: 1px solid var(--border);
 }
 
+.completionSummary > .completionDiagnosis {
+  grid-column: 1 / -1;
+}
+
 .completionLead {
   min-width: 0;
   display: flex;
@@ -7579,8 +7682,23 @@ button.controlSignal:focus-visible {
   .completionSummary > button,
   .completionDetails,
   .completionSummary > .completionFailureReason,
+  .completionSummary > .completionDiagnosis,
   .completionSummary > .completionEvidence {
     grid-column: 1;
+  }
+
+  .completionDiagnosis {
+    grid-template-columns: 1fr;
+  }
+
+  .completionDiagnosis > button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+  }
+
+  .diagnosisActions {
+    grid-template-columns: 1fr;
   }
 
   .completionSignals {

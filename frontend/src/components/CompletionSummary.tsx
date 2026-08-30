@@ -1,5 +1,6 @@
-import { ArrowRight, Ban, CheckCircle2, ChevronDown, CircleAlert, FileDiff, FlaskConical } from "lucide-react";
+import { ArrowRight, Ban, CheckCircle2, ChevronDown, CircleAlert, FileDiff, FlaskConical, ShieldCheck } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
+import type { TranslationKey } from "../i18n";
 import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 import { CompletionEvidence } from "./CompletionEvidence";
@@ -12,6 +13,7 @@ interface CompletionSummaryProps {
   artifacts?: RunArtifacts;
   completion?: CompletionAssessment | null;
   onNewTask: () => void;
+  onInspectRun?: () => void;
 }
 
 export function CompletionSummary({
@@ -22,6 +24,7 @@ export function CompletionSummary({
   artifacts,
   completion,
   onNewTask,
+  onInspectRun,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
@@ -44,6 +47,13 @@ export function CompletionSummary({
     worker_error: t("completion.reason.worker_error"),
   };
   const reason = terminationReason ? knownReasons[terminationReason] ?? terminationReason : "";
+  const diagnosis = buildFailureDiagnosis({
+    status,
+    terminationReason,
+    observationError: displayedObservationError,
+    completion,
+    testsStatus: tests?.status,
+  });
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -61,6 +71,31 @@ export function CompletionSummary({
           {displayedObservationError && displayedObservationError !== reason ? <code>{displayedObservationError}</code> : null}
         </div>
       ) : null}
+      {diagnosis ? (
+        <section className="completionDiagnosis" aria-label={t("diagnosis.title")}>
+          <header>
+            <CircleAlert size={17} />
+            <div>
+              <strong>{t("diagnosis.title")}</strong>
+              <span>{t(diagnosis.summary)}</span>
+            </div>
+          </header>
+          <div className="diagnosisActions">
+            {diagnosis.actions.map((action) => (
+              <article key={action}>
+                <CheckCircle2 size={14} />
+                <span>{t(action)}</span>
+              </article>
+            ))}
+          </div>
+          {onInspectRun ? (
+            <button type="button" onClick={onInspectRun}>
+              <ShieldCheck size={15} />
+              {t("diagnosis.inspect")}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
       <div className="completionSignals">
         <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div>
         <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
@@ -77,6 +112,61 @@ export function CompletionSummary({
       </button>
     </section>
   );
+}
+
+interface FailureDiagnosisInput {
+  status: string;
+  terminationReason?: string;
+  observationError: string;
+  completion?: CompletionAssessment | null;
+  testsStatus?: string;
+}
+
+function buildFailureDiagnosis(input: FailureDiagnosisInput): { summary: TranslationKey; actions: TranslationKey[] } | null {
+  if (input.status === "completed") return null;
+  const failedChecks = input.completion?.checks.filter((check) => check.required && !check.passed).map((check) => check.id) ?? [];
+  if (input.status === "cancelled") {
+    return {
+      summary: "diagnosis.summary.cancelled",
+      actions: ["diagnosis.action.reviewTrace", "diagnosis.action.startFollowUp"],
+    };
+  }
+  if (input.terminationReason?.startsWith("max_")) {
+    return {
+      summary: "diagnosis.summary.budget",
+      actions: ["diagnosis.action.narrowTask", "diagnosis.action.reviewBudget"],
+    };
+  }
+  if (input.terminationReason === "invalid_action_ir" || /unable to recognize|无法识别|action/i.test(input.observationError)) {
+    return {
+      summary: "diagnosis.summary.actionIr",
+      actions: ["diagnosis.action.askPlan", "diagnosis.action.simplify"],
+    };
+  }
+  if (input.terminationReason === "model_error") {
+    return {
+      summary: "diagnosis.summary.model",
+      actions: ["diagnosis.action.checkModel", "diagnosis.action.retryFocused"],
+    };
+  }
+  if (input.terminationReason === "worker_error" || /transition|阶段切换/i.test(input.observationError)) {
+    return {
+      summary: "diagnosis.summary.runtime",
+      actions: ["diagnosis.action.reviewTrace", "diagnosis.action.retryBoundary"],
+    };
+  }
+  if (failedChecks.length > 0) {
+    return {
+      summary: failedChecks.includes("tests_after_change") || input.testsStatus === "Failed"
+        ? "diagnosis.summary.tests"
+        : "diagnosis.summary.evidence",
+      actions: ["diagnosis.action.collectEvidence", "diagnosis.action.startFollowUp"],
+    };
+  }
+  return {
+    summary: "diagnosis.summary.generic",
+    actions: ["diagnosis.action.reviewTrace", "diagnosis.action.startFollowUp"],
+  };
 }
 
 function localizeRuntimeError(error: string, locale: "zh" | "en"): string {
