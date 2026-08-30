@@ -70,6 +70,12 @@ const runCopy: Record<string, { title: TranslationKey; description: TranslationK
   cancelled: { title: "run.cancelledTitle", description: "run.cancelledDescription" },
 };
 
+const followUpTemplates: TranslationKey[] = [
+  "session.template.fixFailure",
+  "session.template.addTests",
+  "session.template.explainChanges",
+];
+
 export function Workbench() {
   const { locale, t } = usePreferences();
   const [workspacePath, setWorkspacePath] = useState("");
@@ -128,6 +134,7 @@ export function Workbench() {
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
+  const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     daemonApi
@@ -873,6 +880,11 @@ export function Workbench() {
     await prepareRun(true, nextTask, parentRunId);
   }
 
+  function useFollowUpSuggestion(message: string) {
+    setFollowUpTask(message);
+    window.setTimeout(() => followUpInputRef.current?.focus(), 0);
+  }
+
   function openControlPlaneTarget(target: ControlPlaneTarget) {
     setRuntimePanelTarget(target);
     setRuntimeDetailsOpen(true);
@@ -1134,6 +1146,7 @@ export function Workbench() {
               artifacts={artifacts}
               completion={completion}
               onNewTask={() => resetRunState(true)}
+              onUseFollowUp={useFollowUpSuggestion}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);
@@ -1162,6 +1175,7 @@ export function Workbench() {
               <div>
                 <textarea
                   id="follow-up-task"
+                  ref={followUpInputRef}
                   rows={2}
                   value={followUpTask}
                   placeholder={t("session.followUpPlaceholder")}
@@ -1176,6 +1190,18 @@ export function Workbench() {
                 <button type="button" disabled={!followUpTask.trim() || busy} onClick={() => void startFollowUp()} title={t("session.sendFollowUp")} aria-label={t("session.sendFollowUp")}>
                   <ArrowUp size={17} />
                 </button>
+              </div>
+              <div className="followUpTemplates" aria-label={t("session.templates")}>
+                {followUpTemplates.map((template) => (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => useFollowUpSuggestion(t(template))}
+                    key={template}
+                  >
+                    {t(template)}
+                  </button>
+                ))}
               </div>
               <span>{t("session.followUpHint")}</span>
             </section>
