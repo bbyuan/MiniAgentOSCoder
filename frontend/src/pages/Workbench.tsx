@@ -79,6 +79,7 @@ const followUpTemplates: TranslationKey[] = [
 
 export function Workbench() {
   const { locale, t } = usePreferences();
+  const [showSplash, setShowSplash] = useState(true);
   const [workspacePath, setWorkspacePath] = useState("");
   const [project, setProject] = useState<OpenProjectResponse>();
   const [recentProjects, setRecentProjects] = useState<HistoryProject[]>([]);
@@ -137,6 +138,11 @@ export function Workbench() {
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     daemonApi
@@ -954,6 +960,7 @@ export function Workbench() {
 
   return (
     <main className="appShell">
+      {showSplash ? <SplashScreen /> : null}
       <TopBar
         project={project ? basename(project.path) : t("top.noProject")}
         status={displayStatus}
@@ -1124,20 +1131,6 @@ export function Workbench() {
             }}
           />
 
-          <AgentOSControlPlane
-            variant="runtime"
-            mode={mode}
-            contract={contract}
-            context={contextPack}
-            memory={memory}
-            governance={governance}
-            extensions={extensions}
-            trace={traceEvents}
-            runStatus={runStatus}
-            activeTarget={runtimeDetailsOpen ? runtimePanelTarget : undefined}
-            onOpen={openControlPlaneTarget}
-          />
-
           {displayPlan.length ? <RunProgress items={displayPlan} /> : null}
 
           {steeringMessages.map((guidance, index) => (
@@ -1173,9 +1166,6 @@ export function Workbench() {
               }}
             />
           ) : null}
-          <ActivityFeed events={traceEvents} status={runStatus} />
-
-          {error ? <ErrorBanner message={error} /> : null}
 
           {runIsActive ? (
             <RunSteeringComposer
@@ -1188,6 +1178,10 @@ export function Workbench() {
               onStop={() => void cancelRun()}
             />
           ) : null}
+
+          <ActivityFeed events={traceEvents} status={runStatus} />
+
+          {error ? <ErrorBanner message={error} /> : null}
 
           {terminal ? (
             <section className="followUpComposer">
@@ -1303,6 +1297,20 @@ export function Workbench() {
         onSaveVersion={() => void saveAgentPackVersion()}
       />
     </main>
+  );
+}
+
+function SplashScreen() {
+  const { t } = usePreferences();
+  return (
+    <div className="splashScreen" aria-hidden="true">
+      <div className="splashHello">
+        <svg viewBox="0 0 900 190" role="img">
+          <text x="50%" y="118" textAnchor="middle">hello, world</text>
+        </svg>
+        <span>{t("splash.subtitle")}</span>
+      </div>
+    </div>
   );
 }
 

@@ -2,6 +2,8 @@ export type Locale = "zh" | "en";
 
 const en = {
   "app.subtitle": "Local coding-agent runtime",
+  "splash.title": "MiniAgentOS Coder",
+  "splash.subtitle": "Preparing a governed local coding workspace",
   "top.modelSetup": "Model setup needed",
   "top.modelUnchecked": "Model unchecked",
   "top.locale": "Language",
@@ -571,6 +573,7 @@ const en = {
   "task.useSpecMode": "Use Spec mode",
   "task.protocolPrompt": "Read the project's development protocols and implement the next incomplete requirement with verification.",
   "task.protocolPreview": "Detected",
+  "task.setupDetails": "Run checks and advanced context",
   "task.quickStart": "Good first tasks",
   "task.quickFix": "Fix a failing test",
   "task.quickReview": "Review current changes",
@@ -1012,6 +1015,8 @@ export type TranslationKey = keyof typeof en;
 
 const zh: Record<TranslationKey, string> = {
   "app.subtitle": "本地代码智能体运行时",
+  "splash.title": "MiniAgentOS Coder",
+  "splash.subtitle": "正在准备受治理的本地编码工作区",
   "top.modelSetup": "需要配置模型",
   "top.modelUnchecked": "模型未检查",
   "top.locale": "语言",
@@ -1581,6 +1586,7 @@ const zh: Record<TranslationKey, string> = {
   "task.useSpecMode": "使用规格模式",
   "task.protocolPrompt": "阅读项目开发协议，完成下一项未实现需求，并运行验证。",
   "task.protocolPreview": "已识别",
+  "task.setupDetails": "运行检查与高级上下文",
   "task.quickStart": "推荐起点",
   "task.quickFix": "修复失败测试",
   "task.quickReview": "评审当前变更",
