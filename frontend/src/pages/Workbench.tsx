@@ -1324,10 +1324,15 @@ function isEvidenceEvent(eventName: string): boolean {
 }
 
 function ErrorBanner({ message }: { message: string }) {
+  const { t } = usePreferences();
+  const displayMessage = /failed to fetch|load failed|networkerror|network request failed/i.test(message)
+    ? t("error.daemonUnavailable")
+    : message;
+
   return (
     <div className="errorBanner" role="alert">
       <AlertCircle size={17} />
-      <span>{message}</span>
+      <span>{displayMessage}</span>
     </div>
   );
 }

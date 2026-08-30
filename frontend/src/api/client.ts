@@ -841,7 +841,7 @@ export interface EvaluationSummary {
   privacy: { content_collected: false; fields_excluded: string[] };
 }
 
-let apiBase = import.meta.env.VITE_DAEMON_URL ?? "http://localhost:8000";
+let apiBase = import.meta.env.VITE_DAEMON_URL ?? "http://127.0.0.1:8000";
 
 export function configureDesktopDaemon(url: string): void {
   const parsed = new URL(url);
