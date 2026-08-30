@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, FolderOpen, HardDrive, LoaderCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, FolderOpen, HardDrive, LoaderCircle, MessageSquareText, ShieldCheck } from "lucide-react";
 import type { HistoryProject } from "../api/client";
 import { usePreferences } from "../preferences";
 
@@ -29,6 +29,29 @@ export function ProjectLauncher({
         <span className="stageEyebrow">{t("launcher.eyebrow")}</span>
         <h1 id="project-launcher-title">{t("launcher.title")}</h1>
         <p>{t("launcher.description")}</p>
+      </div>
+
+      <div className="launcherFlow" aria-label={t("launcher.flowTitle")}>
+        <div>
+          <FolderOpen size={15} />
+          <strong>{t("launcher.flow.open")}</strong>
+          <span>{t("launcher.flow.openHint")}</span>
+        </div>
+        <div>
+          <ShieldCheck size={15} />
+          <strong>{t("launcher.flow.prepare")}</strong>
+          <span>{t("launcher.flow.prepareHint")}</span>
+        </div>
+        <div>
+          <MessageSquareText size={15} />
+          <strong>{t("launcher.flow.guide")}</strong>
+          <span>{t("launcher.flow.guideHint")}</span>
+        </div>
+        <div>
+          <CheckCircle2 size={15} />
+          <strong>{t("launcher.flow.verify")}</strong>
+          <span>{t("launcher.flow.verifyHint")}</span>
+        </div>
       </div>
 
       <button className="openProjectAction" type="button" onClick={onBrowse} disabled={busy}>

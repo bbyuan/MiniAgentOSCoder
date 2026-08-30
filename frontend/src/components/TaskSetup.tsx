@@ -1,4 +1,4 @@
-import { ArrowUp, Boxes, CheckCircle2, ClipboardCheck, GitBranch, KeyRound, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
+import { ArrowUp, Boxes, CheckCircle2, ClipboardCheck, FileCheck2, GitBranch, KeyRound, Layers3, ScrollText, ShieldCheck, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
 import type { ReactNode } from "react";
 import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
@@ -161,6 +161,29 @@ export function TaskSetup({
           <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button>
         </div>
       ) : null}
+
+      <div className="taskRunPreview" aria-label={t("task.flowTitle")}>
+        <div>
+          <Layers3 size={15} />
+          <strong>{t("task.flow.context")}</strong>
+          <span>{t("task.flow.contextHint")}</span>
+        </div>
+        <div>
+          <ShieldCheck size={15} />
+          <strong>{t("task.flow.govern")}</strong>
+          <span>{t("task.flow.governHint")}</span>
+        </div>
+        <div>
+          <GitBranch size={15} />
+          <strong>{t("task.flow.execute")}</strong>
+          <span>{t("task.flow.executeHint")}</span>
+        </div>
+        <div>
+          <FileCheck2 size={15} />
+          <strong>{t("task.flow.verify")}</strong>
+          <span>{t("task.flow.verifyHint")}</span>
+        </div>
+      </div>
 
       <div className="taskComposerProduct">
         <label className="srOnly" htmlFor="task-description">{t("task.instruction")}</label>
