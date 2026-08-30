@@ -1,4 +1,4 @@
-import { ArrowUp, GitBranch, MessageSquarePlus, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
+import { ArrowUp, GitBranch, MessageSquarePlus, Radio, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -42,6 +42,7 @@ export function RunSteeringComposer({
   const statusCopy = stopping
     ? t("steering.stopping")
     : t(status === "waiting_approval" ? "steering.replacesApproval" : "steering.safeBoundary");
+  const canSend = Boolean(message.trim()) && !busy && !stopping;
 
   async function submit() {
     const guidance = message.trim();
@@ -56,8 +57,9 @@ export function RunSteeringComposer({
 
   return (
     <section className="runSteeringComposer" aria-label={t("steering.title")}>
-      <header>
+      <header className="steeringTopline">
         <div>
+          <span className="steeringEyebrow"><Radio size={12} />{t("steering.liveControl")}</span>
           <strong>{t("steering.title")}</strong>
           <span>{statusCopy}</span>
         </div>
@@ -77,29 +79,13 @@ export function RunSteeringComposer({
         </button>
       </header>
 
-      <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
-        {intentOptions.map(({ intent: option, icon: Icon }) => (
-          <button
-            type="button"
-            className={intent === option ? "selected" : ""}
-            aria-pressed={intent === option}
-            disabled={busy || stopping}
-            onClick={() => setIntent(option)}
-            key={option}
-          >
-            <Icon size={14} />
-            {t(`steering.intent.${option}`)}
-          </button>
-        ))}
-      </div>
-
       <div className="steeringInputFrame">
         <div className="steeringInputLabel">
-          <span>{t(`steering.intentHelp.${intent}`)}</span>
+          <span>{t("steering.chatLabel")}</span>
           <small>{t("steering.safeBoundaryShort")}</small>
         </div>
         <textarea
-          rows={2}
+          rows={3}
           value={message}
           disabled={stopping}
           placeholder={t(`steering.placeholder.${intent}`)}
@@ -111,12 +97,43 @@ export function RunSteeringComposer({
             }
           }}
         />
+        <div className="steeringInlineActions">
+          <span className={`steeringState state-${status}`}>
+            <i aria-hidden="true" />
+            {message.trim() ? t("steering.readyToSend") : t("steering.interruptible")}
+          </span>
+          <button
+            type="button"
+            className="steeringSend"
+            disabled={!canSend}
+            onClick={() => void submit()}
+            title={t("steering.send")}
+          >
+            <ArrowUp size={17} />
+            {t("steering.sendShort")}
+          </button>
+        </div>
       </div>
+
+      <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
+        {intentOptions.map(({ intent: option, icon: Icon }) => (
+          <button
+            type="button"
+            className={intent === option ? "selected" : ""}
+            aria-pressed={intent === option}
+            disabled={busy || stopping}
+            onClick={() => setIntent(option)}
+            key={option}
+          >
+            <Icon size={14} />
+            <span>{t(`steering.intent.${option}`)}</span>
+            <small>{t(`steering.intentHelp.${option}`)}</small>
+          </button>
+        ))}
+      </div>
+
       <footer>
-        <span className={`steeringState state-${status}`}>
-          <i aria-hidden="true" />
-          {message.trim() ? t("steering.readyToSend") : t("steering.interruptible")}
-        </span>
+        <span>{t("steering.quickActions")}</span>
         <div>
           {suggestions.map(({ key, icon: Icon, intent: suggestionIntent }) => (
             <button
@@ -133,16 +150,6 @@ export function RunSteeringComposer({
               {t(key)}
             </button>
           ))}
-          <button
-            type="button"
-            className="steeringSend"
-            disabled={!message.trim() || busy || stopping}
-            onClick={() => void submit()}
-            title={t("steering.send")}
-          >
-            <ArrowUp size={17} />
-            {t("steering.sendShort")}
-          </button>
         </div>
       </footer>
     </section>
