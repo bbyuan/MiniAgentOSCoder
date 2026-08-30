@@ -11,7 +11,9 @@
     "desktop:dev": "tauri dev",
     "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml",
     "desktop:sidecar": "node scripts/build-daemon-sidecar.mjs",
-    "desktop:build": "npm run desktop:sidecar && tauri build --config src-tauri/tauri.prod.conf.json"
+    "desktop:build": "npm run desktop:sidecar && tauri build --config src-tauri/tauri.prod.conf.json",
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "check": "npm run check:i18n && npm run build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
