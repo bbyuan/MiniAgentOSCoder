@@ -22,9 +22,40 @@ export function ProjectLauncher({
   onOpen,
 }: ProjectLauncherProps) {
   const { locale, t } = usePreferences();
+  const pathEntry = (
+    <div className="pathFallback">
+      <div className="pathDivider"><span>{desktop ? t("launcher.orPath") : t("launcher.pathFirst")}</span></div>
+      <div className="pathEntry">
+        <HardDrive size={16} aria-hidden="true" />
+        <input
+          value={path}
+          placeholder={t("launcher.pathPlaceholder")}
+          aria-label={t("launcher.pathPlaceholder")}
+          disabled={busy}
+          onChange={(event) => onPathChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && path.trim()) onOpen(path.trim());
+          }}
+        />
+        <button type="button" disabled={busy || !path.trim()} onClick={() => onOpen(path.trim())}>
+          {t("launcher.openPath")}
+        </button>
+      </div>
+    </div>
+  );
+  const pickerButton = (
+    <button className="openProjectAction" type="button" onClick={onBrowse} disabled={busy}>
+      <span className="openProjectIcon"><FolderOpen size={21} /></span>
+      <span>
+        <strong>{busy ? t("launcher.opening") : desktop ? t("launcher.open") : t("launcher.pickViaRuntime")}</strong>
+        <small>{desktop ? t("launcher.openHint") : t("launcher.browserHint")}</small>
+      </span>
+      {busy ? <LoaderCircle className="spin" size={18} /> : <ArrowRight size={18} />}
+    </button>
+  );
 
   return (
-    <section className="projectLauncher" aria-labelledby="project-launcher-title">
+    <section className={`projectLauncher ${desktop ? "desktopLauncher" : "browserLauncher"}`} aria-labelledby="project-launcher-title">
       <div className="launcherIntro">
         <span className="stageEyebrow">{t("launcher.eyebrow")}</span>
         <h1 id="project-launcher-title">{t("launcher.title")}</h1>
@@ -54,33 +85,9 @@ export function ProjectLauncher({
         </div>
       </div>
 
-      <button className="openProjectAction" type="button" onClick={onBrowse} disabled={busy}>
-        <span className="openProjectIcon"><FolderOpen size={21} /></span>
-        <span>
-          <strong>{busy ? t("launcher.opening") : t("launcher.open")}</strong>
-          <small>{desktop ? t("launcher.openHint") : t("launcher.browserHint")}</small>
-        </span>
-        {busy ? <LoaderCircle className="spin" size={18} /> : <ArrowRight size={18} />}
-      </button>
-
-      <div className="pathFallback">
-        <div className="pathDivider"><span>{desktop ? t("launcher.orPath") : t("launcher.browserPath")}</span></div>
-        <div className="pathEntry">
-          <HardDrive size={16} aria-hidden="true" />
-          <input
-            value={path}
-            placeholder={t("launcher.pathPlaceholder")}
-            aria-label={t("launcher.pathPlaceholder")}
-            disabled={busy}
-            onChange={(event) => onPathChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && path.trim()) onOpen(path.trim());
-            }}
-          />
-          <button type="button" disabled={busy || !path.trim()} onClick={() => onOpen(path.trim())}>
-            {t("launcher.openPath")}
-          </button>
-        </div>
+      <div className="launcherOpenStack">
+        {desktop ? pickerButton : pathEntry}
+        {desktop ? pathEntry : pickerButton}
       </div>
 
       <div className="recentProjects">

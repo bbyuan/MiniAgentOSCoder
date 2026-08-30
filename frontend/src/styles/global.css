@@ -14221,3 +14221,78 @@ button.controlSignal.active {
     width: 100%;
   }
 }
+
+/* Launcher host-aware flow */
+.launcherOpenStack {
+  width: min(100%, 780px);
+  margin: 34px auto 0;
+  display: grid;
+  gap: 12px;
+}
+
+.launcherOpenStack .openProjectAction,
+.launcherOpenStack .pathFallback {
+  width: 100%;
+  margin: 0;
+}
+
+.browserLauncher .pathFallback {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 76%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 97%, transparent), color-mix(in srgb, var(--surface) 94%, transparent));
+  box-shadow: var(--shadow-composer);
+}
+
+.browserLauncher .pathDivider {
+  margin: 0 0 12px;
+  text-align: left;
+}
+
+.browserLauncher .pathDivider::before,
+.browserLauncher .pathDivider::after {
+  display: none;
+}
+
+.browserLauncher .pathDivider span {
+  padding: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.browserLauncher .pathEntry {
+  min-height: 58px;
+  box-shadow: none;
+}
+
+.browserLauncher .openProjectAction {
+  min-height: 58px;
+  padding: 10px 14px;
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  box-shadow: none;
+}
+
+.browserLauncher .openProjectIcon {
+  width: 38px;
+  height: 38px;
+}
+
+.browserLauncher .openProjectAction strong {
+  font-size: 13px;
+}
+
+.browserLauncher .openProjectAction small {
+  font-size: 11px;
+}
+
+.desktopLauncher .launcherOpenStack {
+  margin-top: 36px;
+}
+
+.desktopLauncher .pathFallback {
+  margin-top: 0;
+}
