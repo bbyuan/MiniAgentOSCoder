@@ -1,4 +1,4 @@
-import { ArrowUp, GitBranch, MessageSquarePlus, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
+import { ArrowUp, ChevronDown, GitBranch, MessageSquarePlus, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -88,22 +88,10 @@ export function RunSteeringComposer({
           }}
         />
         <div className="steeringInlineActions">
-          <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
-            {intentOptions.map(({ intent: option, icon: Icon }) => (
-              <button
-                type="button"
-                className={intent === option ? "selected" : ""}
-                aria-pressed={intent === option}
-                disabled={busy || stopping}
-                onClick={() => setIntent(option)}
-                title={t(`steering.intentHelp.${option}`)}
-                key={option}
-              >
-                <Icon size={14} />
-                <span>{t(`steering.intent.${option}`)}</span>
-              </button>
-            ))}
-          </div>
+          <span className={`steeringState state-${status}`}>
+            <i aria-hidden="true" />
+            {stopping ? t("steering.stopping") : message.trim() ? t("steering.readyToSend") : statusCopy}
+          </span>
           <button
             type="button"
             className="steeringSend"
@@ -117,12 +105,28 @@ export function RunSteeringComposer({
         </div>
       </div>
 
-      <footer className="steeringQuickStrip">
-        <span className={`steeringState state-${status}`}>
-          <i aria-hidden="true" />
-          {stopping ? t("steering.stopping") : message.trim() ? t("steering.readyToSend") : statusCopy}
-        </span>
-        <div>
+      <details className="steeringQuickStrip">
+        <summary>
+          <span>{t("steering.quickActions")}</span>
+          <ChevronDown size={14} />
+        </summary>
+        <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
+          {intentOptions.map(({ intent: option, icon: Icon }) => (
+            <button
+              type="button"
+              className={intent === option ? "selected" : ""}
+              aria-pressed={intent === option}
+              disabled={busy || stopping}
+              onClick={() => setIntent(option)}
+              title={t(`steering.intentHelp.${option}`)}
+              key={option}
+            >
+              <Icon size={14} />
+              <span>{t(`steering.intent.${option}`)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="steeringSuggestionGroup">
           {suggestions.map(({ key, icon: Icon, intent: suggestionIntent }) => (
             <button
               type="button"
@@ -139,12 +143,12 @@ export function RunSteeringComposer({
             </button>
           ))}
         </div>
-        {queuedCount || appliedCount ? (
-          <small className="steeringQueueState" aria-label={t("steering.queueStatus")}>
-            {t("steering.queuedCount", { count: queuedCount })} · {t("steering.appliedCount", { count: appliedCount })}
-          </small>
-        ) : null}
-      </footer>
+      </details>
+      {queuedCount || appliedCount ? (
+        <small className="steeringQueueState" aria-label={t("steering.queueStatus")}>
+          {t("steering.queuedCount", { count: queuedCount })} · {t("steering.appliedCount", { count: appliedCount })}
+        </small>
+      ) : null}
     </section>
   );
 }

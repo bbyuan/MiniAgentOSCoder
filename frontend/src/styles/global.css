@@ -14672,3 +14672,323 @@ button.controlSignal.active {
     width: 100%;
   }
 }
+
+/* Active run declutter pass */
+.runStatusDeck {
+  min-height: auto;
+  border-left-width: 2px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 64px rgba(15, 23, 42, 0.08);
+}
+
+.runStatusDeck > header {
+  min-height: 58px;
+  padding: 12px 15px;
+}
+
+.runStatusIdentity {
+  gap: 9px;
+}
+
+.runStatusIdentity > span {
+  width: 32px;
+  height: 32px;
+}
+
+.runStatusIdentity small {
+  font-size: 10px;
+  text-transform: none;
+}
+
+.runStatusIdentity h2 {
+  margin-top: 2px;
+  font-size: 18px;
+}
+
+.runStatusNow {
+  padding: 14px 16px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.runStatusNow > div {
+  min-width: 0;
+}
+
+.runStatusNow small,
+.runStatusNow strong,
+.runStatusNow span {
+  display: block;
+  min-width: 0;
+}
+
+.runStatusNow small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.runStatusNow strong {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusNow span {
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusTimeline {
+  padding: 0 16px 16px;
+}
+
+.runStatusStepSummary {
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.runStatusStepSummary i {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.runStatusStepSummary b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
+
+.runStatusTimeline ol {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  list-style: none;
+}
+
+.runStatusTimeline li {
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 7px;
+  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+}
+
+.runStatusTimeline li > span {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+}
+
+.runStatusTimeline li > span > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.runStatusTimeline li strong {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusTimeline li:not(.state-active):not(.state-failed) strong {
+  display: none;
+}
+
+.runStatusTimeline li.state-active,
+.runStatusTimeline li.state-failed {
+  flex: 2.2 1 140px;
+}
+
+.runStatusTimeline li.state-done {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 45%, var(--surface));
+}
+
+.runStatusTimeline li.state-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface));
+}
+
+.runStatusTimeline li.state-failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 36%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 54%, var(--surface));
+}
+
+.runStatusActions {
+  display: none;
+}
+
+.runSteeringComposer {
+  margin-top: 18px;
+}
+
+.runSteeringComposer .steeringInputFrame {
+  padding: 13px;
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border-strong));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 64px rgba(15, 23, 42, 0.1);
+}
+
+.steeringComposerHead {
+  min-height: 28px;
+}
+
+.steeringComposerHead strong {
+  font-size: 14px;
+}
+
+.runSteeringComposer textarea {
+  min-height: 68px;
+  height: 68px;
+  max-height: 120px;
+  resize: none;
+}
+
+.runSteeringComposer textarea:focus {
+  outline: 0;
+}
+
+.steeringInlineActions {
+  min-height: 34px;
+}
+
+.steeringState {
+  max-width: min(100%, 460px);
+}
+
+.steeringState,
+.steeringState i {
+  flex: 0 0 auto;
+}
+
+.steeringState {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steeringSend,
+.steeringStop {
+  border-radius: 8px;
+}
+
+.steeringQuickStrip {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 62%, transparent);
+}
+
+.steeringQuickStrip > summary {
+  min-height: 36px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  list-style: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.steeringQuickStrip > summary::-webkit-details-marker {
+  display: none;
+}
+
+.steeringQuickStrip[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.steeringQuickStrip .steeringIntentGroup,
+.steeringSuggestionGroup {
+  padding: 0 11px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.steeringSuggestionGroup {
+  padding-top: 0;
+}
+
+.steeringQueueState {
+  display: block;
+  margin-top: 6px;
+  padding-right: 4px;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .runStatusDeck > header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runStatusNow {
+    grid-template-columns: 1fr;
+  }
+
+  .runStatusTimeline ol {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runStatusTimeline li,
+  .runStatusTimeline li.state-active,
+  .runStatusTimeline li.state-failed {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .runStatusTimeline li:not(.state-active):not(.state-failed) strong {
+    display: block;
+  }
+
+  .steeringInlineActions {
+    align-items: stretch;
+  }
+
+  .steeringState {
+    max-width: 100%;
+  }
+}
