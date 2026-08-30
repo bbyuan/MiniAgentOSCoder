@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.api.store import store
 from app.main import create_app
-from app.models import Checkpoint, RunPhase
+from app.models import Checkpoint, CompletionAssessment, CompletionCheck, RunLoopResult, RunPhase
 from app.runtime.checkpoint import CheckpointStore
 from app.runtime.model_client import QueuedStaticModelClient
 
@@ -535,6 +535,56 @@ def test_get_run_returns_plan(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.json()["plan"][0]["id"] == "scan"
+
+
+def test_run_evidence_summarizes_runtime_without_content(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "inspect secret code", "mode": "Bugfix"},
+    ).json()
+
+    from app.runtime.tracer import TraceWriter
+
+    writer = TraceWriter(tmp_path / "runs")
+    writer.event(run["run_id"], "model.requested", {"request": {"messages": [{"content": "secret source"}]}})
+    writer.event(run["run_id"], "tool.executed", {"result": {"output": "private code content"}})
+    writer.event(run["run_id"], "policy.evaluated", {"evaluation": {"outcome": "allowed"}})
+    writer.event(run["run_id"], "approval.requested", {"approval": {"reason": "edit"}})
+    writer.event(run["run_id"], "approval.resolved", {"decision": "approve_once"})
+    store.run_results[run["run_id"]] = RunLoopResult(
+        run_id=run["run_id"],
+        status=RunPhase.COMPLETED,
+        termination_reason="finish",
+        completion=CompletionAssessment(
+            verdict="passed",
+            mode="Bugfix",
+            checks=[CompletionCheck(id="final_message", passed=True, evidence="summary")],
+        ),
+    )
+
+    response = client.get(f"/runs/{run['run_id']}/evidence")
+
+    assert response.status_code == 200
+    payload = response.json()
+    text = json.dumps(payload)
+    assert payload["run_id"] == run["run_id"]
+    assert payload["privacy"]["content_collected"] is False
+    assert payload["ready"] >= 4
+    assert {item["id"] for item in payload["items"]} == {
+        "context",
+        "model",
+        "tools",
+        "governance",
+        "extensions",
+        "tests",
+        "completion",
+    }
+    assert next(item for item in payload["items"] if item["id"] == "model")["state"] == "ready"
+    assert next(item for item in payload["items"] if item["id"] == "governance")["state"] == "ready"
+    assert "secret source" not in text
+    assert "private code content" not in text
 
 
 def test_memory_api_manages_scopes_and_requires_long_term_confirmation(tmp_path: Path) -> None:

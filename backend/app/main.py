@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import approvals, context, evaluation, extensions, governance, health, history, memory, models, projects, runs, trace
+from app.api import approvals, context, evaluation, evidence, extensions, governance, health, history, memory, models, projects, runs, trace
 from app.api.store import store
 from app.runtime.history_store import default_history_path
 
@@ -37,6 +37,7 @@ def create_app(history_path: str | Path | None = ":memory:") -> FastAPI:
     app.include_router(approvals.router)
     app.include_router(trace.router)
     app.include_router(context.router)
+    app.include_router(evidence.router)
     app.include_router(memory.router)
     app.include_router(governance.router)
     app.include_router(extensions.router)

@@ -24,6 +24,7 @@ import {
   type OpenProjectResponse,
   type ProjectProtocols,
   type RecoveryResponse,
+  type RunEvidenceLedger,
   type RunArtifacts,
   type RunAdmission,
   type RunMode,
@@ -116,6 +117,7 @@ export function Workbench() {
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [recovery, setRecovery] = useState<RecoveryResponse>();
+  const [evidence, setEvidence] = useState<RunEvidenceLedger>();
   const [rollbackBusy, setRollbackBusy] = useState<string>();
   const [report, setReport] = useState<RunReportResponse>();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -272,6 +274,7 @@ export function Workbench() {
         traceResponse,
         recoveryResponse,
         reportResponse,
+        evidenceResponse,
         memoryResponse,
         governanceResponse,
         extensionResponse,
@@ -283,6 +286,7 @@ export function Workbench() {
         daemonApi.getTrace(resumed.run_id),
         daemonApi.getCheckpoints(resumed.run_id),
         daemonApi.getReport(resumed.run_id),
+        daemonApi.getEvidence(resumed.run_id),
         daemonApi.getMemory(resumed.run_id),
         daemonApi.getGovernance(resumed.run_id),
         daemonApi.getExtensions(resumed.run_id),
@@ -304,6 +308,7 @@ export function Workbench() {
       setArtifacts(resumed.artifacts);
       setRecovery(recoveryResponse);
       setReport(reportResponse);
+      setEvidence(evidenceResponse);
       setMemory(memoryResponse);
       setGovernance(governanceResponse);
       setExtensions(extensionResponse);
@@ -380,6 +385,7 @@ export function Workbench() {
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
+    setEvidence(undefined);
     setMemory(undefined);
     setGovernance(undefined);
     setExtensions(undefined);
@@ -404,6 +410,7 @@ export function Workbench() {
         artifactResponse,
         recoveryResponse,
         reportResponse,
+        evidenceResponse,
         memoryResponse,
         governanceResponse,
         extensionResponse,
@@ -414,6 +421,7 @@ export function Workbench() {
         daemonApi.getArtifacts(run.run_id),
         daemonApi.getCheckpoints(run.run_id),
         daemonApi.getReport(run.run_id),
+        daemonApi.getEvidence(run.run_id),
         daemonApi.getMemory(run.run_id),
         daemonApi.getGovernance(run.run_id),
         daemonApi.getExtensions(run.run_id),
@@ -430,6 +438,7 @@ export function Workbench() {
       setArtifacts(artifactResponse);
       setRecovery(recoveryResponse);
       setReport(reportResponse);
+      setEvidence(evidenceResponse);
       setMemory(memoryResponse);
       setGovernance(governanceResponse);
       setExtensions(extensionResponse);
@@ -551,6 +560,7 @@ export function Workbench() {
             daemonApi.getArtifacts(activeRunId),
             daemonApi.getCheckpoints(activeRunId),
             daemonApi.getReport(activeRunId),
+            daemonApi.getEvidence(activeRunId),
             daemonApi.getContext(activeRunId),
             daemonApi.getMemory(activeRunId),
             daemonApi.getGovernance(activeRunId),
@@ -561,6 +571,7 @@ export function Workbench() {
             latestArtifacts,
             latestRecovery,
             latestReport,
+            latestEvidence,
             latestContext,
             latestMemory,
             latestGovernance,
@@ -575,6 +586,7 @@ export function Workbench() {
             setArtifacts(latestArtifacts);
             setRecovery(latestRecovery);
             setReport(latestReport);
+            setEvidence(latestEvidence);
             setContextPack(latestContext);
             setMemory(latestMemory);
             setGovernance(latestGovernance);
@@ -594,14 +606,16 @@ export function Workbench() {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
       if (cancelled.status === "cancelled") {
-        const [latestReport, latestGovernance, latestExtensions, latestTrace, latestConversation] = await Promise.all([
+        const [latestReport, latestEvidence, latestGovernance, latestExtensions, latestTrace, latestConversation] = await Promise.all([
           daemonApi.getReport(runId),
+          daemonApi.getEvidence(runId),
           daemonApi.getGovernance(runId),
           daemonApi.getExtensions(runId),
           daemonApi.getTrace(runId),
           daemonApi.getConversation(runId),
         ]);
         setReport(latestReport);
+        setEvidence(latestEvidence);
         setGovernance(latestGovernance);
         setExtensions(latestExtensions);
         setTraceEvents(latestTrace.events);
@@ -669,6 +683,7 @@ export function Workbench() {
     setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
+    setEvidence(undefined);
     setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
@@ -759,14 +774,16 @@ export function Workbench() {
     setError(null);
     try {
       const result = await daemonApi.compactContext(runId, targetRatio, confirmed);
-      const [latestContext, latestRecovery, latestAdmission, latestModelRoute] = await Promise.all([
+      const [latestContext, latestRecovery, latestEvidence, latestAdmission, latestModelRoute] = await Promise.all([
         daemonApi.getContext(runId),
         daemonApi.getCheckpoints(runId),
+        daemonApi.getEvidence(runId),
         daemonApi.getAdmission(runId),
         daemonApi.getModelRoute(runId),
       ]);
       setContextPack(latestContext);
       setRecovery(latestRecovery);
+      setEvidence(latestEvidence);
       setAdmission(latestAdmission);
       setModelRoute(latestModelRoute);
       return result;
@@ -1225,6 +1242,7 @@ export function Workbench() {
           diff={displayDiff}
           tests={displayTests}
           trace={traceEvents}
+          evidence={evidence}
           runId={runId}
           runStatus={runStatus}
           recovery={recovery}

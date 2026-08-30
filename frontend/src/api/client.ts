@@ -230,6 +230,27 @@ export interface ContextCompactionResponse {
   reason: string;
 }
 
+export interface RunEvidenceItem {
+  id: "context" | "model" | "tools" | "governance" | "extensions" | "tests" | "completion" | string;
+  state: "ready" | "pending" | "warning" | "failed";
+  count: number;
+  detail: string;
+  source: string;
+}
+
+export interface RunEvidenceLedger {
+  run_id: string;
+  status: string;
+  score: number;
+  ready: number;
+  attention: number;
+  items: RunEvidenceItem[];
+  privacy: {
+    content_collected: false;
+    fields_excluded: string[];
+  };
+}
+
 export type MemoryScope = "short_term" | "project" | "long_term";
 
 export interface MemoryEntry {
@@ -885,6 +906,7 @@ export const daemonApi = {
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),
   getContext: (runId: string) => request<ContextPack>(`/runs/${runId}/context`),
+  getEvidence: (runId: string) => request<RunEvidenceLedger>(`/runs/${runId}/evidence`),
   compactContext: (runId: string, targetRatio: number, confirmed = false) =>
     request<ContextCompactionResponse>(`/runs/${runId}/context/compact`, {
       method: "POST",

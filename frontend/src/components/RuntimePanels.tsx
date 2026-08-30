@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -9,6 +9,7 @@ import type {
   MemoryInput,
   MemoryResponse,
   RecoveryResponse,
+  RunEvidenceLedger,
   RunReportResponse,
   TraceEvent,
   SandboxProfile,
@@ -60,6 +61,7 @@ interface RuntimePanelsProps {
     failed: number;
   };
   trace: TraceEvent[];
+  evidence?: RunEvidenceLedger;
   runId?: string;
   runStatus: string;
   recovery?: RecoveryResponse;
@@ -88,6 +90,7 @@ export function RuntimePanels({
   diff,
   tests,
   trace,
+  evidence,
   runId,
   runStatus,
   recovery,
@@ -160,6 +163,40 @@ export function RuntimePanels({
             <div className="contractAssurance">
               <span><Check size={16} /></span>
               <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
+            </div>
+
+            <div className="evidenceLedger">
+              <header>
+                <div className="modelGateHeading"><ShieldCheck size={15} /><strong>{t("evidence.title")}</strong></div>
+                <span>{evidence ? t("evidence.score", { ready: evidence.ready, total: evidence.items.length }) : t("evidence.pending")}</span>
+              </header>
+              <div className="evidenceLedgerGrid">
+                {(evidence?.items ?? []).map((item) => (
+                  <article className={`evidenceLedgerItem state-${item.state}`} key={item.id}>
+                    <span>
+                      {item.state === "ready" ? <Check size={13} /> : <CircleAlert size={13} />}
+                      {t(`evidence.state.${item.state}` as TranslationKey)}
+                    </span>
+                    <strong>{t(`evidence.item.${item.id}` as TranslationKey)}</strong>
+                    <small title={item.detail}>{localizeEvidenceDetail(item.detail, locale)}</small>
+                    <code>{translateKnownText(locale, item.source)} · {item.count}</code>
+                  </article>
+                ))}
+                {!evidence ? (
+                  <article className="evidenceLedgerItem state-pending">
+                    <span><CircleAlert size={13} />{t("evidence.state.pending")}</span>
+                    <strong>{t("evidence.emptyTitle")}</strong>
+                    <small>{t("evidence.emptyDescription")}</small>
+                    <code>runtime · 0</code>
+                  </article>
+                ) : null}
+              </div>
+              {evidence ? (
+                <footer>
+                  <span>{t("evidence.privacy")}</span>
+                  <strong>{t("evidence.privacyNoContent")}</strong>
+                </footer>
+              ) : null}
             </div>
 
             <div className="modelGateEvidence">
@@ -301,4 +338,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function numberValue(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function localizeEvidenceDetail(detail: string, locale: "zh" | "en"): string {
+  if (locale === "en") return detail;
+  return detail
+    .replace("Context Pack is not available yet", "上下文包尚未就绪")
+    .replace("No test summary is available yet", "尚无测试摘要")
+    .replace("No structured completion assessment yet", "尚无结构化完成验收")
+    .replace("selected items", "个已选上下文项")
+    .replace("tokens", "Token")
+    .replace("protocol items", "个协议项")
+    .replace("provider requests", "次真实模型请求")
+    .replace("cache hits", "次缓存命中")
+    .replace("responses", "次响应")
+    .replace("tool calls", "次工具调用")
+    .replace("rejected", "拒绝")
+    .replace("policy evaluations", "次策略评估")
+    .replace("approvals", "次审批")
+    .replace("pending", "待处理")
+    .replace("skill activations", "次 Skill 激活")
+    .replace("MCP calls", "次 MCP 调用")
+    .replace("hook events", "次 Hook 事件")
+    .replace("checks passed", "项检查通过")
+    .replace("required checks failed", "项必需检查失败")
+    .replace("Passed", "通过")
+    .replace("Failed", "失败")
+    .replace("Not run", "未运行")
+    .replace("Not selected", "未选择")
+    .replace("failed", "失败");
 }
