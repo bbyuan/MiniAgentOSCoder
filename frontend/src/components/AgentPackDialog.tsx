@@ -10,19 +10,32 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { AgentPackManifest } from "../api/client";
+import type { AgentPackManifest, AgentPackVersion } from "../api/client";
 import { usePreferences } from "../preferences";
 
 interface AgentPackDialogProps {
   open: boolean;
   loading: boolean;
+  versionBusy: boolean;
   error?: string;
   manifest?: AgentPackManifest;
+  versions: AgentPackVersion[];
   onClose: () => void;
   onRefresh: () => void;
+  onSaveVersion: () => void;
 }
 
-export function AgentPackDialog({ open, loading, error, manifest, onClose, onRefresh }: AgentPackDialogProps) {
+export function AgentPackDialog({
+  open,
+  loading,
+  versionBusy,
+  error,
+  manifest,
+  versions,
+  onClose,
+  onRefresh,
+  onSaveVersion,
+}: AgentPackDialogProps) {
   const { t } = usePreferences();
   if (!open) return null;
 
@@ -61,7 +74,13 @@ export function AgentPackDialog({ open, loading, error, manifest, onClose, onRef
                 <strong>{manifest.agent.name}</strong>
                 <span>{manifest.agent.id} · {manifest.agent.mode}</span>
               </div>
-              <code title={manifest.digest}>{manifest.digest.slice(0, 12)}</code>
+              <div className="agentPackHeroActions">
+                <code title={manifest.digest}>{manifest.digest.slice(0, 12)}</code>
+                <button type="button" className="textPrimaryAction" disabled={versionBusy} onClick={onSaveVersion}>
+                  {versionBusy ? <LoaderCircle className="spin" size={15} /> : <Boxes size={15} />}
+                  {t("agentPack.saveVersion")}
+                </button>
+              </div>
             </div>
 
             <div className="agentPackMetrics">
@@ -96,6 +115,29 @@ export function AgentPackDialog({ open, loading, error, manifest, onClose, onRef
               </section>
             </div>
 
+            <section className="agentPackVersions">
+              <header>
+                <h3>{t("agentPack.versions")}</h3>
+                <span>{t("agentPack.versionCount", { count: versions.length })}</span>
+              </header>
+              {versions.length ? (
+                <div>
+                  {versions.slice(0, 5).map((version) => (
+                    <article key={version.version_id}>
+                      <span><CheckCircle2 size={14} /></span>
+                      <div>
+                        <strong>{version.agent_name || version.agent_id}</strong>
+                        <small>{formatDate(version.generated_at)} · {version.mode} · {version.model_strategy}</small>
+                      </div>
+                      <code title={version.digest}>{version.digest.slice(0, 10)}</code>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p>{t("agentPack.noVersions")}</p>
+              )}
+            </section>
+
             <details className="agentPackJson">
               <summary>{t("agentPack.viewManifest")}</summary>
               <pre>{JSON.stringify(manifest, null, 2)}</pre>
@@ -107,7 +149,7 @@ export function AgentPackDialog({ open, loading, error, manifest, onClose, onRef
 
         <footer>
           <span>{manifest ? t("agentPack.generated", { date: formatDate(manifest.provenance.generated_at) }) : t("agentPack.localOnly")}</span>
-          <button type="button" className="secondaryTextAction" disabled={loading} onClick={onRefresh}>
+          <button type="button" className="secondaryTextAction" disabled={loading || versionBusy} onClick={onRefresh}>
             {loading ? <LoaderCircle className="spin" size={15} /> : <Boxes size={15} />}
             {t("agentPack.refresh")}
           </button>

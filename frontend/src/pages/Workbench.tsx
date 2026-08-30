@@ -4,6 +4,7 @@ import {
   daemonApi,
   type AgentContract,
   type AgentPackManifest,
+  type AgentPackVersion,
   type ApprovalRequest,
   type ContextPack,
   type CompletionAssessment,
@@ -115,8 +116,10 @@ export function Workbench() {
   const [modelSetupError, setModelSetupError] = useState<string>();
   const [agentPackOpen, setAgentPackOpen] = useState(false);
   const [agentPackBusy, setAgentPackBusy] = useState(false);
+  const [agentPackVersionBusy, setAgentPackVersionBusy] = useState(false);
   const [agentPackError, setAgentPackError] = useState<string>();
   const [agentPack, setAgentPack] = useState<AgentPackManifest>();
+  const [agentPackVersions, setAgentPackVersions] = useState<AgentPackVersion[]>([]);
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
@@ -189,6 +192,7 @@ export function Workbench() {
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
       setAgentPack(undefined);
+      setAgentPackVersions([]);
       setAgentPackError(undefined);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
@@ -642,6 +646,7 @@ export function Workbench() {
     setModelStatus(undefined);
     setModelConfig(undefined);
     setAgentPack(undefined);
+    setAgentPackVersions([]);
     setAgentPackError(undefined);
     setAgentPackOpen(false);
     setRecentRuns([]);
@@ -847,11 +852,35 @@ export function Workbench() {
     setAgentPackBusy(true);
     setAgentPackError(undefined);
     try {
-      setAgentPack(await daemonApi.getAgentPack(project.project_id, mode));
+      const [manifest, versionResponse] = await Promise.all([
+        daemonApi.getAgentPack(project.project_id, mode),
+        daemonApi.getAgentPackVersions(project.project_id),
+      ]);
+      setAgentPack(manifest);
+      setAgentPackVersions(versionResponse.versions);
     } catch (caught) {
       setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.loadError"));
     } finally {
       setAgentPackBusy(false);
+    }
+  }
+
+  async function saveAgentPackVersion() {
+    if (!project) return;
+    setAgentPackVersionBusy(true);
+    setAgentPackError(undefined);
+    try {
+      await daemonApi.saveAgentPackVersion(project.project_id, mode);
+      const [manifest, versionResponse] = await Promise.all([
+        daemonApi.getAgentPack(project.project_id, mode),
+        daemonApi.getAgentPackVersions(project.project_id),
+      ]);
+      setAgentPack(manifest);
+      setAgentPackVersions(versionResponse.versions);
+    } catch (caught) {
+      setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.saveError"));
+    } finally {
+      setAgentPackVersionBusy(false);
     }
   }
 
@@ -1156,10 +1185,13 @@ export function Workbench() {
       <AgentPackDialog
         open={agentPackOpen}
         loading={agentPackBusy}
+        versionBusy={agentPackVersionBusy}
         error={agentPackError}
         manifest={agentPack}
+        versions={agentPackVersions}
         onClose={() => setAgentPackOpen(false)}
         onRefresh={() => void openAgentPack()}
+        onSaveVersion={() => void saveAgentPackVersion()}
       />
     </main>
   );

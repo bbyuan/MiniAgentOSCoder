@@ -549,6 +549,21 @@ export interface AgentPackManifest {
   };
 }
 
+export interface AgentPackVersion {
+  version_id: string;
+  manifest_version: string;
+  digest: string;
+  generated_at: string;
+  agent_id: string;
+  agent_name: string;
+  mode: string;
+  max_steps: number;
+  model_strategy: "single" | "policy" | string;
+  model_profiles: number;
+  active_skills: number;
+  path: string;
+}
+
 export interface StartRunResponse {
   run_id: string;
   status: string;
@@ -790,6 +805,13 @@ export const daemonApi = {
     }),
   getAgentPack: (projectId: string, mode?: RunMode) =>
     request<AgentPackManifest>(`/projects/${projectId}/agent-pack${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
+  getAgentPackVersions: (projectId: string) =>
+    request<{ project_id: string; versions: AgentPackVersion[] }>(`/projects/${projectId}/agent-pack/versions`),
+  saveAgentPackVersion: (projectId: string, mode?: RunMode) =>
+    request<{ project_id: string; version: AgentPackVersion }>(
+      `/projects/${projectId}/agent-pack/versions${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`,
+      { method: "POST" },
+    ),
   createRun: (body: CreateRunRequest) =>
     request<RunSummary>("/runs", {
       method: "POST",

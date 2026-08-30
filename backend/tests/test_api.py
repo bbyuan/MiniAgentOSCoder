@@ -292,6 +292,40 @@ models:
     assert "pack-secret" not in json.dumps(manifest)
 
 
+def test_project_agent_pack_versions_are_persisted_and_listed(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    (agent_dir / "config.yaml").write_text(
+        """agent:
+  id: versioned-agent
+runtime:
+  max_steps: 6
+models:
+  default_model: version-model
+  api_key_env: VERSION_MODEL_KEY
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("VERSION_MODEL_KEY", "version-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    create_response = client.post(f"/projects/{project['project_id']}/agent-pack/versions?mode=Spec")
+    list_response = client.get(f"/projects/{project['project_id']}/agent-pack/versions")
+    version = create_response.json()["version"]
+    versions = list_response.json()["versions"]
+
+    assert create_response.status_code == 201
+    assert list_response.status_code == 200
+    assert version["version_id"]
+    assert version["mode"] == "Spec"
+    assert version["path"].startswith(".agent/agentpacks/versions/")
+    assert (tmp_path / version["path"]).is_file()
+    assert versions[0]["version_id"] == version["version_id"]
+    assert "version-secret" not in json.dumps(version)
+    assert "version-secret" not in json.dumps(versions)
+
+
 def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()

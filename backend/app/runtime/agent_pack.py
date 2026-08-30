@@ -115,6 +115,36 @@ def build_agent_pack_manifest(
     return payload
 
 
+def save_agent_pack_version(manifest: dict[str, Any], workspace: str | Path) -> dict[str, Any]:
+    root = Path(workspace).resolve()
+    versions_dir = root / ".agent" / "agentpacks" / "versions"
+    versions_dir.mkdir(parents=True, exist_ok=True)
+    digest = str(manifest.get("digest", ""))
+    generated_at = str(manifest.get("provenance", {}).get("generated_at", datetime.now(timezone.utc).isoformat()))
+    version_id = _version_id(generated_at, digest)
+    payload = dict(manifest)
+    payload["version_id"] = version_id
+    target = versions_dir / f"{version_id}.json"
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return _version_summary(payload, target, root)
+
+
+def list_agent_pack_versions(workspace: str | Path) -> list[dict[str, Any]]:
+    root = Path(workspace).resolve()
+    versions_dir = root / ".agent" / "agentpacks" / "versions"
+    if not versions_dir.is_dir():
+        return []
+    versions: list[dict[str, Any]] = []
+    for path in sorted(versions_dir.glob("*.json"), reverse=True):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            versions.append(_version_summary(payload, path, root))
+    return sorted(versions, key=lambda item: str(item.get("generated_at", "")), reverse=True)
+
+
 def _stable_payload(payload: dict[str, Any]) -> dict[str, Any]:
     stable = dict(payload)
     stable.pop("digest", None)
@@ -122,6 +152,33 @@ def _stable_payload(payload: dict[str, Any]) -> dict[str, Any]:
     provenance.pop("generated_at", None)
     stable["provenance"] = provenance
     return stable
+
+
+def _version_summary(payload: dict[str, Any], path: Path, root: Path) -> dict[str, Any]:
+    contract = payload.get("contract", {}) if isinstance(payload.get("contract"), dict) else {}
+    cost = contract.get("cost_envelope", {}) if isinstance(contract.get("cost_envelope"), dict) else {}
+    models = payload.get("models", {}) if isinstance(payload.get("models"), dict) else {}
+    extensions = payload.get("extensions", {}) if isinstance(payload.get("extensions"), dict) else {}
+    skills = extensions.get("skills", {}) if isinstance(extensions.get("skills"), dict) else {}
+    return {
+        "version_id": str(payload.get("version_id", path.stem)),
+        "manifest_version": str(payload.get("manifest_version", "agentpack.v1")),
+        "digest": str(payload.get("digest", "")),
+        "generated_at": str(payload.get("provenance", {}).get("generated_at", "")) if isinstance(payload.get("provenance"), dict) else "",
+        "agent_id": str(payload.get("agent", {}).get("id", "")) if isinstance(payload.get("agent"), dict) else "",
+        "agent_name": str(payload.get("agent", {}).get("name", "")) if isinstance(payload.get("agent"), dict) else "",
+        "mode": str(contract.get("program", {}).get("mode", "")) if isinstance(contract.get("program"), dict) else "",
+        "max_steps": int(cost.get("max_steps", 0) or 0),
+        "model_strategy": str(models.get("strategy", "single")),
+        "model_profiles": len(models.get("profiles", [])) if isinstance(models.get("profiles", []), list) else 0,
+        "active_skills": len(skills.get("active_by_default", [])) if isinstance(skills.get("active_by_default", []), list) else 0,
+        "path": _relative_or_name(path, root),
+    }
+
+
+def _version_id(generated_at: str, digest: str) -> str:
+    safe_time = "".join(character for character in generated_at[:19] if character.isdigit() or character == "T")
+    return f"{safe_time or 'agentpack'}-{digest[:12] or 'snapshot'}"
 
 
 def _digest_file(path: Path) -> str:

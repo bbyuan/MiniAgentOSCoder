@@ -7835,6 +7835,19 @@ button.controlSignal:focus-visible {
   font-size: 11px;
 }
 
+.agentPackHeroActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.agentPackHeroActions .textPrimaryAction {
+  min-height: 34px;
+  padding-inline: 12px;
+  font-size: 12px;
+}
+
 .agentPackMetrics {
   margin-top: 12px;
   display: grid;
@@ -8015,6 +8028,97 @@ button.controlSignal:focus-visible {
   line-height: 1.5;
 }
 
+.agentPackVersions {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.agentPackVersions > header {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agentPackVersions h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.agentPackVersions header span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.agentPackVersions > div {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+}
+
+.agentPackVersions article {
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 9px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+}
+
+.agentPackVersions article > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.agentPackVersions div,
+.agentPackVersions strong,
+.agentPackVersions small {
+  min-width: 0;
+  display: block;
+}
+
+.agentPackVersions strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentPackVersions small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.agentPackVersions code {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--surface);
+  font-size: 10px;
+}
+
+.agentPackVersions > p {
+  margin: 10px 0 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .agentPackDialog > footer {
   margin-top: 16px;
   padding-top: 14px;
@@ -8069,13 +8173,24 @@ button.controlSignal:focus-visible {
   }
 
   .agentPackHero,
+  .agentPackHeroActions,
   .agentPackDialog > footer {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .agentPackHeroActions .textPrimaryAction,
   .agentPackDialog > footer button {
     width: 100%;
+  }
+
+  .agentPackVersions article {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .agentPackVersions code {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .modelConfigFacts,
