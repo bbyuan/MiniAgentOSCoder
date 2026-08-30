@@ -70,55 +70,12 @@ export function TaskSetup({
       })
       : t("task.protocolMissingHint")
     : t("task.protocolChecking");
-  const readinessSummary = [
-    {
-      id: "model",
-      icon: modelReady ? <CheckCircle2 size={15} /> : <KeyRound size={15} />,
-      tone: modelReady ? "ready" : "blocked",
-      label: t("task.readinessModel"),
-      value: modelReady ? model?.model || t("preflight.ready") : t("preflight.needsSetup"),
-    },
-    {
-      id: "tests",
-      icon: <TerminalSquare size={15} />,
-      tone: tests.length ? "ready" : "warn",
-      label: t("task.readinessTests"),
-      value: tests.length ? t("task.testCommands", { count: tests.length }) : t("task.noTests"),
-    },
-    {
-      id: "protocols",
-      icon: <ScrollText size={15} />,
-      tone: protocolCount ? "ready" : "info",
-      label: t("task.readinessProtocols"),
-      value: protocolCount ? t("task.protocolCount", { count: protocolCount }) : t("task.protocolMissing"),
-    },
-    {
-      id: "baseline",
-      icon: packState === "changed" ? <GitBranch size={15} /> : <Boxes size={15} />,
-      tone: packState === "changed" ? "warn" : packState === "empty" ? "info" : "ready",
-      label: t("task.readinessAgentPack"),
-      value: t(packState === "changed" ? "task.agentPackChanged" : packState === "empty" ? "task.agentPackEmpty" : packState === "stable" ? "task.agentPackStable" : "task.agentPackChecking"),
-    },
-  ] as const;
-
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
       <header className="taskIntro productTaskIntro">
         <h1 id="task-setup-title">{t("task.title")}</h1>
         <p>{t("task.description")}</p>
       </header>
-
-      <div className="taskReadinessRail" aria-label={t("task.readinessTitle")}>
-        {readinessSummary.map((item) => (
-          <ReadinessPill
-            key={item.id}
-            icon={item.icon}
-            tone={item.tone}
-            label={item.label}
-            value={item.value}
-          />
-        ))}
-      </div>
 
       <StartReadinessBrief
         modelState={modelState}
@@ -171,8 +128,10 @@ export function TaskSetup({
               className="exampleFillAction"
               disabled={busy}
               onClick={() => onTaskChange(t(examples[mode]))}
+              title={t("task.tryExample")}
             >
-              <Sparkles size={15} />{t("task.tryExample")}
+              <Sparkles size={15} />
+              <span>{t("task.tryExample")}</span>
             </button>
           </div>
 
@@ -198,24 +157,29 @@ export function TaskSetup({
         </div>
       </div>
 
-      <div className="guidedTaskStarts">
-        <span><ClipboardCheck size={14} />{t("task.quickStart")}</span>
-        {suggestedTasks.map((item) => (
-          <button
-            type="button"
-            key={item.mode}
-            disabled={busy}
-            onClick={() => {
-              onModeChange(item.mode);
-              onTaskChange(item.prompt);
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <details className="guidedTaskStarts">
+        <summary>
+          <span><ClipboardCheck size={14} />{t("task.quickStart")}</span>
+          <ChevronDown size={15} />
+        </summary>
+        <div>
+          {suggestedTasks.map((item) => (
+            <button
+              type="button"
+              key={item.mode}
+              disabled={busy}
+              onClick={() => {
+                onModeChange(item.mode);
+                onTaskChange(item.prompt);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </details>
 
-      <details className="setupDetails">
+      <details className="setupDetails compactSetupDetails">
         <summary>
           <span>{t("task.setupDetails")}</span>
           <ChevronDown size={15} />
@@ -366,28 +330,6 @@ function StartReadinessBrief({
         </button>
       ) : null}
     </aside>
-  );
-}
-
-function ReadinessPill({
-  icon,
-  tone,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  tone: "ready" | "warn" | "blocked" | "info";
-  label: string;
-  value: string;
-}) {
-  return (
-    <article className={`readinessPill tone-${tone}`}>
-      <span>{icon}</span>
-      <div>
-        <small>{label}</small>
-        <strong title={value}>{value}</strong>
-      </div>
-    </article>
   );
 }
 
