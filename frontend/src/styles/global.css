@@ -9220,6 +9220,107 @@ button.controlSignal:focus-visible {
   font-size: 12px;
 }
 
+.agentPackExplainer {
+  min-height: 82px;
+  margin-top: 18px;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 82%, var(--accent-soft)), var(--surface));
+}
+
+.agentPackExplainer strong,
+.agentPackExplainer p {
+  min-width: 0;
+}
+
+.agentPackExplainer strong {
+  display: block;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.agentPackExplainer p {
+  max-width: 610px;
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.agentPackExplainer > span {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--surface-raised);
+  font-size: 11px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.agentPackPurposeGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agentPackPurpose {
+  min-width: 0;
+  min-height: 70px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.agentPackPurpose > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.agentPackPurpose div,
+.agentPackPurpose strong,
+.agentPackPurpose small {
+  min-width: 0;
+  display: block;
+}
+
+.agentPackPurpose strong,
+.agentPackPurpose small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agentPackPurpose strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.agentPackPurpose small {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .agentPackDrift {
   margin-top: 12px;
   padding: 13px;
@@ -9676,6 +9777,15 @@ button.controlSignal:focus-visible {
 }
 
 @media (max-width: 620px) {
+  .agentPackExplainer,
+  .agentPackPurposeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .agentPackExplainer > span {
+    justify-self: start;
+  }
+
   .taskModelNotice {
     grid-template-columns: 24px minmax(0, 1fr);
   }

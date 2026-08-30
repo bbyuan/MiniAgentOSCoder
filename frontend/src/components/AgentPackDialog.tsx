@@ -64,6 +64,13 @@ export function AgentPackDialog({
       + manifest.extensions.hooks.valid
     : 0;
   const driftState = drift ? getDriftState(drift) : undefined;
+  const baselineState = driftState
+    ? driftState === "changed"
+      ? "agentPack.explain.changed"
+      : driftState === "empty"
+        ? "agentPack.explain.empty"
+        : "agentPack.explain.stable"
+    : "agentPack.explain.loading";
 
   return (
     <div className="agentPackBackdrop" role="presentation" onMouseDown={(event) => {
@@ -88,6 +95,20 @@ export function AgentPackDialog({
           <div className="agentPackLoading"><LoaderCircle className="spin" size={18} />{t("agentPack.loading")}</div>
         ) : manifest ? (
           <>
+            <section className="agentPackExplainer" aria-label={t("agentPack.explainTitle")}>
+              <div>
+                <strong>{t("agentPack.explainTitle")}</strong>
+                <p>{t("agentPack.explainBody")}</p>
+              </div>
+              <span>{t(baselineState as TranslationKey)}</span>
+            </section>
+
+            <div className="agentPackPurposeGrid">
+              <Purpose icon={<ShieldCheck size={15} />} title={t("agentPack.purpose.control")} detail={t("agentPack.purpose.controlHint")} />
+              <Purpose icon={<GitBranch size={15} />} title={t("agentPack.purpose.compare")} detail={t("agentPack.purpose.compareHint")} />
+              <Purpose icon={<FileCode2 size={15} />} title={t("agentPack.purpose.share")} detail={t("agentPack.purpose.shareHint")} />
+            </div>
+
             <div className="agentPackHero">
               <div>
                 <strong>{manifest.agent.name}</strong>
@@ -200,6 +221,18 @@ export function AgentPackDialog({
         </footer>
       </section>
     </div>
+  );
+}
+
+function Purpose({ icon, title, detail }: { icon: ReactNode; title: string; detail: string }) {
+  return (
+    <article className="agentPackPurpose">
+      <span>{icon}</span>
+      <div>
+        <strong>{title}</strong>
+        <small>{detail}</small>
+      </div>
+    </article>
   );
 }
 
