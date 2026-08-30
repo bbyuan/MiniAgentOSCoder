@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, Bot, CheckCircle2, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, CheckCircle2, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -1083,54 +1083,31 @@ export function Workbench() {
               </>
             ) : (
               <>
-          <header className="runHeader sessionRunHeader">
-            <div className="runHeading">
-              <span className="eyebrow">{t("session.currentTask")}</span>
-              <h1>{t("session.title")}</h1>
-              <p>
-                {basename(project.path)} · {translateMode(locale, mode)} · {t("conversation.turn", { count: currentTurnIndex + 1 })}
-              </p>
+          <header className="runSessionHero">
+            <div>
+              <span className="eyebrow">{basename(project.path)} · {translateMode(locale, mode)} · {t("conversation.turn", { count: currentTurnIndex + 1 })}</span>
+              <h1>{t(copy.title)}</h1>
+              <p>{task}</p>
             </div>
-            <div className="runHeaderControls">
-              <button
-                type="button"
-                className="runDetailsAction"
-                onClick={() => {
-                  if (!runtimeDetailsOpen) setRuntimePanelTarget("overview");
-                  setRuntimeDetailsOpen((current) => !current);
-                }}
-              >
-                {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-                {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="runDetailsAction"
+              onClick={() => {
+                if (!runtimeDetailsOpen) setRuntimePanelTarget("overview");
+                setRuntimeDetailsOpen((current) => !current);
+              }}
+            >
+              {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
+            </button>
           </header>
 
           <ConversationHistory conversation={conversation} currentRunId={runId} />
 
-          <section className="conversationTurn userTurn">
-            <div className="turnAvatar"><UserRound size={16} /></div>
-            <div className="turnBody">
-              <span>{t("session.you")}</span>
-              <p>{task}</p>
-            </div>
-          </section>
-
-          <section className="conversationTurn agentTurn">
-            <div className="turnAvatar"><Bot size={16} /></div>
-            <div className="turnBody">
-              <span>MiniAgentOS</span>
-              <strong>{t(copy.title)}</strong>
-              {!terminal ? <p>{t(copy.description)}</p> : null}
-            </div>
-          </section>
-
           <RunStatusDeck
             status={runStatus}
-            phase={artifacts?.diff_summary.status === "Applied" ? "applying_patch" : runStatus}
             plan={displayPlan}
             trace={traceEvents}
-            context={contextPack}
             onOpenControlPlane={() => {
               setRuntimePanelTarget("overview");
               setRuntimeDetailsOpen(true);

@@ -4,17 +4,15 @@ import {
   LoaderCircle,
   ShieldCheck,
 } from "lucide-react";
-import type { ContextPack, PlanStep, TraceEvent } from "../api/client";
+import type { PlanStep, TraceEvent } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface RunStatusDeckProps {
   status: string;
-  phase: string;
   plan: PlanStep[];
   trace: TraceEvent[];
-  context?: ContextPack;
   onOpenControlPlane: () => void;
 }
 

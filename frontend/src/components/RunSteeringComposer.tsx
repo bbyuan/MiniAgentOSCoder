@@ -1,6 +1,5 @@
-import { ArrowUp, ChevronDown, GitBranch, MessageSquarePlus, Route, SearchCode, ShieldCheck, Square, TestTube2 } from "lucide-react";
+import { ArrowUp, ShieldCheck, Square } from "lucide-react";
 import { useState } from "react";
-import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface RunSteeringComposerProps {
@@ -13,15 +12,6 @@ interface RunSteeringComposerProps {
   onStop: () => void;
 }
 
-type SteeringIntent = "append" | "redirect" | "inspect" | "verify";
-
-const intentOptions: Array<{ intent: SteeringIntent; icon: typeof MessageSquarePlus }> = [
-  { intent: "append", icon: MessageSquarePlus },
-  { intent: "redirect", icon: Route },
-  { intent: "inspect", icon: SearchCode },
-  { intent: "verify", icon: TestTube2 },
-];
-
 export function RunSteeringComposer({
   status,
   busy,
@@ -33,12 +23,6 @@ export function RunSteeringComposer({
 }: RunSteeringComposerProps) {
   const { t } = usePreferences();
   const [message, setMessage] = useState("");
-  const [intent, setIntent] = useState<SteeringIntent>("append");
-  const suggestions: Array<{ key: TranslationKey; icon: typeof GitBranch; intent: SteeringIntent }> = [
-    { key: "steering.suggestion.inspect", icon: SearchCode, intent: "inspect" },
-    { key: "steering.suggestion.test", icon: TestTube2, intent: "verify" },
-    { key: "steering.suggestion.plan", icon: GitBranch, intent: "redirect" },
-  ] as const;
   const statusCopy = stopping
     ? t("steering.stopping")
     : t(status === "waiting_approval" ? "steering.replacesApproval" : "steering.safeBoundary");
@@ -78,7 +62,7 @@ export function RunSteeringComposer({
           rows={2}
           value={message}
           disabled={stopping}
-          placeholder={t(`steering.placeholder.${intent}`)}
+          placeholder={t("steering.placeholder")}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -105,45 +89,6 @@ export function RunSteeringComposer({
         </div>
       </div>
 
-      <details className="steeringQuickStrip">
-        <summary>
-          <span>{t("steering.quickActions")}</span>
-          <ChevronDown size={14} />
-        </summary>
-        <div className="steeringIntentGroup" aria-label={t("steering.intentLabel")}>
-          {intentOptions.map(({ intent: option, icon: Icon }) => (
-            <button
-              type="button"
-              className={intent === option ? "selected" : ""}
-              aria-pressed={intent === option}
-              disabled={busy || stopping}
-              onClick={() => setIntent(option)}
-              title={t(`steering.intentHelp.${option}`)}
-              key={option}
-            >
-              <Icon size={14} />
-              <span>{t(`steering.intent.${option}`)}</span>
-            </button>
-          ))}
-        </div>
-        <div className="steeringSuggestionGroup">
-          {suggestions.map(({ key, icon: Icon, intent: suggestionIntent }) => (
-            <button
-              type="button"
-              className="steeringSuggestion"
-              disabled={busy || stopping}
-              onClick={() => {
-                setIntent(suggestionIntent);
-                setMessage((current) => current ? `${current}\n${t(key)}` : t(key));
-              }}
-              key={key}
-            >
-              <Icon size={14} />
-              {t(key)}
-            </button>
-          ))}
-        </div>
-      </details>
       {queuedCount || appliedCount ? (
         <small className="steeringQueueState" aria-label={t("steering.queueStatus")}>
           {t("steering.queuedCount", { count: queuedCount })} · {t("steering.appliedCount", { count: appliedCount })}
