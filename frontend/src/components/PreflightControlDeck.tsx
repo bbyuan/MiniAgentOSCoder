@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Boxes,
   BrainCircuit,
   CheckCircle2,
   CircleDollarSign,
@@ -13,6 +14,7 @@ import {
 import type { ReactNode } from "react";
 import type {
   AgentContract,
+  AgentPackDrift,
   ContextPack,
   ExtensionResponse,
   GovernanceResponse,
@@ -35,7 +37,9 @@ interface PreflightControlDeckProps {
   context?: ContextPack;
   governance?: GovernanceResponse;
   extensions?: ExtensionResponse;
+  agentPackDrift?: AgentPackDrift;
   onConfigureModel: () => void;
+  onOpenAgentPack: () => void;
 }
 
 const routePhases = ["inspect", "work", "verify", "repair"] as const;
@@ -50,7 +54,9 @@ export function PreflightControlDeck({
   context,
   governance,
   extensions,
+  agentPackDrift,
   onConfigureModel,
+  onOpenAgentPack,
 }: PreflightControlDeckProps) {
   const { locale, t } = usePreferences();
   const modelReady = model?.configured === true;
@@ -71,6 +77,11 @@ export function PreflightControlDeck({
     : modelReady
       ? admissionReady ? "preflightDeck.decision.ready" : "preflightDeck.decision.review"
       : "preflightDeck.decision.model";
+  const packState = agentPackDrift
+    ? agentPackDrift.has_versions
+      ? agentPackDrift.drift ? "changed" : "stable"
+      : "empty"
+    : "loading";
 
   return (
     <section className={`preflightControlDeck tone-${admissionBlocked ? "blocked" : modelReady ? "ready" : "setup"}`} aria-labelledby="preflight-deck-title">
@@ -151,6 +162,15 @@ export function PreflightControlDeck({
           tone={admission?.cost.configured ? "normal" : "muted"}
         />
       </div>
+
+      <button type="button" className={`preflightAgentPackStrip state-${packState}`} onClick={onOpenAgentPack}>
+        <span>{packState === "changed" ? <GitBranch size={16} /> : <Boxes size={16} />}</span>
+        <div>
+          <strong>{t("preflightDeck.agentPack")}</strong>
+          <small>{agentPackDrift ? t(`preflightDeck.agentPack.${packState}` as TranslationKey) : t("preflightDeck.agentPack.loading")}</small>
+        </div>
+        <em>{agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("preflightDeck.openAgentPack")}</em>
+      </button>
 
       <div className="preflightRouteDeck">
         <div className="preflightRouteHeader">

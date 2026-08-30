@@ -145,13 +145,92 @@ def list_agent_pack_versions(workspace: str | Path) -> list[dict[str, Any]]:
     return sorted(versions, key=lambda item: str(item.get("generated_at", "")), reverse=True)
 
 
+def compare_agent_pack_drift(current_manifest: dict[str, Any], workspace: str | Path) -> dict[str, Any]:
+    root = Path(workspace).resolve()
+    versions = _read_agent_pack_versions(root)
+    latest = versions[0] if versions else None
+    latest_summary = _version_summary(latest, latest["_path"], root) if latest is not None else None
+    sections = [
+        _section_drift(section_id, current_manifest, latest)
+        for section_id in ["agent", "contract", "governance", "models", "extensions", "workspace"]
+    ]
+    changed_sections = [section["id"] for section in sections if section["changed"]]
+    has_versions = latest is not None
+    recommendation = (
+        "create_first_version"
+        if not has_versions
+        else "save_version"
+        if changed_sections
+        else "up_to_date"
+    )
+    return {
+        "project_id": str(current_manifest.get("project_id", "")),
+        "current_digest": str(current_manifest.get("digest", "")),
+        "latest_version": latest_summary,
+        "has_versions": has_versions,
+        "drift": bool(changed_sections),
+        "sections": sections,
+        "changed_sections": changed_sections,
+        "recommendation": recommendation,
+    }
+
+
 def _stable_payload(payload: dict[str, Any]) -> dict[str, Any]:
     stable = dict(payload)
     stable.pop("digest", None)
+    stable.pop("version_id", None)
     provenance = dict(stable.get("provenance", {}))
     provenance.pop("generated_at", None)
     stable["provenance"] = provenance
     return stable
+
+
+def _section_drift(section_id: str, current: dict[str, Any], latest: dict[str, Any] | None) -> dict[str, Any]:
+    current_value = _stable_section(section_id, current)
+    latest_value = _stable_section(section_id, latest) if latest is not None else None
+    current_digest = _digest_value(current_value)
+    latest_digest = _digest_value(latest_value) if latest is not None else None
+    return {
+        "id": section_id,
+        "changed": latest is not None and current_digest != latest_digest,
+        "current_digest": current_digest,
+        "latest_digest": latest_digest,
+    }
+
+
+def _stable_section(section_id: str, payload: dict[str, Any] | None) -> Any:
+    if payload is None:
+        return None
+    if section_id == "workspace":
+        workspace = payload.get("workspace", {})
+        if not isinstance(workspace, dict):
+            return {}
+        return {
+            "name": workspace.get("name"),
+            "profile": workspace.get("profile", {}),
+        }
+    return payload.get(section_id, {})
+
+
+def _read_agent_pack_versions(root: Path) -> list[dict[str, Any]]:
+    versions_dir = root / ".agent" / "agentpacks" / "versions"
+    if not versions_dir.is_dir():
+        return []
+    versions: list[dict[str, Any]] = []
+    for path in sorted(versions_dir.glob("*.json"), reverse=True):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            payload = dict(payload)
+            payload["_path"] = path
+            versions.append(payload)
+    return sorted(
+        versions,
+        key=lambda item: str(item.get("provenance", {}).get("generated_at", "")) if isinstance(item.get("provenance"), dict) else "",
+        reverse=True,
+    )
 
 
 def _version_summary(payload: dict[str, Any], path: Path, root: Path) -> dict[str, Any]:

@@ -564,6 +564,24 @@ export interface AgentPackVersion {
   path: string;
 }
 
+export interface AgentPackDriftSection {
+  id: "agent" | "contract" | "governance" | "models" | "extensions" | "workspace" | string;
+  changed: boolean;
+  current_digest: string;
+  latest_digest?: string | null;
+}
+
+export interface AgentPackDrift {
+  project_id: string;
+  current_digest: string;
+  latest_version?: AgentPackVersion | null;
+  has_versions: boolean;
+  drift: boolean;
+  sections: AgentPackDriftSection[];
+  changed_sections: string[];
+  recommendation: "create_first_version" | "up_to_date" | "save_version" | string;
+}
+
 export interface StartRunResponse {
   run_id: string;
   status: string;
@@ -807,6 +825,8 @@ export const daemonApi = {
     request<AgentPackManifest>(`/projects/${projectId}/agent-pack${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
   getAgentPackVersions: (projectId: string) =>
     request<{ project_id: string; versions: AgentPackVersion[] }>(`/projects/${projectId}/agent-pack/versions`),
+  getAgentPackDrift: (projectId: string, mode?: RunMode) =>
+    request<AgentPackDrift>(`/projects/${projectId}/agent-pack/drift${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
   saveAgentPackVersion: (projectId: string, mode?: RunMode) =>
     request<{ project_id: string; version: AgentPackVersion }>(
       `/projects/${projectId}/agent-pack/versions${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`,

@@ -3,6 +3,7 @@ import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, UserRound }
 import {
   daemonApi,
   type AgentContract,
+  type AgentPackDrift,
   type AgentPackManifest,
   type AgentPackVersion,
   type ApprovalRequest,
@@ -120,6 +121,7 @@ export function Workbench() {
   const [agentPackError, setAgentPackError] = useState<string>();
   const [agentPack, setAgentPack] = useState<AgentPackManifest>();
   const [agentPackVersions, setAgentPackVersions] = useState<AgentPackVersion[]>([]);
+  const [agentPackDrift, setAgentPackDrift] = useState<AgentPackDrift>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const streamCleanup = useRef<(() => void) | null>(null);
@@ -135,6 +137,22 @@ export function Workbench() {
       .catch(() => setConnection("offline"));
     return () => streamCleanup.current?.();
   }, []);
+
+  useEffect(() => {
+    if (!project) return;
+    let cancelled = false;
+    daemonApi
+      .getAgentPackDrift(project.project_id, mode)
+      .then((drift) => {
+        if (!cancelled) setAgentPackDrift(drift);
+      })
+      .catch(() => {
+        if (!cancelled) setAgentPackDrift(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.project_id, mode]);
 
   const displayContract = useMemo(() => {
     if (!contract) return { effects: [], policies: [], budget: undefined };
@@ -193,6 +211,7 @@ export function Workbench() {
       setModelConfig(configurationSnapshot);
       setAgentPack(undefined);
       setAgentPackVersions([]);
+      setAgentPackDrift(undefined);
       setAgentPackError(undefined);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
@@ -647,6 +666,7 @@ export function Workbench() {
     setModelConfig(undefined);
     setAgentPack(undefined);
     setAgentPackVersions([]);
+    setAgentPackDrift(undefined);
     setAgentPackError(undefined);
     setAgentPackOpen(false);
     setRecentRuns([]);
@@ -852,12 +872,14 @@ export function Workbench() {
     setAgentPackBusy(true);
     setAgentPackError(undefined);
     try {
-      const [manifest, versionResponse] = await Promise.all([
+      const [manifest, versionResponse, drift] = await Promise.all([
         daemonApi.getAgentPack(project.project_id, mode),
         daemonApi.getAgentPackVersions(project.project_id),
+        daemonApi.getAgentPackDrift(project.project_id, mode),
       ]);
       setAgentPack(manifest);
       setAgentPackVersions(versionResponse.versions);
+      setAgentPackDrift(drift);
     } catch (caught) {
       setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.loadError"));
     } finally {
@@ -871,12 +893,14 @@ export function Workbench() {
     setAgentPackError(undefined);
     try {
       await daemonApi.saveAgentPackVersion(project.project_id, mode);
-      const [manifest, versionResponse] = await Promise.all([
+      const [manifest, versionResponse, drift] = await Promise.all([
         daemonApi.getAgentPack(project.project_id, mode),
         daemonApi.getAgentPackVersions(project.project_id),
+        daemonApi.getAgentPackDrift(project.project_id, mode),
       ]);
       setAgentPack(manifest);
       setAgentPackVersions(versionResponse.versions);
+      setAgentPackDrift(drift);
     } catch (caught) {
       setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.saveError"));
     } finally {
@@ -970,7 +994,9 @@ export function Workbench() {
                     context={contextPack}
                     governance={governance}
                     extensions={extensions}
+                    agentPackDrift={agentPackDrift}
                     onConfigureModel={() => setModelSetupOpen(true)}
+                    onOpenAgentPack={() => void openAgentPack()}
                   />
                   <AdmissionSummary admission={admission} />
                   <ModelRouteSummary plan={modelRoute} />
@@ -1189,6 +1215,7 @@ export function Workbench() {
         error={agentPackError}
         manifest={agentPack}
         versions={agentPackVersions}
+        drift={agentPackDrift}
         onClose={() => setAgentPackOpen(false)}
         onRefresh={() => void openAgentPack()}
         onSaveVersion={() => void saveAgentPackVersion()}

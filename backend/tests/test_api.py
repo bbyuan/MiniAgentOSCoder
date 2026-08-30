@@ -326,6 +326,60 @@ models:
     assert "version-secret" not in json.dumps(versions)
 
 
+def test_project_agent_pack_drift_compares_against_latest_version(tmp_path: Path, monkeypatch) -> None:
+    agent_dir = tmp_path / ".agent"
+    agent_dir.mkdir()
+    config_path = agent_dir / "config.yaml"
+    config_path.write_text(
+        """agent:
+  id: drift-agent
+runtime:
+  max_steps: 6
+models:
+  default_model: drift-model
+  api_key_env: DRIFT_MODEL_KEY
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("DRIFT_MODEL_KEY", "drift-secret")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    first_drift_response = client.get(f"/projects/{project['project_id']}/agent-pack/drift?mode=Spec")
+    assert first_drift_response.status_code == 200
+    first_drift = first_drift_response.json()
+    assert first_drift["has_versions"] is False
+    assert first_drift["drift"] is False
+    assert first_drift["recommendation"] == "create_first_version"
+
+    client.post(f"/projects/{project['project_id']}/agent-pack/versions?mode=Spec")
+    stable_drift = client.get(f"/projects/{project['project_id']}/agent-pack/drift?mode=Spec").json()
+    assert stable_drift["has_versions"] is True
+    assert stable_drift["drift"] is False
+    assert stable_drift["recommendation"] == "up_to_date"
+    assert stable_drift["latest_version"]["version_id"]
+
+    config_path.write_text(
+        """agent:
+  id: drift-agent
+runtime:
+  max_steps: 12
+models:
+  default_model: drift-model-v2
+  api_key_env: DRIFT_MODEL_KEY
+""",
+        encoding="utf-8",
+    )
+    changed_drift_response = client.get(f"/projects/{project['project_id']}/agent-pack/drift?mode=Spec")
+    changed_drift = changed_drift_response.json()
+
+    assert changed_drift_response.status_code == 200
+    assert changed_drift["drift"] is True
+    assert changed_drift["recommendation"] == "save_version"
+    assert {"contract", "models"}.issubset(set(changed_drift["changed_sections"]))
+    assert "drift-secret" not in json.dumps(changed_drift)
+
+
 def test_model_route_blocks_launch_when_context_fits_no_profile(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()

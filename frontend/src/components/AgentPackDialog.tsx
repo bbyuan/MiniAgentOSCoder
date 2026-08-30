@@ -10,8 +10,24 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { AgentPackManifest, AgentPackVersion } from "../api/client";
+import type { AgentPackDrift, AgentPackManifest, AgentPackVersion } from "../api/client";
+import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+
+const sectionLabels: Record<string, TranslationKey> = {
+  agent: "agentPack.section.agent",
+  contract: "agentPack.section.contract",
+  governance: "agentPack.section.governance",
+  models: "agentPack.section.models",
+  extensions: "agentPack.section.extensions",
+  workspace: "agentPack.section.workspace",
+};
+
+const recommendationLabels: Record<string, TranslationKey> = {
+  create_first_version: "agentPack.drift.create_first_version",
+  up_to_date: "agentPack.drift.up_to_date",
+  save_version: "agentPack.drift.save_version",
+};
 
 interface AgentPackDialogProps {
   open: boolean;
@@ -20,6 +36,7 @@ interface AgentPackDialogProps {
   error?: string;
   manifest?: AgentPackManifest;
   versions: AgentPackVersion[];
+  drift?: AgentPackDrift;
   onClose: () => void;
   onRefresh: () => void;
   onSaveVersion: () => void;
@@ -32,6 +49,7 @@ export function AgentPackDialog({
   error,
   manifest,
   versions,
+  drift,
   onClose,
   onRefresh,
   onSaveVersion,
@@ -45,6 +63,7 @@ export function AgentPackDialog({
       + manifest.extensions.mcp_servers.valid
       + manifest.extensions.hooks.valid
     : 0;
+  const driftState = drift ? getDriftState(drift) : undefined;
 
   return (
     <div className="agentPackBackdrop" role="presentation" onMouseDown={(event) => {
@@ -82,6 +101,31 @@ export function AgentPackDialog({
                 </button>
               </div>
             </div>
+
+            {drift && driftState ? (
+              <section className={`agentPackDrift ${driftState}`} aria-label={t("agentPack.driftTitle")}>
+                <header>
+                  <span>{driftState === "changed" ? <GitBranch size={16} /> : <CheckCircle2 size={16} />}</span>
+                  <div>
+                    <h3>{t("agentPack.driftTitle")}</h3>
+                    <p>{t(recommendationLabels[drift.recommendation] ?? "agentPack.drift.unknown")}</p>
+                  </div>
+                  <strong>{driftState === "changed" ? t("agentPack.driftChanged") : driftState === "empty" ? t("agentPack.driftNoBaseline") : t("agentPack.driftStable")}</strong>
+                </header>
+                <div className="agentPackDriftSections">
+                  {drift.sections.map((section) => (
+                    <span className={section.changed ? "changed" : "stable"} key={section.id}>
+                      {section.changed ? <GitBranch size={12} /> : <CheckCircle2 size={12} />}
+                      {t(sectionLabels[section.id] ?? "agentPack.section.unknown")}
+                    </span>
+                  ))}
+                </div>
+                <div className="agentPackDigestGrid">
+                  <Digest label={t("agentPack.currentDigest")} value={drift.current_digest} />
+                  <Digest label={t("agentPack.latestDigest")} value={drift.latest_version?.digest || ""} empty={t("agentPack.noBaseline")} />
+                </div>
+              </section>
+            ) : null}
 
             <div className="agentPackMetrics">
               <Metric icon={<ShieldCheck size={17} />} label={t("agentPack.contract")} value={t("agentPack.effects", { count: manifest.contract.effects.allow.length })} detail={t("agentPack.budget", { steps: manifest.contract.cost_envelope.max_steps })} />
@@ -157,6 +201,20 @@ export function AgentPackDialog({
       </section>
     </div>
   );
+}
+
+function Digest({ label, value, empty }: { label: string; value: string; empty?: string }) {
+  return (
+    <div className="agentPackDigest">
+      <small>{label}</small>
+      {value ? <code title={value}>{value.slice(0, 14)}</code> : <em>{empty}</em>}
+    </div>
+  );
+}
+
+function getDriftState(drift: AgentPackDrift): "stable" | "changed" | "empty" {
+  if (!drift.has_versions) return "empty";
+  return drift.drift ? "changed" : "stable";
 }
 
 function Metric({

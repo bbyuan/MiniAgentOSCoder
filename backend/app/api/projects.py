@@ -6,7 +6,12 @@ from pydantic import BaseModel
 
 from app.api.store import ProjectRecord, store
 from app.context import build_workspace_index, scan_workspace, write_project_profile
-from app.runtime.agent_pack import build_agent_pack_manifest, list_agent_pack_versions, save_agent_pack_version
+from app.runtime.agent_pack import (
+    build_agent_pack_manifest,
+    compare_agent_pack_drift,
+    list_agent_pack_versions,
+    save_agent_pack_version,
+)
 from app.runtime.model_provider import ModelConfigurationError
 from app.runtime.model_routing import ModelRoutingError
 from app.runtime.native_dialog import NativeDialogUnavailable, choose_local_directory
@@ -98,6 +103,28 @@ def get_agent_pack_versions(project_id: str) -> dict[str, object]:
         "project_id": project.project_id,
         "versions": list_agent_pack_versions(project.path),
     }
+
+
+@router.get("/{project_id}/agent-pack/drift")
+def get_agent_pack_drift(project_id: str, mode: str = "Feature") -> dict[str, object]:
+    project = store.projects.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    config_path = project.path / ".agent" / "config.yaml"
+    if not config_path.exists():
+        config_path = default_agent_dir() / "config.yaml"
+    try:
+        manifest = build_agent_pack_manifest(
+            project_id=project.project_id,
+            workspace=project.path,
+            project_profile=project.profile,
+            config_path=config_path,
+            mode=mode,
+        )
+        return compare_agent_pack_drift(manifest, project.path)
+    except (ModelConfigurationError, ModelRoutingError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/{project_id}/agent-pack/versions", status_code=201)

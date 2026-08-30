@@ -7848,6 +7848,171 @@ button.controlSignal:focus-visible {
   font-size: 12px;
 }
 
+.agentPackDrift {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.agentPackDrift.stable {
+  border-color: color-mix(in srgb, var(--success) 34%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 58%, var(--surface)), var(--surface));
+}
+
+.agentPackDrift.changed {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning-soft) 62%, var(--surface)), var(--surface));
+}
+
+.agentPackDrift.empty {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 52%, var(--surface)), var(--surface));
+}
+
+.agentPackDrift > header {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.agentPackDrift > header > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.agentPackDrift.stable > header > span {
+  color: var(--success);
+}
+
+.agentPackDrift.changed > header > span {
+  color: var(--warning);
+}
+
+.agentPackDrift h3,
+.agentPackDrift p {
+  min-width: 0;
+}
+
+.agentPackDrift h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.agentPackDrift p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.agentPackDrift > header > strong {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.agentPackDrift.stable > header > strong {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.agentPackDrift.changed > header > strong {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.agentPackDriftSections {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agentPackDriftSections span {
+  min-height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: var(--surface-subtle);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.agentPackDriftSections span.stable {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+}
+
+.agentPackDriftSections span.changed {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+  background: var(--warning-soft);
+}
+
+.agentPackDigestGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agentPackDigest {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-subtle));
+}
+
+.agentPackDigest small,
+.agentPackDigest code,
+.agentPackDigest em {
+  min-width: 0;
+  display: block;
+}
+
+.agentPackDigest small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.agentPackDigest code,
+.agentPackDigest em {
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.agentPackDigest code {
+  color: var(--accent);
+}
+
+.agentPackDigest em {
+  color: var(--text-tertiary);
+  font-style: normal;
+}
+
 .agentPackMetrics {
   margin-top: 12px;
   display: grid;
@@ -8168,15 +8333,25 @@ button.controlSignal:focus-visible {
   }
 
   .agentPackMetrics,
+  .agentPackDigestGrid,
   .agentPackSections {
     grid-template-columns: 1fr;
   }
 
   .agentPackHero,
   .agentPackHeroActions,
+  .agentPackDrift > header,
   .agentPackDialog > footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .agentPackDrift > header {
+    display: flex;
+  }
+
+  .agentPackDrift > header > strong {
+    align-self: flex-start;
   }
 
   .agentPackHeroActions .textPrimaryAction,
@@ -8793,6 +8968,88 @@ button.controlSignal:focus-visible {
 
 .preflightDecisionTile.tone-danger > i > b {
   background: var(--danger);
+}
+
+.preflightAgentPackStrip {
+  width: calc(100% - 48px);
+  min-height: 66px;
+  margin: 0 24px 22px;
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+
+.preflightAgentPackStrip:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--surface) 82%, var(--accent-soft));
+}
+
+.preflightAgentPackStrip > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.preflightAgentPackStrip.state-stable > span {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.preflightAgentPackStrip.state-changed > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.preflightAgentPackStrip div,
+.preflightAgentPackStrip strong,
+.preflightAgentPackStrip small {
+  min-width: 0;
+  display: block;
+}
+
+.preflightAgentPackStrip strong {
+  font-size: 13px;
+}
+
+.preflightAgentPackStrip small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preflightAgentPackStrip em {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.preflightAgentPackStrip.state-changed em {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--border));
 }
 
 .preflightRouteDeck {
@@ -9435,6 +9692,17 @@ button.controlSignal:focus-visible {
   .preflightDecisionGrid {
     padding-inline: 18px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .preflightAgentPackStrip {
+    width: calc(100% - 36px);
+    margin-inline: 18px;
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .preflightAgentPackStrip em {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .preflightRouteHeader,
