@@ -13376,3 +13376,205 @@ button.controlSignal.active {
     justify-content: center;
   }
 }
+
+.taskStartBrief {
+  width: min(100%, 900px);
+  margin: 0 auto 16px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.taskStartBrief.state-ready {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+}
+
+.taskStartBrief.state-blocked {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+  background: color-mix(in srgb, var(--warning-soft) 48%, var(--surface));
+}
+
+.taskStartBriefLead {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+}
+
+.taskStartBriefLead > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.taskStartBrief.state-blocked .taskStartBriefLead > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.taskStartBrief.state-checking .taskStartBriefLead > span {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.taskStartBriefLead strong,
+.taskStartBriefLead p {
+  display: block;
+  min-width: 0;
+}
+
+.taskStartBriefLead strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.taskStartBriefLead p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.taskStartBriefChecks {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.taskStartBriefChecks span {
+  min-height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  font-size: 11px;
+  font-weight: 680;
+  white-space: nowrap;
+}
+
+.taskStartBriefChecks .state-ready {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 52%, var(--surface));
+}
+
+.taskStartBriefChecks .state-blocked {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--border));
+  background: color-mix(in srgb, var(--warning-soft) 56%, var(--surface));
+}
+
+.taskStartBriefChecks .state-checking {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 56%, var(--surface));
+}
+
+.taskStartBriefChecks .state-optional {
+  color: var(--text-tertiary);
+}
+
+.taskStartBrief > button {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--warning) 36%, var(--border));
+  border-radius: 8px;
+  color: var(--warning);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.taskModelNotice {
+  width: min(100%, 900px);
+  min-height: 46px;
+  margin-inline: auto;
+  padding: 11px 13px;
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  box-shadow: none;
+}
+
+.taskModelNotice button {
+  display: none;
+}
+
+.followUpComposer {
+  padding: 14px;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 54px rgba(15, 23, 42, 0.08);
+}
+
+.followUpComposer > label {
+  padding: 0 4px 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.followUpComposer > div:first-of-type {
+  min-height: 68px;
+  padding: 8px 8px 8px 14px;
+  align-items: end;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.followUpComposer textarea {
+  min-height: 50px;
+  padding: 6px 0;
+}
+
+.followUpComposer > div:first-of-type:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border-strong));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-soft) 70%, transparent);
+}
+
+.followUpTemplates {
+  margin-top: 11px;
+}
+
+.followUpComposer > span {
+  padding-top: 9px;
+}
+
+@media (max-width: 980px) {
+  .taskStartBrief {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .taskStartBriefChecks {
+    justify-content: flex-start;
+  }
+
+  .taskStartBrief > button {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1186,10 +1186,6 @@ export function Workbench() {
             />
           ) : null}
 
-          <ActivityFeed events={traceEvents} status={runStatus} />
-
-          {error ? <ErrorBanner message={error} /> : null}
-
           {terminal ? (
             <section className="followUpComposer">
               <label htmlFor="follow-up-task">{t("session.followUp")}</label>
@@ -1227,6 +1223,10 @@ export function Workbench() {
               <span>{t("session.followUpHint")}</span>
             </section>
           ) : null}
+
+          <ActivityFeed events={traceEvents} status={runStatus} />
+
+          {error ? <ErrorBanner message={error} /> : null}
               </>
             )}
         </section>
