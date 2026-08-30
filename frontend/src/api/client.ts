@@ -412,6 +412,21 @@ export interface ExtensionResponse {
     diagnostics: string[];
   };
   settings: ExtensionSettings;
+  summary: {
+    enabled_total: number;
+    available_total: number;
+    diagnostic_count: number;
+    skills_active: number;
+    skills_available: number;
+    mcp_enabled: number;
+    mcp_available: number;
+    mcp_tools_discovered: number;
+    hooks_enabled: number;
+    hooks_available: number;
+    runtime_events: number;
+    runtime_failures: number;
+    has_runtime_activation: boolean;
+  };
   discovered_tools: Array<{
     server_id: string;
     tools: string[];

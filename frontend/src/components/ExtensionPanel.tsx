@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
+  Activity,
   AlertTriangle,
   Braces,
   CheckCircle2,
+  CircleDashed,
   PlugZap,
   Save,
   Server,
+  ShieldCheck,
   Sparkles,
   Workflow,
 } from "lucide-react";
@@ -41,6 +44,15 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
     ),
     [extensions],
   );
+  const evidenceByTarget = useMemo(() => {
+    const lookup = new Map<string, TraceEvent>();
+    [...(extensions?.evidence ?? [])].reverse().forEach((event) => {
+      const id = eventIdentity(event);
+      if (id && !lookup.has(id)) lookup.set(id, event);
+    });
+    return lookup;
+  }, [extensions]);
+  const extensionSummary = extensions?.summary;
 
   useEffect(() => {
     if (!extensions) return;
@@ -78,6 +90,41 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
         <PlugZap size={15} />
       </div>
 
+      {extensionSummary ? (
+        <div className="extensionSummaryGrid">
+          <SummaryTile
+            icon={<ShieldCheck size={15} />}
+            label={t("extensions.summary.enabled")}
+            value={`${extensionSummary.enabled_total}/${extensionSummary.available_total}`}
+            detail={extensionSummary.diagnostic_count > 0
+              ? t("extensions.summary.diagnostics", { count: extensionSummary.diagnostic_count })
+              : t("extensions.summary.clean")}
+            tone={extensionSummary.diagnostic_count > 0 ? "warning" : "ready"}
+          />
+          <SummaryTile
+            icon={<Server size={15} />}
+            label={t("extensions.summary.mcpTools")}
+            value={String(extensionSummary.mcp_tools_discovered)}
+            detail={t("extensions.summary.mcpEnabled", {
+              enabled: extensionSummary.mcp_enabled,
+              available: extensionSummary.mcp_available,
+            })}
+            tone={extensionSummary.mcp_enabled > 0 && extensionSummary.mcp_tools_discovered === 0 ? "pending" : "ready"}
+          />
+          <SummaryTile
+            icon={<Activity size={15} />}
+            label={t("extensions.summary.runtime")}
+            value={String(extensionSummary.runtime_events)}
+            detail={extensionSummary.runtime_failures > 0
+              ? t("extensions.summary.failures", { count: extensionSummary.runtime_failures })
+              : extensionSummary.has_runtime_activation
+                ? t("extensions.summary.activated")
+                : t("extensions.summary.waiting")}
+            tone={extensionSummary.runtime_failures > 0 ? "failed" : extensionSummary.has_runtime_activation ? "ready" : "pending"}
+          />
+        </div>
+      ) : null}
+
       {(extensions?.catalog.diagnostics.length ?? 0) > 0 ? (
         <div className="extensionDiagnostics">
           <AlertTriangle size={13} />
@@ -92,7 +139,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
         empty={t("extensions.skillsEmpty")}
       >
         {(extensions?.catalog.skills ?? []).map((skill) => (
-          <label className={`extensionRow ${skill.valid ? "" : "invalid"}`} key={skill.id}>
+          <label className={`extensionRow ${skill.valid ? "" : "invalid"} ${settings.active_skill_ids.includes(skill.id) ? "enabled" : ""}`} key={skill.id}>
             <input
               type="checkbox"
               checked={settings.active_skill_ids.includes(skill.id)}
@@ -113,6 +160,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
                   </b>
                 ) : null}
               </span>
+              <RuntimeBadge event={evidenceByTarget.get(skill.id)} fallback={settings.active_skill_ids.includes(skill.id) ? t("extensions.badge.enabled") : t("extensions.badge.off")} />
             </span>
           </label>
         ))}
@@ -126,11 +174,12 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
       >
         {(extensions?.catalog.mcp_servers ?? []).map((server) => {
           const discovery = extensions?.discovered_tools.find((item) => item.server_id === server.id);
+          const enabled = settings.enabled_mcp_server_ids.includes(server.id);
           return (
-            <label className={`extensionRow ${server.valid ? "" : "invalid"}`} key={server.id}>
+            <label className={`extensionRow ${server.valid ? "" : "invalid"} ${enabled ? "enabled" : ""}`} key={server.id}>
               <input
                 type="checkbox"
-                checked={settings.enabled_mcp_server_ids.includes(server.id)}
+                checked={enabled}
                 disabled={!extensions?.editable || busy || !server.valid}
                 onChange={() => toggle("enabled_mcp_server_ids", server.id)}
               />
@@ -143,6 +192,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
                   <em>{translateKnownText(locale, server.risk)}</em>
                   {discovery ? <b>{t("extensions.toolsDiscovered", { count: discovery.tool_count })}</b> : null}
                 </span>
+                <RuntimeBadge event={evidenceByTarget.get(server.id)} fallback={enabled ? t("extensions.badge.enabled") : t("extensions.badge.off")} />
               </span>
             </label>
           );
@@ -156,7 +206,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
         empty={t("extensions.hooksEmpty")}
       >
         {(extensions?.catalog.hooks ?? []).map((hook) => (
-          <label className={`extensionRow ${hook.valid ? "" : "invalid"}`} key={hook.id}>
+          <label className={`extensionRow ${hook.valid ? "" : "invalid"} ${settings.enabled_hook_ids.includes(hook.id) ? "enabled" : ""}`} key={hook.id}>
             <input
               type="checkbox"
               checked={settings.enabled_hook_ids.includes(hook.id)}
@@ -171,6 +221,7 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
                 <code>{hook.id}</code>
                 <em>{translateKnownText(locale, hook.failure_policy)}</em>
               </span>
+              <RuntimeBadge event={evidenceByTarget.get(hook.id)} fallback={settings.enabled_hook_ids.includes(hook.id) ? t("extensions.badge.enabled") : t("extensions.badge.off")} />
             </span>
           </label>
         ))}
@@ -201,6 +252,29 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
   );
 }
 
+function SummaryTile({
+  icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  tone: "ready" | "pending" | "warning" | "failed";
+}) {
+  return (
+    <div className={`extensionSummaryTile tone-${tone}`}>
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
+      <em>{detail}</em>
+    </div>
+  );
+}
+
 function ExtensionGroup({
   icon,
   title,
@@ -228,15 +302,8 @@ function ExtensionGroup({
 
 function EvidenceRow({ event }: { event: TraceEvent }) {
   const { locale } = usePreferences();
+  const identity = eventIdentity(event) ?? "runtime";
   const payload = event.payload;
-  const identity = String(
-    payload.skill_id
-      ?? (Array.isArray(payload.skill_ids) ? payload.skill_ids.join(", ") : undefined)
-      ?? payload.server_id
-      ?? payload.hook_id
-      ?? payload.tool
-      ?? "runtime",
-  );
   const ok = payload.ok;
   return (
     <div>
@@ -247,4 +314,30 @@ function EvidenceRow({ event }: { event: TraceEvent }) {
       </span>
     </div>
   );
+}
+
+function RuntimeBadge({ event, fallback }: { event?: TraceEvent; fallback: string }) {
+  const { locale } = usePreferences();
+  if (!event) {
+    return (
+      <span className="extensionRuntimeBadge muted">
+        <CircleDashed size={11} />
+        {fallback}
+      </span>
+    );
+  }
+  const failed = event.payload.ok === false;
+  return (
+    <span className={`extensionRuntimeBadge ${failed ? "failed" : "ready"}`}>
+      {failed ? <AlertTriangle size={11} /> : <CheckCircle2 size={11} />}
+      {translateKnownText(locale, event.event)}
+    </span>
+  );
+}
+
+function eventIdentity(event: TraceEvent): string | undefined {
+  const payload = event.payload;
+  const skillIds = Array.isArray(payload.skill_ids) ? payload.skill_ids.join(", ") : undefined;
+  const value = payload.skill_id ?? skillIds ?? payload.server_id ?? payload.hook_id ?? payload.tool;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }

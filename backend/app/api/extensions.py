@@ -43,11 +43,41 @@ def get_extensions(run_id: str) -> dict[str, object]:
         for event in evidence
         if event.get("event") == "mcp.tools.discovered" and isinstance(event.get("payload"), dict)
     ]
+    extension_events = [str(event.get("event", "")) for event in evidence]
     return {
         "run_id": run_id,
         "editable": run.status == RunPhase.PLANNING and not store.worker.is_active(run_id),
         "catalog": _public_catalog(catalog),
         "settings": settings.to_dict(),
+        "summary": {
+            "enabled_total": len(settings.active_skill_ids)
+            + len(settings.enabled_mcp_server_ids)
+            + len(settings.enabled_hook_ids),
+            "available_total": len(catalog.skills) + len(catalog.mcp_servers) + len(catalog.hooks),
+            "diagnostic_count": len(catalog.diagnostics),
+            "skills_active": len(settings.active_skill_ids),
+            "skills_available": len(catalog.skills),
+            "mcp_enabled": len(settings.enabled_mcp_server_ids),
+            "mcp_available": len(catalog.mcp_servers),
+            "mcp_tools_discovered": sum(
+                int(item.get("tool_count", 0))
+                for item in discovered_tools
+                if isinstance(item.get("tool_count", 0), int)
+            ),
+            "hooks_enabled": len(settings.enabled_hook_ids),
+            "hooks_available": len(catalog.hooks),
+            "runtime_events": len(evidence),
+            "runtime_failures": sum(
+                1
+                for event in evidence
+                if isinstance(event.get("payload"), dict) and event["payload"].get("ok") is False
+            ),
+            "has_runtime_activation": any(
+                event_name
+                in {"skill.activated", "mcp.tools.discovered", "mcp.tool.called", "hook.finished"}
+                for event_name in extension_events
+            ),
+        },
         "discovered_tools": discovered_tools,
         "evidence": evidence,
     }

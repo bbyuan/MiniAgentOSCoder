@@ -828,6 +828,9 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
     assert initial.status_code == 200
     assert initial.json()["editable"] is True
     assert initial.json()["settings"]["active_skill_ids"] == ["bugfix", "test-repair"]
+    assert initial.json()["summary"]["skills_active"] == 2
+    assert initial.json()["summary"]["available_total"] >= initial.json()["summary"]["enabled_total"]
+    assert initial.json()["summary"]["has_runtime_activation"] is False
     assert all("command" not in server for server in initial.json()["catalog"]["mcp_servers"])
     assert updated.json()["settings"]["active_skill_ids"] == ["bugfix"]
     assert invalid.status_code == 422
@@ -865,6 +868,8 @@ def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: P
 
     assert extensions["editable"] is False
     assert extensions["settings"]["active_skill_ids"] == ["code-review"]
+    assert extensions["summary"]["runtime_events"] >= 1
+    assert extensions["summary"]["has_runtime_activation"] is True
     assert any(event["event"] == "skill.activated" for event in extensions["evidence"])
     assert model_requests[0]["payload"]["request"]["metadata"]["available_skill_ids"] == ["code-review"]
     assert model_requests[0]["payload"]["request"]["metadata"]["active_skill_ids"] == []

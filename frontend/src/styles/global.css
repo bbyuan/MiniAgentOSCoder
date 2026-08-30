@@ -3093,6 +3093,105 @@ button.statusChip:hover {
   line-height: 1.45;
 }
 
+.extensionSummaryGrid {
+  margin: 4px 0 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.extensionSummaryTile {
+  min-width: 0;
+  min-height: 74px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-areas:
+    "icon value"
+    "label label"
+    "detail detail";
+  align-items: center;
+  gap: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--surface), var(--canvas));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.extensionSummaryTile > span {
+  width: 22px;
+  height: 22px;
+  grid-area: icon;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.extensionSummaryTile strong {
+  grid-area: value;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 720;
+}
+
+.extensionSummaryTile small,
+.extensionSummaryTile em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extensionSummaryTile small {
+  grid-area: label;
+  color: var(--text-secondary);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.extensionSummaryTile em {
+  grid-area: detail;
+  color: var(--text-tertiary);
+  font-size: 7px;
+  font-style: normal;
+}
+
+.extensionSummaryTile.tone-ready {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.extensionSummaryTile.tone-ready > span {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+}
+
+.extensionSummaryTile.tone-pending > span {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.extensionSummaryTile.tone-warning {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+}
+
+.extensionSummaryTile.tone-warning > span {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
+
+.extensionSummaryTile.tone-failed {
+  border-color: color-mix(in srgb, var(--danger) 36%, var(--border));
+}
+
+.extensionSummaryTile.tone-failed > span {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 .extensionGroup,
 .extensionEvidence {
   padding: 10px 0;
@@ -3127,12 +3226,14 @@ button.statusChip:hover {
 
 .extensionRow {
   min-height: 56px;
-  padding: 7px 2px;
+  padding: 8px 7px;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid var(--border);
+  border: 1px solid transparent;
+  border-bottom-color: var(--border);
+  border-radius: 7px;
   cursor: pointer;
 }
 
@@ -3142,6 +3243,11 @@ button.statusChip:hover {
 
 .extensionRow:hover {
   background: var(--surface);
+}
+
+.extensionRow.enabled {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: color-mix(in srgb, var(--accent) 4%, var(--canvas));
 }
 
 .extensionRow.invalid {
@@ -3227,6 +3333,7 @@ button.statusChip:hover {
   align-items: center;
   gap: 5px;
   overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .extensionMeta code,
@@ -3265,6 +3372,42 @@ button.statusChip:hover {
 .extensionMeta b.loaded {
   color: var(--success);
   background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.extensionRuntimeBadge {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 18px;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: var(--canvas);
+  font-size: 7px;
+  font-weight: 620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extensionRuntimeBadge.ready {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.extensionRuntimeBadge.failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.extensionRuntimeBadge.muted {
+  color: var(--text-tertiary);
+  background: var(--surface-subtle);
 }
 
 .extensionGroup .emptyText,
