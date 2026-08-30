@@ -140,11 +140,6 @@ export function Workbench() {
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowSplash(false), 2850);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     daemonApi
       .health()
       .then(async () => {
@@ -960,7 +955,7 @@ export function Workbench() {
 
   return (
     <main className="appShell">
-      {showSplash ? <SplashScreen /> : null}
+      {showSplash ? <SplashScreen onEnter={() => setShowSplash(false)} /> : null}
       <TopBar
         project={project ? basename(project.path) : t("top.noProject")}
         status={displayStatus}
@@ -1300,15 +1295,16 @@ export function Workbench() {
   );
 }
 
-function SplashScreen() {
+function SplashScreen({ onEnter }: { onEnter: () => void }) {
   const { t } = usePreferences();
   return (
-    <div className="splashScreen" aria-hidden="true">
+    <div className="splashScreen" role="dialog" aria-label={t("splash.title")}>
       <div className="splashHello">
-        <svg viewBox="0 0 1060 210" role="img">
+        <svg viewBox="0 0 1060 210" aria-hidden="true">
           <text x="50%" y="128" textAnchor="middle">{t("splash.title")}</text>
         </svg>
         <span>{t("splash.subtitle")}</span>
+        <button type="button" onClick={onEnter}>{t("splash.enter")}</button>
       </div>
     </div>
   );

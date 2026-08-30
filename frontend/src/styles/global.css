@@ -85,18 +85,16 @@ body {
   z-index: 1000;
   display: grid;
   place-items: center;
-  pointer-events: none;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface) 42%, transparent), transparent 56%),
     color-mix(in srgb, var(--canvas) 94%, var(--surface));
-  animation: splashExit 2850ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .splashHello {
   width: min(88vw, 900px);
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: 14px;
   transform: translateY(-2vh);
 }
 
@@ -130,6 +128,34 @@ body {
   animation: helloSubtitle 620ms ease 1500ms forwards;
 }
 
+.splashHello button {
+  min-height: 42px;
+  min-width: 128px;
+  margin-top: 8px;
+  padding: 0 18px;
+  opacity: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--surface);
+  background: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 720;
+  box-shadow: 0 12px 34px rgba(18, 23, 31, 0.12);
+  transform: translateY(6px);
+  animation: helloEnter 540ms ease 2100ms forwards;
+}
+
+.splashHello button:hover {
+  background: color-mix(in srgb, var(--text) 88%, var(--accent));
+  transform: translateY(3px);
+}
+
+.splashHello button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 @keyframes helloWrite {
   to {
     stroke-dashoffset: 0;
@@ -150,23 +176,29 @@ body {
   }
 }
 
-@keyframes splashExit {
-  0%, 82% { opacity: 1; }
-  100% {
-    opacity: 0;
-    visibility: hidden;
+@keyframes helloEnter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .splashScreen,
   .splashHello text,
-  .splashHello span {
+  .splashHello span,
+  .splashHello button {
     animation: none;
   }
 
-  .splashScreen {
-    display: none;
+  .splashHello text {
+    fill: var(--text);
+    stroke-dashoffset: 0;
+  }
+
+  .splashHello span,
+  .splashHello button {
+    opacity: 1;
+    transform: none;
   }
 }
 
