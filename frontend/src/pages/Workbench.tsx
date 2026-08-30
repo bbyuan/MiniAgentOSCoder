@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, Bot, PanelRightClose, PanelRightOpen, UserRound } from "lucide-react";
+import { AlertCircle, ArrowUp, Bot, CheckCircle2, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -140,14 +140,7 @@ export function Workbench() {
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    daemonApi
-      .health()
-      .then(async () => {
-        setConnection("connected");
-        const history = await daemonApi.getHistoryProjects().catch(() => undefined);
-        if (history) setRecentProjects(history.projects);
-      })
-      .catch(() => setConnection("offline"));
+    void refreshConnection();
     return () => streamCleanup.current?.();
   }, []);
 
@@ -214,6 +207,19 @@ export function Workbench() {
         : [];
     });
   }, [traceEvents]);
+
+  async function refreshConnection() {
+    setConnection("checking");
+    try {
+      await daemonApi.health();
+      setConnection("connected");
+      setError((current) => current && isRuntimeConnectionError(current) ? null : current);
+      const history = await daemonApi.getHistoryProjects().catch(() => undefined);
+      if (history) setRecentProjects(history.projects);
+    } catch {
+      setConnection("offline");
+    }
+  }
 
   async function openWorkspace(path: string) {
     if (!path.trim()) return;
@@ -971,16 +977,22 @@ export function Workbench() {
 
       {!project ? (
         <div className="guidedStage">
-          {error ? <ErrorBanner message={error} /> : null}
-          <ProjectLauncher
-            desktop={isDesktopHost()}
-            path={workspacePath}
-            recentProjects={recentProjects}
-            busy={projectBusy}
-            onPathChange={setWorkspacePath}
-            onBrowse={browseWorkspace}
-            onOpen={openWorkspace}
-          />
+          {connection !== "connected" ? (
+            <RuntimeConnectionPanel status={connection} onRetry={() => void refreshConnection()} />
+          ) : (
+            <>
+              {error ? <ErrorBanner message={error} /> : null}
+              <ProjectLauncher
+                desktop={isDesktopHost()}
+                path={workspacePath}
+                recentProjects={recentProjects}
+                busy={projectBusy}
+                onPathChange={setWorkspacePath}
+                onBrowse={browseWorkspace}
+                onOpen={openWorkspace}
+              />
+            </>
+          )}
         </div>
       ) : (
         <div className="productFrame">
@@ -1310,6 +1322,51 @@ function SplashScreen({ onEnter }: { onEnter: () => void }) {
   );
 }
 
+function RuntimeConnectionPanel({
+  status,
+  onRetry,
+}: {
+  status: "checking" | "connected" | "offline";
+  onRetry: () => void;
+}) {
+  const { t } = usePreferences();
+  const checking = status === "checking";
+  return (
+    <section className={`runtimeConnectionPanel tone-${status}`} aria-live="polite">
+      <div className="runtimeConnectionMark">
+        {checking ? <RefreshCw className="spin" size={24} /> : <WifiOff size={24} />}
+      </div>
+      <span className="stageEyebrow">{t("runtimeGate.eyebrow")}</span>
+      <h1>{t(checking ? "runtimeGate.checkingTitle" : "runtimeGate.offlineTitle")}</h1>
+      <p>{t(checking ? "runtimeGate.checkingDescription" : "runtimeGate.offlineDescription")}</p>
+
+      <div className="runtimeConnectionChecks">
+        <article className="ready">
+          <CheckCircle2 size={16} />
+          <div><strong>{t("runtimeGate.frontendReady")}</strong><span>{t("runtimeGate.frontendReadyHint")}</span></div>
+        </article>
+        <article className={checking ? "checking" : "blocked"}>
+          {checking ? <RefreshCw className="spin" size={16} /> : <Server size={16} />}
+          <div><strong>{t(checking ? "runtimeGate.daemonChecking" : "runtimeGate.daemonOffline")}</strong><span>{t("runtimeGate.daemonEndpoint")}</span></div>
+        </article>
+        <article className="pending">
+          <FolderOpen size={16} />
+          <div><strong>{t("runtimeGate.projectPending")}</strong><span>{t("runtimeGate.projectPendingHint")}</span></div>
+        </article>
+      </div>
+
+      <div className="runtimeConnectionActions">
+        <button type="button" onClick={onRetry} disabled={checking}>
+          <RefreshCw className={checking ? "spin" : ""} size={16} />
+          {t(checking ? "runtimeGate.retrying" : "runtimeGate.retry")}
+        </button>
+        <code>http://127.0.0.1:8000/health</code>
+      </div>
+      <small>{t("runtimeGate.devHint")}</small>
+    </section>
+  );
+}
+
 function isEvidenceEvent(eventName: string): boolean {
   return eventName.startsWith("context.")
     || eventName.startsWith("model.")
@@ -1323,9 +1380,13 @@ function isEvidenceEvent(eventName: string): boolean {
     || eventName.startsWith("repair.");
 }
 
+function isRuntimeConnectionError(message: string): boolean {
+  return /failed to fetch|load failed|networkerror|network request failed/i.test(message);
+}
+
 function ErrorBanner({ message }: { message: string }) {
   const { t } = usePreferences();
-  const displayMessage = /failed to fetch|load failed|networkerror|network request failed/i.test(message)
+  const displayMessage = isRuntimeConnectionError(message)
     ? t("error.daemonUnavailable")
     : message;
 
