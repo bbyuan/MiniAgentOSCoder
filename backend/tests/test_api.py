@@ -548,8 +548,13 @@ def test_run_evidence_summarizes_runtime_without_content(tmp_path: Path) -> None
     from app.runtime.tracer import TraceWriter
 
     writer = TraceWriter(tmp_path / "runs")
-    writer.event(run["run_id"], "model.requested", {"request": {"messages": [{"content": "secret source"}]}})
-    writer.event(run["run_id"], "tool.executed", {"result": {"output": "private code content"}})
+    writer.event(run["run_id"], "model.requested", {"request": {"model": "demo-model", "messages": [{"content": "secret source"}]}})
+    writer.event(run["run_id"], "model.responded", {"response": {"model": "demo-model", "content": "private model content"}})
+    writer.event(
+        run["run_id"],
+        "tool.executed",
+        {"action": {"type": "read_file", "params": {"path": "secret.py"}}, "result": {"output": "private code content"}},
+    )
     writer.event(run["run_id"], "policy.evaluated", {"evaluation": {"outcome": "allowed"}})
     writer.event(run["run_id"], "approval.requested", {"approval": {"reason": "edit"}})
     writer.event(run["run_id"], "approval.resolved", {"decision": "approve_once"})
@@ -583,8 +588,15 @@ def test_run_evidence_summarizes_runtime_without_content(tmp_path: Path) -> None
     }
     assert next(item for item in payload["items"] if item["id"] == "model")["state"] == "ready"
     assert next(item for item in payload["items"] if item["id"] == "governance")["state"] == "ready"
+    assert any(detail["value"] == "demo-model" for detail in next(item for item in payload["items"] if item["id"] == "model")["details"])
+    assert any(detail["value"] == "read_file" for detail in next(item for item in payload["items"] if item["id"] == "tools")["details"])
+    assert any(
+        detail["value"] == "final_message: passed"
+        for detail in next(item for item in payload["items"] if item["id"] == "completion")["details"]
+    )
     assert "secret source" not in text
     assert "private code content" not in text
+    assert "private model content" not in text
 
 
 def test_memory_api_manages_scopes_and_requires_long_term_confirmation(tmp_path: Path) -> None:

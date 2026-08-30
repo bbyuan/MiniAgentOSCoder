@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from app.api.store import store
+from app.guards import redact_secrets
 from app.models import RunPhase
 from app.runtime.tracer import TraceWriter
 
@@ -61,7 +62,12 @@ def _context_evidence(context) -> dict[str, object]:
         f"{len(selected)} selected items, {context.budget_report.used_tokens}/"
         f"{context.budget_report.max_tokens} tokens, {len(protocols)} protocol items"
     )
-    return _item("context", "ready" if selected else "pending", len(selected), detail, "context_pack")
+    details = [
+        _detail("context_tokens", f"{context.budget_report.used_tokens}/{context.budget_report.max_tokens}"),
+        _detail("context_protocols", str(len(protocols))),
+        *_limited_details("context_item", [item.source for item in protocols], limit=4),
+    ]
+    return _item("context", "ready" if selected else "pending", len(selected), detail, "context_pack", details)
 
 
 def _model_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
@@ -71,7 +77,13 @@ def _model_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
     errors = _count(trace, "model.error")
     state = "failed" if errors else "ready" if requested or cached or responded else "pending"
     detail = f"{requested} provider requests, {cached} cache hits, {responded} responses"
-    return _item("model", state, requested + cached + responded, detail, "trace")
+    model_names = _model_names(trace)
+    details = [
+        _detail("model_provider_requests", str(requested)),
+        _detail("model_cache_hits", str(cached)),
+        *_limited_details("model_name", model_names, limit=4),
+    ]
+    return _item("model", state, requested + cached + responded, detail, "trace", details)
 
 
 def _tool_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
@@ -80,7 +92,12 @@ def _tool_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
     rejected = _count(trace, "action.rejected")
     state = "failed" if failed else "warning" if rejected else "ready" if executed else "pending"
     detail = f"{executed} tool calls, {failed} failed, {rejected} rejected"
-    return _item("tools", state, executed + failed + rejected, detail, "trace")
+    details = [
+        *_limited_details("tool_type", _action_types(trace, {"tool.executed", "tool.failed"}), limit=5),
+        _detail("tool_failed", str(failed), "failed" if failed else "ready"),
+        _detail("tool_rejected", str(rejected), "warning" if rejected else "ready"),
+    ]
+    return _item("tools", state, executed + failed + rejected, detail, "trace", details)
 
 
 def _governance_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
@@ -90,7 +107,13 @@ def _governance_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
     pending = max(0, requested - resolved - _count(trace, "approval.cancelled"))
     state = "warning" if pending else "ready" if evaluated or requested else "pending"
     detail = f"{evaluated} policy evaluations, {requested} approvals, {pending} pending"
-    return _item("governance", state, evaluated + requested + resolved, detail, "policy_engine")
+    details = [
+        _detail("policy_evaluations", str(evaluated)),
+        _detail("approval_requested", str(requested)),
+        _detail("approval_resolved", str(resolved)),
+        _detail("approval_pending", str(pending), "warning" if pending else "ready"),
+    ]
+    return _item("governance", state, evaluated + requested + resolved, detail, "policy_engine", details)
 
 
 def _extension_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
@@ -99,7 +122,12 @@ def _extension_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
     hooks = _count(trace, "hook.started") + _count(trace, "hook.finished") + _count(trace, "hook.blocked")
     state = "ready" if skills or mcp_calls or hooks else "pending"
     detail = f"{skills} skill activations, {mcp_calls} MCP calls, {hooks} hook events"
-    return _item("extensions", state, skills + mcp_calls + hooks, detail, "extension_runtime")
+    details = [
+        *_limited_details("skill_id", _payload_values(trace, "skill.activated", "skill_id"), limit=4),
+        *_limited_details("mcp_tool", _payload_values(trace, "mcp.tool.called", "tool"), limit=4),
+        _detail("hook_events", str(hooks)),
+    ]
+    return _item("extensions", state, skills + mcp_calls + hooks, detail, "extension_runtime", details)
 
 
 def _test_evidence(test_summary: dict[str, Any] | None) -> dict[str, object]:
@@ -110,8 +138,14 @@ def _test_evidence(test_summary: dict[str, Any] | None) -> dict[str, object]:
     command = str(test_summary.get("command", "Not selected"))
     passed = int(test_summary.get("passed", 0) or 0)
     failed = int(test_summary.get("failed", 0) or 0)
-    detail = f"{status}: {command}; {passed} passed, {failed} failed"
-    return _item("tests", state, passed + failed, detail, "run_artifacts")
+    detail = f"{status}: {_safe_value(command)}; {passed} passed, {failed} failed"
+    details = [
+        _detail("test_status", status, state),
+        _detail("test_command", _safe_value(command)),
+        _detail("test_passed", str(passed)),
+        _detail("test_failed", str(failed), "failed" if failed else "ready"),
+    ]
+    return _item("tests", state, passed + failed, detail, "run_artifacts", details)
 
 
 def _completion_evidence(completion: dict[str, Any] | None, status: RunPhase) -> dict[str, object]:
@@ -124,18 +158,105 @@ def _completion_evidence(completion: dict[str, Any] | None, status: RunPhase) ->
     verdict = str(completion.get("verdict", "unknown"))
     state = "ready" if verdict == "passed" else "failed" if failed else "warning"
     detail = f"{verdict}: {passed} checks passed, {failed} required checks failed"
-    return _item("completion", state, passed + failed, detail, "completion_guard")
+    check_details = [
+        _detail(
+            "completion_check",
+            f"{_safe_value(str(check.get('id', 'unknown')))}: {'passed' if check.get('passed') else 'missing'}",
+            "ready" if check.get("passed") else "failed" if check.get("required") else "warning",
+        )
+        for check in checks
+        if isinstance(check, dict)
+    ]
+    details = [_detail("completion_verdict", verdict, state), *check_details[:6]]
+    return _item("completion", state, passed + failed, detail, "completion_guard", details)
 
 
-def _item(kind: str, state: str, count: int, detail: str, source: str) -> dict[str, object]:
+def _item(
+    kind: str,
+    state: str,
+    count: int,
+    detail: str,
+    source: str,
+    details: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
     return {
         "id": kind,
         "state": state,
         "count": count,
         "detail": detail,
         "source": source,
+        "details": details or [],
     }
 
 
 def _count(trace: list[dict[str, Any]], event_name: str) -> int:
     return sum(1 for event in trace if event.get("event") == event_name)
+
+
+def _detail(label: str, value: str, state: str = "ready") -> dict[str, object]:
+    return {"label": label, "value": _safe_value(value), "state": state}
+
+
+def _limited_details(label: str, values: list[str], *, limit: int) -> list[dict[str, object]]:
+    return [_detail(label, value) for value in _unique(values)[:limit]]
+
+
+def _unique(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        clean = _safe_value(value)
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        result.append(clean)
+    return result
+
+
+def _safe_value(value: str, *, limit: int = 120) -> str:
+    redacted = redact_secrets(value).replace("\n", " ").strip()
+    return redacted if len(redacted) <= limit else f"{redacted[: limit - 3]}..."
+
+
+def _payload_values(trace: list[dict[str, Any]], event_name: str, key: str) -> list[str]:
+    values: list[str] = []
+    for event in trace:
+        if event.get("event") != event_name:
+            continue
+        payload = event.get("payload", {})
+        if isinstance(payload, dict) and isinstance(payload.get(key), str):
+            values.append(payload[key])
+    return values
+
+
+def _action_types(trace: list[dict[str, Any]], event_names: set[str]) -> list[str]:
+    actions: list[str] = []
+    for event in trace:
+        if event.get("event") not in event_names:
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        action = payload.get("action")
+        if isinstance(action, dict) and isinstance(action.get("type"), str):
+            actions.append(action["type"])
+            continue
+        result = payload.get("result")
+        if isinstance(result, dict) and isinstance(result.get("tool"), str):
+            actions.append(result["tool"])
+    return actions
+
+
+def _model_names(trace: list[dict[str, Any]]) -> list[str]:
+    names: list[str] = []
+    for event in trace:
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        response = payload.get("response")
+        if isinstance(response, dict) and isinstance(response.get("model"), str):
+            names.append(response["model"])
+        request = payload.get("request")
+        if isinstance(request, dict) and isinstance(request.get("model"), str):
+            names.append(request["model"])
+    return names

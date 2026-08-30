@@ -179,6 +179,16 @@ export function RuntimePanels({
                     </span>
                     <strong>{t(`evidence.item.${item.id}` as TranslationKey)}</strong>
                     <small title={item.detail}>{localizeEvidenceDetail(item.detail, locale)}</small>
+                    {item.details.length > 0 ? (
+                      <div className="evidenceDetailList">
+                        {item.details.slice(0, 4).map((detail, index) => (
+                          <span className={`state-${detail.state}`} title={detail.value} key={`${detail.label}-${detail.value}-${index}`}>
+                            <em>{t(`evidence.detail.${detail.label}` as TranslationKey)}</em>
+                            <b>{localizeEvidenceValue(detail.value, locale)}</b>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     <code>{translateKnownText(locale, item.source)} · {item.count}</code>
                   </article>
                 ))}
@@ -367,4 +377,12 @@ function localizeEvidenceDetail(detail: string, locale: "zh" | "en"): string {
     .replace("Not run", "未运行")
     .replace("Not selected", "未选择")
     .replace("failed", "失败");
+}
+
+function localizeEvidenceValue(value: string, locale: "zh" | "en"): string {
+  if (locale === "en") return value;
+  return value
+    .replace("passed", "通过")
+    .replace("missing", "缺失")
+    .replace("unknown", "未知");
 }

@@ -539,6 +539,9 @@ export function Workbench() {
           || event.event.startsWith("hook.")) {
           daemonApi.getExtensions(activeRunId).then(setExtensions).catch(() => undefined);
         }
+        if (isEvidenceEvent(event.event)) {
+          daemonApi.getEvidence(activeRunId).then(setEvidence).catch(() => undefined);
+        }
         const transitionedStatus = event.payload.status;
         if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
           setRunStatus(transitionedStatus);
@@ -1301,6 +1304,19 @@ export function Workbench() {
       />
     </main>
   );
+}
+
+function isEvidenceEvent(eventName: string): boolean {
+  return eventName.startsWith("context.")
+    || eventName.startsWith("model.")
+    || eventName.startsWith("tool.")
+    || eventName.startsWith("policy.")
+    || eventName.startsWith("approval.")
+    || eventName.startsWith("skill.")
+    || eventName.startsWith("mcp.")
+    || eventName.startsWith("hook.")
+    || eventName.startsWith("completion.")
+    || eventName.startsWith("repair.");
 }
 
 function ErrorBanner({ message }: { message: string }) {

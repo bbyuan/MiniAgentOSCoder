@@ -236,6 +236,11 @@ export interface RunEvidenceItem {
   count: number;
   detail: string;
   source: string;
+  details: Array<{
+    label: string;
+    value: string;
+    state: "ready" | "pending" | "warning" | "failed" | string;
+  }>;
 }
 
 export interface RunEvidenceLedger {

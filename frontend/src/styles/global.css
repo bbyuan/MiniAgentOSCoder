@@ -1137,6 +1137,57 @@ button.statusChip:hover {
   line-height: 1.45;
 }
 
+.evidenceDetailList {
+  margin-top: 8px;
+  display: grid;
+  gap: 5px;
+}
+
+.evidenceDetailList span {
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 7px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-muted) 60%, transparent);
+}
+
+.evidenceDetailList span.state-warning {
+  border-color: color-mix(in srgb, var(--warning) 25%, var(--border));
+  background: var(--warning-soft);
+}
+
+.evidenceDetailList span.state-failed {
+  border-color: color-mix(in srgb, var(--danger) 25%, var(--border));
+  background: var(--danger-soft);
+}
+
+.evidenceDetailList em,
+.evidenceDetailList b {
+  min-width: 0;
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidenceDetailList em {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-weight: 720;
+}
+
+.evidenceDetailList b {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 740;
+  text-align: right;
+}
+
 .evidenceLedgerItem code {
   margin-top: auto;
   padding-top: 8px;
