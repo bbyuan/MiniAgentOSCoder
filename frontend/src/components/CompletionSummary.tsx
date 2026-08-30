@@ -281,6 +281,15 @@ function buildFailureDiagnosis(input: FailureDiagnosisInput): { summary: Transla
 }
 
 function localizeRuntimeError(error: string, locale: "zh" | "en"): string {
+  const knownProviderErrors: Array<[RegExp, string, string]> = [
+    [/Model provider request timed out/i, "模型服务请求超时。", "Model provider request timed out."],
+    [/Model provider network request failed/i, "模型服务网络请求失败。", "Model provider network request failed."],
+    [/Model provider returned invalid JSON/i, "模型服务返回了无效 JSON。", "Model provider returned invalid JSON."],
+    [/Model provider returned HTTP (\d+)/i, "模型服务返回了 HTTP 错误。", "Model provider returned an HTTP error."],
+  ];
+  for (const [pattern, zh, en] of knownProviderErrors) {
+    if (pattern.test(error)) return locale === "zh" ? zh : en;
+  }
   const transition = error.match(/^Cannot transition run .+ from (\w+) to (\w+)$/);
   if (!transition) return translateKnownText(locale, error);
   const from = translateStatus(locale, transition[1]);

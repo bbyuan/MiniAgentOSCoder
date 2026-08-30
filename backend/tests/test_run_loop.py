@@ -5,6 +5,7 @@ from threading import Event
 from app.models import ActiveSkill, RunPhase, SkillManifest
 from app.runtime.agent_loop import execute_agent_run
 from app.runtime.contract_compiler import compile_agent_contract
+from app.runtime.openai_compatible import ModelProviderError
 from app.runtime.model_client import QueuedStaticModelClient
 from app.runtime.run_loop import AgentRunLoop
 from app.runtime.tracer import TraceWriter
@@ -271,6 +272,40 @@ def test_run_loop_fails_on_malformed_action_without_tool_execution(tmp_path: Pat
     assert gateway.used_tool_calls == 0
     events = [event["event"] for event in tracer.read_events("run-invalid-action")]
     assert events[-2:] == ["action.rejected", "run.failed"]
+
+
+def test_run_loop_retries_transient_model_provider_errors(tmp_path: Path) -> None:
+    class FlakyModelClient:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def complete(self, request):
+            self.calls += 1
+            if self.calls == 1:
+                raise ModelProviderError("Model provider request timed out")
+            return QueuedStaticModelClient([
+                '{"type":"finish","rationale":"recovered","params":{"message":"Recovered after retry."}}'
+            ]).complete(request)
+
+    gateway = make_gateway(tmp_path)
+    tracer = TraceWriter(tmp_path / "runs")
+    client = FlakyModelClient()
+
+    result = AgentRunLoop(
+        run_id="run-model-retry",
+        gateway=gateway,
+        model_client=client,
+        tracer=tracer,
+    ).run(task="answer", contract=gateway.contract, mode="Chat")
+
+    assert result.status == RunPhase.COMPLETED
+    assert result.final_message == "Recovered after retry."
+    assert result.model_calls == 2
+    assert result.observations[0].action_type == "model_call"
+    assert result.observations[0].metadata["retryable"] is True
+    events = [event["event"] for event in tracer.read_events("run-model-retry")]
+    assert "model.retry_scheduled" in events
+    assert events[-1] == "run.finished"
 
 
 def test_run_loop_stops_when_max_steps_are_used_without_finish(tmp_path: Path) -> None:

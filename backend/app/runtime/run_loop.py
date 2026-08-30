@@ -25,6 +25,20 @@ from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
 
 
+MAX_TRANSIENT_MODEL_RETRIES = 2
+RETRYABLE_MODEL_ERROR_MARKERS = (
+    "timed out",
+    "timeout",
+    "network request failed",
+    "temporarily unavailable",
+    "rate limit",
+    "429",
+    "502",
+    "503",
+    "504",
+)
+
+
 class AgentRunLoop:
     def __init__(
         self,
@@ -84,6 +98,7 @@ class AgentRunLoop:
         max_steps = max(0, min(contract.program.max_steps, contract.cost_envelope.max_steps))
         starting_step = max(0, initial_steps)
         completion_attempts = 0
+        transient_model_failures = 0
         last_completion: CompletionAssessment | None = None
         active_mode = mode or contract.program.mode
         active_task = task
@@ -179,6 +194,42 @@ class AgentRunLoop:
                     completion=last_completion,
                 )
             except Exception as exc:
+                if (
+                    _is_retryable_model_error(exc)
+                    and transient_model_failures < MAX_TRANSIENT_MODEL_RETRIES
+                ):
+                    transient_model_failures += 1
+                    observation = ActionObservation(
+                        step=step,
+                        action_type="model_call",
+                        ok=False,
+                        error=str(exc),
+                        metadata={
+                            "error_type": type(exc).__name__,
+                            "retryable": True,
+                            "retry_attempt": transient_model_failures,
+                            "max_retries": MAX_TRANSIENT_MODEL_RETRIES,
+                        },
+                    )
+                    observations.append(observation)
+                    self.tracer.event(
+                        self.run_id,
+                        "model.retry_scheduled",
+                        {
+                            "error": str(exc),
+                            "error_type": type(exc).__name__,
+                            "attempt": transient_model_failures,
+                            "max_retries": MAX_TRANSIENT_MODEL_RETRIES,
+                        },
+                        role="Planner",
+                    )
+                    self.tracer.event(
+                        self.run_id,
+                        "observation.recorded",
+                        {"observation": observation.to_dict()},
+                        role="Planner",
+                    )
+                    continue
                 return self._failed_result(
                     reason="model_error",
                     error=str(exc),
@@ -190,6 +241,7 @@ class AgentRunLoop:
                     completion=last_completion,
                 )
 
+            transient_model_failures = 0
             _add_usage(token_usage, decision.response.usage)
             if decision.cache_hit:
                 self.model_cache_hits += 1
@@ -624,6 +676,14 @@ def _token_budget_reason(contract: AgentContract, usage: dict[str, int]) -> str 
     if usage["output_tokens"] > contract.cost_envelope.max_output_tokens:
         return "max_output_tokens"
     return None
+
+
+def _is_retryable_model_error(exc: Exception) -> bool:
+    error_type = type(exc).__name__.lower()
+    message = str(exc).lower()
+    if "modelprovidererror" not in error_type and not isinstance(exc, TimeoutError):
+        return False
+    return any(marker in message for marker in RETRYABLE_MODEL_ERROR_MARKERS)
 
 
 def _terminal_payload(result: RunLoopResult) -> dict[str, object]:
