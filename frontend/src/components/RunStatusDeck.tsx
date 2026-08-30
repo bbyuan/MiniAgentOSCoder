@@ -1,6 +1,7 @@
 import {
   Activity,
   ArrowRight,
+  BarChart3,
   CircleAlert,
   Gauge,
   GitBranch,
@@ -8,6 +9,7 @@ import {
   MessageSquareText,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import type { ContextPack, PlanStep, TraceEvent } from "../api/client";
 import type { TranslationKey } from "../i18n";
@@ -38,6 +40,7 @@ const statusLabels: Record<string, TranslationKey> = {
 
 export function RunStatusDeck({ status, phase, plan, trace, context, onOpenControlPlane }: RunStatusDeckProps) {
   const { locale, t } = usePreferences();
+  const [showMetrics, setShowMetrics] = useState(false);
   const currentStep = plan.find((item) => item.state === "active") ?? plan.find((item) => item.state === "failed");
   const nextStep = plan.find((item) => item.state === "waiting" || item.state === "pending");
   const lastEvent = trace.length ? trace[trace.length - 1] : undefined;
@@ -85,13 +88,20 @@ export function RunStatusDeck({ status, phase, plan, trace, context, onOpenContr
         </article>
       </div>
 
-      <div className="runStatusMetrics">
+      <div className="runStatusActions">
+        <button type="button" onClick={() => setShowMetrics((current) => !current)}>
+          <BarChart3 size={14} />
+          {t(showMetrics ? "runStatus.hideMetrics" : "runStatus.showMetrics")}
+        </button>
+      </div>
+
+      {showMetrics ? <div className="runStatusMetrics">
         <StatusMetric icon={<GitBranch size={15} />} label={t("metric.phase")} value={translateKnownText(locale, phase || status)} />
         <StatusMetric icon={<MessageSquareText size={15} />} label={t("metric.modelCalls")} value={formatNumber(modelCalls)} />
         <StatusMetric icon={<Activity size={15} />} label={t("metric.toolCalls")} value={formatNumber(toolCalls)} />
         <StatusMetric icon={<ShieldCheck size={15} />} label={t("runStatus.guarded")} value={formatNumber(guardedEvents)} />
         <StatusMetric icon={<Gauge size={15} />} label={t("metric.context")} value={t("control.contextPercent", { percent: contextPercent })} />
-      </div>
+      </div> : null}
     </section>
   );
 }

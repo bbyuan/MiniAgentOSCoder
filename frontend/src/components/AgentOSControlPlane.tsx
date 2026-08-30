@@ -10,6 +10,7 @@ import {
   PlugZap,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 import type {
   AgentContract,
   ContextPack,
@@ -63,6 +64,7 @@ export function AgentOSControlPlane({
   onOpen,
 }: AgentOSControlPlaneProps) {
   const { t } = usePreferences();
+  const [expanded, setExpanded] = useState(false);
   const contextBudget = context?.budget_report;
   const contextPercent = contextBudget?.max_tokens
     ? Math.min(100, Math.round((contextBudget.used_tokens / contextBudget.max_tokens) * 100))
@@ -165,8 +167,43 @@ export function AgentOSControlPlane({
     },
   ];
   const signals = variant === "manifest" ? manifestSignals : runtimeSignals;
+  const primaryIds = variant === "manifest"
+    ? new Set(["budget", "sandbox", "verification"])
+    : new Set(["context", "sandbox", "extensions"]);
+  const primarySignals = signals.filter((signal) => primaryIds.has(signal.id));
+  const secondarySignals = signals.filter((signal) => !primaryIds.has(signal.id));
   const runtimeState = controlPlaneRuntimeState(runStatus);
   const StateIcon = variant === "manifest" ? Check : runtimeState.icon;
+
+  function renderSignal(signal: ControlSignal) {
+    const Icon = signal.icon;
+    const content = (
+      <>
+        <Icon size={16} />
+        <span>
+          <small>{t(signal.label)}</small>
+          <strong title={signal.value}>{signal.value}</strong>
+          <em>{signal.hint}</em>
+        </span>
+        {typeof signal.progress === "number" ? (
+          <i className="controlSignalProgress" aria-hidden="true"><b style={{ width: `${signal.progress}%` }} /></i>
+        ) : null}
+      </>
+    );
+    return onOpen ? (
+      <button
+        type="button"
+        className={`controlSignal tone-${signal.tone ?? "normal"} ${activeTarget === signal.target ? "active" : ""}`}
+        onClick={() => onOpen(signal.target)}
+        aria-label={t("control.open", { label: t(signal.label) })}
+        key={signal.id}
+      >
+        {content}
+      </button>
+    ) : (
+      <div className={`controlSignal tone-${signal.tone ?? "normal"}`} key={signal.id}>{content}</div>
+    );
+  }
 
   return (
     <section className={`agentControlPlane variant-${variant}`} aria-label={t(variant === "manifest" ? "control.manifestTitle" : "control.runtimeTitle")}>
@@ -185,36 +222,16 @@ export function AgentOSControlPlane({
       </header>
 
       <div className="controlPlaneSignals">
-        {signals.map((signal) => {
-          const Icon = signal.icon;
-          const content = (
-            <>
-              <Icon size={16} />
-              <span>
-                <small>{t(signal.label)}</small>
-                <strong title={signal.value}>{signal.value}</strong>
-                <em>{signal.hint}</em>
-              </span>
-              {typeof signal.progress === "number" ? (
-                <i className="controlSignalProgress" aria-hidden="true"><b style={{ width: `${signal.progress}%` }} /></i>
-              ) : null}
-            </>
-          );
-          return onOpen ? (
-            <button
-              type="button"
-              className={`controlSignal tone-${signal.tone ?? "normal"} ${activeTarget === signal.target ? "active" : ""}`}
-              onClick={() => onOpen(signal.target)}
-              aria-label={t("control.open", { label: t(signal.label) })}
-              key={signal.id}
-            >
-              {content}
-            </button>
-          ) : (
-            <div className={`controlSignal tone-${signal.tone ?? "normal"}`} key={signal.id}>{content}</div>
-          );
-        })}
+        {primarySignals.map(renderSignal)}
       </div>
+      {secondarySignals.length ? (
+        <div className="controlPlaneMore">
+          <button type="button" onClick={() => setExpanded((current) => !current)}>
+            {t(expanded ? "control.hideAdvanced" : "control.showAdvanced")}
+          </button>
+          {expanded ? <div className="controlPlaneSignals secondary">{secondarySignals.map(renderSignal)}</div> : null}
+        </div>
+      ) : null}
     </section>
   );
 }
