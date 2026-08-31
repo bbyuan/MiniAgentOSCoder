@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -81,6 +81,7 @@ interface RuntimePanelsProps {
   onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
   onCreateMCPServer: (request: CreateMCPServerRequest) => Promise<void>;
   onCreateHook: (request: CreateHookRequest) => Promise<void>;
+  onClose: () => void;
 }
 
 export function RuntimePanels({
@@ -113,9 +114,19 @@ export function RuntimePanels({
   onCreateSkill,
   onCreateMCPServer,
   onCreateHook,
+  onClose,
 }: RuntimePanelsProps) {
   const [activeView, setActiveView] = useState<ControlView>(initialTarget);
   const { locale, t } = usePreferences();
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
   const providerRequests = trace.filter((event) => event.event === "model.requested").length;
   const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const planningTurns = providerRequests + cacheHits;
@@ -142,14 +153,19 @@ export function RuntimePanels({
   ];
 
   return (
-    <aside className="inspector">
+    <aside className="inspector" aria-label={t("control.runtimeTitle")}>
       <div className="inspectorTop">
         <div className="inspectorTitleRow">
           <div>
             <span className="inspectorEyebrow">{t("control.runtimeTitle")}</span>
             <strong>{runId ? `${t("run.label")} ${runId.slice(-8)}` : "MiniAgentOS"}</strong>
           </div>
-          <span className={`inspectorRunState tone-${runStatus}`}>{translateStatus(locale, runStatus)}</span>
+          <div className="inspectorTitleActions">
+            <span className={`inspectorRunState tone-${runStatus}`}>{translateStatus(locale, runStatus)}</span>
+            <button type="button" className="inspectorClose" onClick={onClose} title={t("control.close")} aria-label={t("control.close")}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
         <nav className="controlViewTabs" aria-label={t("inspector.view")}>
           {primaryViews.map(({ id, icon: Icon, label }) => (
@@ -191,10 +207,6 @@ export function RuntimePanels({
             </div>
 
             <div className="runtimeFocusSummary">
-              <article>
-                <small>{t("control.currentStatus")}</small>
-                <strong>{translateStatus(locale, runStatus)}</strong>
-              </article>
               <article>
                 <small>{t("control.changedFiles")}</small>
                 <strong>{t("diff.files", { count: diff.files })}</strong>

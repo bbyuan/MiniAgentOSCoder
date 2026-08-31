@@ -1403,6 +1403,7 @@ export function Workbench() {
           onCreateSkill={createSkill}
           onCreateMCPServer={createMCPServer}
           onCreateHook={createHook}
+          onClose={() => setRuntimeDetailsOpen(false)}
         /> : null}
         </div>
       )}
