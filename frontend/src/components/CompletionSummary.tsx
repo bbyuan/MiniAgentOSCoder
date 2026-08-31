@@ -40,6 +40,7 @@ export function CompletionSummary({
   const completionMessage = message.trim() || t("completion.noMessage");
   const messagePreview = previewCompletionMessage(completionMessage);
   const hasMoreMessage = messagePreview !== completionMessage;
+  const fullMessage = formatCompletionMessage(completionMessage);
   const observationError = typeof lastObservation?.error === "string" ? lastObservation.error : "";
   const displayedObservationError = localizeRuntimeError(observationError, locale);
   const knownReasons: Record<string, string> = {
@@ -115,7 +116,14 @@ export function CompletionSummary({
       {hasMoreMessage ? (
         <details className="completionDetails">
           <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>
-          <p>{completionMessage}</p>
+          <div className="completionFullMessage">
+            <p>{fullMessage.lead}</p>
+            {fullMessage.items.length ? (
+              <ul>
+                {fullMessage.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+              </ul>
+            ) : null}
+          </div>
         </details>
       ) : null}
       {showEvidence ? (
@@ -125,7 +133,7 @@ export function CompletionSummary({
             <span><strong>{t("completion.evidenceTitle")}</strong><small>{completion?.verdict === "passed" ? t("completion.passed") : t("completion.notPassed")}</small></span>
             <ChevronDown size={15} />
           </summary>
-          <div><CompletionEvidence assessment={completion} /></div>
+          <div><CompletionEvidence assessment={completion} embedded /></div>
         </details>
       ) : null}
     </section>
@@ -217,4 +225,28 @@ function previewCompletionMessage(message: string, limit = 120): string {
   const lastSpace = candidate.lastIndexOf(" ");
   const safeEnd = lastSpace >= Math.floor(limit * 0.65) ? lastSpace : limit;
   return `${candidate.slice(0, safeEnd).trimEnd()}...`;
+}
+
+function formatCompletionMessage(message: string): { lead: string; items: string[] } {
+  const normalized = message.replace(/\s+/g, " ").trim();
+  const parts = splitCompletionMessage(normalized);
+  if (parts.length <= 1) return { lead: normalized, items: [] };
+  return { lead: parts[0], items: parts.slice(1, 7) };
+}
+
+function splitCompletionMessage(message: string): string[] {
+  const semicolonParts = message.split(/[;；]/).map((part) => part.trim()).filter(Boolean);
+  if (semicolonParts.length > 1) return semicolonParts;
+
+  const parts: string[] = [];
+  let start = 0;
+  for (let index = 0; index < message.length; index += 1) {
+    if (!"。！？.!?".includes(message[index])) continue;
+    const part = message.slice(start, index + 1).trim();
+    if (part) parts.push(part);
+    start = index + 1;
+  }
+  const rest = message.slice(start).trim();
+  if (rest) parts.push(rest);
+  return parts.length ? parts : [message];
 }

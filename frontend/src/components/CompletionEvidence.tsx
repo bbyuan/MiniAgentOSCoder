@@ -7,9 +7,10 @@ interface CompletionEvidenceProps {
   assessment?: CompletionAssessment | null;
   expectations?: string[];
   preflight?: boolean;
+  embedded?: boolean;
 }
 
-export function CompletionEvidence({ assessment, expectations = [], preflight = false }: CompletionEvidenceProps) {
+export function CompletionEvidence({ assessment, expectations = [], preflight = false, embedded = false }: CompletionEvidenceProps) {
   const { locale, t } = usePreferences();
   const checks = assessment?.checks ?? expectations.map((id) => ({
     id,
@@ -20,24 +21,26 @@ export function CompletionEvidence({ assessment, expectations = [], preflight = 
   const verdict = assessment?.verdict;
 
   return (
-    <section className={`completionEvidence ${preflight ? "preflightEvidence" : ""} ${verdict ? `tone-${verdict}` : ""}`}>
-      <header>
-        <div>
-          <ListChecks size={17} />
+    <section className={`completionEvidence ${preflight ? "preflightEvidence" : ""} ${embedded ? "embeddedEvidence" : ""} ${verdict ? `tone-${verdict}` : ""}`}>
+      {!embedded ? (
+        <header>
           <div>
-            <strong>{t(preflight ? "completion.expectedTitle" : "completion.evidenceTitle")}</strong>
-            <span>{assessment
-              ? t(assessment.verdict === "passed" ? "completion.verified" : "completion.blocked", { attempt: assessment.attempt })
-              : t("completion.expectedDescription")}</span>
+            <ListChecks size={17} />
+            <div>
+              <strong>{t(preflight ? "completion.expectedTitle" : "completion.evidenceTitle")}</strong>
+              <span>{assessment
+                ? t(assessment.verdict === "passed" ? "completion.verified" : "completion.blocked", { attempt: assessment.attempt })
+                : t("completion.expectedDescription")}</span>
+            </div>
           </div>
-        </div>
-        {assessment ? (
-          <span className="completionVerdict">
-            {assessment.verdict === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}
-            {t(assessment.verdict === "passed" ? "completion.passed" : "completion.notPassed")}
-          </span>
-        ) : null}
-      </header>
+          {assessment ? (
+            <span className="completionVerdict">
+              {assessment.verdict === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}
+              {t(assessment.verdict === "passed" ? "completion.passed" : "completion.notPassed")}
+            </span>
+          ) : null}
+        </header>
+      ) : null}
 
       {checks.length ? (
         <ul>
