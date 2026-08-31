@@ -71,14 +71,6 @@ export function TaskSetup({
         onConfigureModel={onConfigureModel}
       />
 
-      {model && !model.configured ? (
-        <div className="taskModelNotice">
-          <KeyRound size={17} />
-          <div><strong>{t("task.modelNeeded")}</strong><span>{t("task.modelNeededHint")}</span></div>
-          <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button>
-        </div>
-      ) : null}
-
       <div className="taskComposerProduct">
         <label className="srOnly" htmlFor="task-description">{t("task.instruction")}</label>
         <textarea

@@ -1306,7 +1306,6 @@ export function Workbench() {
               artifacts={artifacts}
               completion={completion}
               onNewTask={() => resetRunState(true)}
-              onUseFollowUp={useFollowUpSuggestion}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);

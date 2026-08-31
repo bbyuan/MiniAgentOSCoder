@@ -59,13 +59,13 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
         </button>
       </header>
 
-      <div className="runStatusNow">
-        <div>
+      <div className="runStatusCurrent">
+        <div className="runStatusCurrentFocus">
           <small>{t("runStatus.currentStep")}</small>
           <strong>{currentStep ? translateKnownText(locale, currentStep.title) : t("runStatus.noActiveStep")}</strong>
           <span>{currentStep?.detail ? translateKnownText(locale, currentStep.detail) : t("runStatus.safeBoundary")}</span>
         </div>
-        <div>
+        <div className="runStatusNext">
           <small>{t("runStatus.nextStep")}</small>
           <strong>{nextStep ? translateKnownText(locale, nextStep.title) : t("runStatus.waitingForRuntime")}</strong>
           <span>{lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}</span>

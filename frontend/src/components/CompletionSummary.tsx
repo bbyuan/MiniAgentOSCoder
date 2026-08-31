@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   Ban,
   CheckCircle2,
   ChevronDown,
@@ -7,10 +6,8 @@ import {
   FileDiff,
   FlaskConical,
   ListChecks,
-  MessageSquarePlus,
-  RotateCcw,
+  Plus,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
 import type { TranslationKey } from "../i18n";
@@ -28,7 +25,6 @@ interface CompletionSummaryProps {
   completion?: CompletionAssessment | null;
   onNewTask: () => void;
   onInspectRun?: () => void;
-  onUseFollowUp?: (message: string) => void;
 }
 
 export function CompletionSummary({
@@ -40,7 +36,6 @@ export function CompletionSummary({
   completion,
   onNewTask,
   onInspectRun,
-  onUseFollowUp,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
@@ -70,7 +65,6 @@ export function CompletionSummary({
     completion,
     testsStatus: tests?.status,
   });
-  const nextActions = buildNextActions(status, tests?.status);
   const showEvidence = status === "completed" || completion?.verdict === "passed";
   const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
   const showSignals = Boolean(tests) || (status === "completed" && !hasCodeDiff);
@@ -83,6 +77,10 @@ export function CompletionSummary({
           <strong>{t(status === "completed" ? "completion.done" : status === "cancelled" ? "completion.cancelled" : "completion.failed")}</strong>
           <p>{messagePreview}</p>
         </div>
+        <button type="button" className="completionNewTask" onClick={onNewTask}>
+          <Plus size={15} />
+          {t("completion.newTask")}
+        </button>
       </div>
       {status === "failed" && (reason || observationError) ? (
         <div className="completionFailureReason">
@@ -129,102 +127,18 @@ export function CompletionSummary({
           <p>{completionMessage}</p>
         </details>
       ) : null}
-      {showEvidence ? <CompletionEvidence assessment={completion} /> : null}
-      <section className="completionNextActions" aria-label={t("completion.nextActions")}>
-        {status === "completed" ? (
-          <header>
-            <Sparkles size={16} />
-            <div>
-              <strong>{t("completion.nextActions")}</strong>
-              <span>{t("completion.nextActions.ready")}</span>
-            </div>
-          </header>
-        ) : null}
-        <div>
-          {nextActions.map((action) => (
-            <button
-              type="button"
-              onClick={() => {
-                if (action.kind === "inspect") {
-                  onInspectRun?.();
-                } else if (action.kind === "new") {
-                  onNewTask();
-                } else {
-                  onUseFollowUp?.(t(action.prompt));
-                }
-              }}
-              key={action.label}
-            >
-              <action.icon size={15} />
-              <span>{t(action.label)}</span>
-              <small>{t(action.description)}</small>
-            </button>
-          ))}
-        </div>
-      </section>
+      {showEvidence ? (
+        <details className="completionEvidenceDisclosure">
+          <summary>
+            <ListChecks size={16} />
+            <span><strong>{t("completion.evidenceTitle")}</strong><small>{completion?.verdict === "passed" ? t("completion.passed") : t("completion.notPassed")}</small></span>
+            <ChevronDown size={15} />
+          </summary>
+          <div><CompletionEvidence assessment={completion} /></div>
+        </details>
+      ) : null}
     </section>
   );
-}
-
-type NextAction = {
-  kind: "follow_up" | "inspect" | "new";
-  icon: typeof MessageSquarePlus;
-  label: TranslationKey;
-  description: TranslationKey;
-  prompt: TranslationKey;
-};
-
-function buildNextActions(status: string, testsStatus?: string): NextAction[] {
-  if (status === "completed") {
-    const verifyAction: NextAction = testsStatus === "Passed"
-      ? {
-          kind: "follow_up",
-          icon: ListChecks,
-          label: "completion.nextAction.expandTests",
-          description: "completion.nextAction.expandTests.desc",
-          prompt: "completion.followUp.expandTests",
-        }
-      : {
-          kind: "follow_up",
-          icon: FlaskConical,
-          label: "completion.nextAction.verify",
-          description: "completion.nextAction.verify.desc",
-          prompt: "completion.followUp.verify",
-        };
-    return [
-      verifyAction,
-      {
-        kind: "follow_up",
-        icon: MessageSquarePlus,
-        label: "completion.nextAction.continue",
-        description: "completion.nextAction.continue.desc",
-        prompt: "completion.followUp.continue",
-      },
-      {
-        kind: "new",
-        icon: ArrowRight,
-        label: "completion.nextAction.new",
-        description: "completion.nextAction.new.desc",
-        prompt: "completion.followUp.new",
-      },
-    ];
-  }
-  return [
-    {
-      kind: "follow_up",
-      icon: RotateCcw,
-      label: "completion.nextAction.retry",
-      description: "completion.nextAction.retry.desc",
-      prompt: "completion.followUp.retry",
-    },
-    {
-      kind: "follow_up",
-      icon: MessageSquarePlus,
-      label: "completion.nextAction.narrow",
-      description: "completion.nextAction.narrow.desc",
-      prompt: "completion.followUp.narrow",
-    },
-  ];
 }
 
 interface FailureDiagnosisInput {

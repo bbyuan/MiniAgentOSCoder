@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -30,6 +30,7 @@ import { GovernancePanel } from "./GovernancePanel";
 import { ExtensionPanel } from "./ExtensionPanel";
 
 type ControlView = ControlPlaneTarget | "trace";
+type PrimaryControlView = "overview" | "changes" | "context" | "settings";
 
 interface RuntimePanelsProps {
   initialTarget?: ControlPlaneTarget;
@@ -130,6 +131,15 @@ export function RuntimePanels({
       .map((event) => event.payload.skill_id)
       .filter((id): id is string => typeof id === "string"),
   ));
+  const activePrimary: PrimaryControlView = activeView === "overview" || activeView === "changes" || activeView === "context"
+    ? activeView
+    : "settings";
+  const primaryViews: Array<{ id: PrimaryControlView; icon: typeof Activity; label: TranslationKey }> = [
+    { id: "overview", icon: Activity, label: "inspector.overview" },
+    { id: "changes", icon: GitPullRequest, label: "inspector.changes" },
+    { id: "context", icon: BrainCircuit, label: "inspector.context" },
+    { id: "settings", icon: Settings2, label: "inspector.settings" },
+  ];
 
   return (
     <aside className="inspector">
@@ -141,27 +151,33 @@ export function RuntimePanels({
           </div>
           <span className={`inspectorRunState tone-${runStatus}`}>{translateStatus(locale, runStatus)}</span>
         </div>
-        <label className="controlViewPicker" htmlFor="control-plane-view">
-          <span>{t("inspector.view")}</span>
-          <select id="control-plane-view" value={activeView} onChange={(event) => setActiveView(event.target.value as ControlView)}>
-            <optgroup label={t("inspector.group.execution")}>
-              <option value="overview">{t("inspector.overview")}</option>
-              <option value="changes">{t("inspector.changes")}</option>
-            </optgroup>
-            <optgroup label={t("inspector.group.intelligence")}>
-              <option value="context">{t("inspector.context")}</option>
-              <option value="memory">{t("inspector.memory")}</option>
-            </optgroup>
-            <optgroup label={t("inspector.group.governance")}>
-              <option value="governance">{t("inspector.governance")}</option>
-              <option value="extensions">{t("inspector.extensions")}</option>
-              <option value="trace">{t("inspector.trace")}</option>
-            </optgroup>
-          </select>
-        </label>
+        <nav className="controlViewTabs" aria-label={t("inspector.view")}>
+          {primaryViews.map(({ id, icon: Icon, label }) => (
+            <button
+              type="button"
+              className={activePrimary === id ? "active" : ""}
+              aria-current={activePrimary === id ? "page" : undefined}
+              title={t(label)}
+              onClick={() => setActiveView(id === "settings" ? (activePrimary === "settings" ? activeView : "governance") : id)}
+              key={id}
+            >
+              <Icon size={15} />
+              <span>{t(label)}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       <div className="inspectorBody" id={`control-view-${activeView}`}>
+        {activePrimary === "settings" ? (
+          <nav className="controlSettingsTabs" aria-label={t("inspector.settings")}>
+            {(["governance", "extensions", "memory", "trace"] as ControlView[]).map((view) => (
+              <button type="button" className={activeView === view ? "active" : ""} onClick={() => setActiveView(view)} key={view}>
+                {t(`inspector.${view}` as TranslationKey)}
+              </button>
+            ))}
+          </nav>
+        ) : null}
         {activeView === "overview" ? (
           <section className="inspectorSection controlOverviewSection">
             <div className="sectionHeader controlOverviewHeader">

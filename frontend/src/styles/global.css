@@ -17406,3 +17406,243 @@ button.controlSignal.active {
     width: 100%;
   }
 }
+
+/* The run surface now has one clear status story and four user-facing detail areas. */
+.runStatusCurrent {
+  padding: 14px 15px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);
+  align-items: stretch;
+  gap: 10px;
+}
+
+.runStatusCurrentFocus,
+.runStatusNext {
+  min-width: 0;
+  min-height: 72px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.runStatusCurrentFocus small,
+.runStatusCurrentFocus strong,
+.runStatusCurrentFocus span,
+.runStatusNext small,
+.runStatusNext strong,
+.runStatusNext span {
+  min-width: 0;
+  display: block;
+}
+
+.runStatusCurrentFocus small,
+.runStatusNext small {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-weight: 740;
+}
+
+.runStatusCurrentFocus strong,
+.runStatusNext strong {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusCurrentFocus span,
+.runStatusNext span {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStatusNext {
+  border-color: transparent;
+  background: var(--surface-subtle);
+}
+
+.completionSummary > .completionLead {
+  grid-column: 1 / -1;
+}
+
+.completionLead {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.completionNewTask {
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.completionNewTask:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.completionEvidenceDisclosure {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.completionEvidenceDisclosure > summary {
+  min-height: 48px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.completionEvidenceDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.completionEvidenceDisclosure > summary > span,
+.completionEvidenceDisclosure > summary strong,
+.completionEvidenceDisclosure > summary small {
+  min-width: 0;
+  display: block;
+}
+
+.completionEvidenceDisclosure > summary strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.completionEvidenceDisclosure > summary small {
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.completionEvidenceDisclosure > summary > svg:last-child {
+  transition: transform 150ms ease;
+}
+
+.completionEvidenceDisclosure[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.completionEvidenceDisclosure > div {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.completionEvidenceDisclosure .completionEvidence {
+  padding: 0;
+  border: 0;
+}
+
+.controlViewTabs {
+  width: 100%;
+  padding: 3px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.controlViewTabs button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  background: transparent;
+}
+
+.controlViewTabs button span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controlViewTabs button.active {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.controlSettingsTabs {
+  min-height: 44px;
+  padding: 7px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.controlSettingsTabs button {
+  min-height: 29px;
+  padding: 0 9px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.controlSettingsTabs button.active {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+@media (max-width: 760px) {
+  .runStatusCurrent {
+    grid-template-columns: 1fr;
+  }
+
+  .completionLead {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .completionNewTask {
+    grid-column: 2;
+    width: fit-content;
+  }
+}
