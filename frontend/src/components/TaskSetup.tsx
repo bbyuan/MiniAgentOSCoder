@@ -55,6 +55,23 @@ export function TaskSetup({
     : "loading";
   const protocolCount = protocols?.summary.total ?? 0;
   const modelState = modelReady ? "ready" : model ? "blocked" : "checking";
+  const optionalSignalsMissing = !tests.length || !protocolCount || packState === "changed" || packState === "empty";
+  const readinessTone = !modelReady ? "blocked" : optionalSignalsMissing ? "review" : "ready";
+  const readinessTitle = !modelReady
+    ? t("task.setupSummaryBlocked")
+    : optionalSignalsMissing
+      ? t("task.setupSummaryReview")
+      : t("task.setupSummaryReady");
+  const readinessHint = !modelReady
+    ? t("task.setupSummaryBlockedHint")
+    : optionalSignalsMissing
+      ? t("task.setupSummaryReviewHint")
+      : t("task.setupSummaryReadyHint");
+  const baselineChip = packState === "changed"
+    ? t("task.setupChipBaselineChanged")
+    : packState === "loading"
+      ? t("task.setupChipBaselineChecking")
+      : t("task.setupChipBaselineReady");
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
@@ -151,9 +168,21 @@ export function TaskSetup({
         </div>
       </div>
 
-      <details className="setupDetails compactSetupDetails">
+      <details className={`setupDetails compactSetupDetails taskReadinessDisclosure tone-${readinessTone}`} open={modelState === "blocked" ? true : undefined}>
         <summary>
-          <span>{t("task.setupDetails")}</span>
+          <span className="taskReadinessSummaryIcon">
+            {readinessTone === "blocked" ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+          </span>
+          <span className="taskReadinessSummaryCopy">
+            <strong>{readinessTitle}</strong>
+            <small>{readinessHint}</small>
+          </span>
+          <span className="taskReadinessPills" aria-label={t("task.setupDetails")}>
+            <em className={modelReady ? "ready" : "blocked"}>{t(modelReady ? "task.setupChipModelReady" : "task.setupChipModelMissing")}</em>
+            <em className={tests.length ? "ready" : "optional"}>{t(tests.length ? "task.setupChipTestsReady" : "task.setupChipTestsOptional")}</em>
+            <em className={protocolCount ? "ready" : "optional"}>{t(protocolCount ? "task.setupChipProtocolReady" : "task.setupChipProtocolOptional")}</em>
+            <em className={packState === "changed" ? "optional" : "ready"}>{baselineChip}</em>
+          </span>
           <ChevronDown size={15} />
         </summary>
         <section className="compactProjectChecks" aria-label={t("task.readinessTitle")}>
