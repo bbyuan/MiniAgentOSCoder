@@ -107,6 +107,15 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
 
   if (!open || !project) return null;
 
+  function showChangedFiles() {
+    setFileScope("changes");
+    const changedPath = firstChangedPath(changeSet?.patch ?? "", changeSet?.changedFiles ?? []);
+    if (changedPath && !changedByPath.has(selectedPath)) {
+      setSelectedPath(changedPath);
+      setPreviewMode("diff");
+    }
+  }
+
   async function loadFiles(nextQuery = query) {
     if (!project) return;
     setLoadingFiles(true);
@@ -130,7 +139,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
 
   return (
     <div className="workspaceFilesBackdrop" role="presentation">
-      <section className="workspaceFilesDialog" role="dialog" aria-modal="true" aria-label={t("workspaceFiles.title")}>
+      <section className={`workspaceFilesDialog ${hasChanges ? "withChanges" : ""}`} role="dialog" aria-modal="true" aria-label={t("workspaceFiles.title")}>
         <header className="workspaceFilesHeader">
           <div>
             <span className="eyebrow">{t("workspaceFiles.eyebrow")}</span>
@@ -162,7 +171,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
               <span>{t("workspaceFiles.changeRailHint")}</span>
             </div>
             <div className="workspaceScopeTabs" role="tablist" aria-label={t("workspaceFiles.scope")}>
-              <button type="button" className={fileScope === "changes" ? "active" : ""} onClick={() => setFileScope("changes")}>
+              <button type="button" className={fileScope === "changes" ? "active" : ""} onClick={showChangedFiles}>
                 <FileDiff size={15} />
                 {t("workspaceFiles.changedOnly")}
               </button>

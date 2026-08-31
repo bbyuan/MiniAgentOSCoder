@@ -17552,7 +17552,7 @@ button.controlSignal.active {
   width: min(1480px, calc(100vw - 48px));
 }
 
-.workspaceFilesDialog:has(.workspaceChangeRail) {
+.workspaceFilesDialog.withChanges {
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
 }
 
