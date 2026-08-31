@@ -1,5 +1,5 @@
 import { ArrowUp, ShieldCheck, Square } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePreferences } from "../preferences";
 
 interface RunSteeringComposerProps {
@@ -8,6 +8,7 @@ interface RunSteeringComposerProps {
   stopping: boolean;
   queuedCount?: number;
   appliedCount?: number;
+  changeReview?: ReactNode;
   onSend: (message: string) => Promise<void>;
   onStop: () => void;
 }
@@ -18,6 +19,7 @@ export function RunSteeringComposer({
   stopping,
   queuedCount = 0,
   appliedCount = 0,
+  changeReview,
   onSend,
   onStop,
 }: RunSteeringComposerProps) {
@@ -58,6 +60,7 @@ export function RunSteeringComposer({
             {t("steering.stop")}
           </button>
         </div>
+        {changeReview ? <div className="steeringChangeReview">{changeReview}</div> : null}
         <textarea
           rows={2}
           value={message}

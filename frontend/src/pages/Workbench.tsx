@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FileDiff, FolderOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, Check, CheckCircle2, ChevronDown, FileDiff, FolderOpen, RefreshCw, Server, UserRound, WifiOff, X } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -42,7 +42,6 @@ import { AgentPackDialog } from "../components/AgentPackDialog";
 import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
-import { ApprovalPanel } from "../components/ApprovalPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
@@ -80,6 +79,18 @@ const followUpTemplates: TranslationKey[] = [
   "session.template.addTests",
   "session.template.explainChanges",
 ];
+
+const zhRunTitles: Record<string, string> = {
+  running: "智能体正在工作",
+  waiting_approval: "需要确认代码变更",
+  applying_patch: "正在应用已确认的修改",
+  testing: "正在验证代码变更",
+  repairing: "智能体正在调整方案",
+  cancellation_requested: "正在停止运行",
+  completed: "任务已完成",
+  failed: "任务需要处理",
+  cancelled: "任务已取消",
+};
 
 export function Workbench() {
   const { locale, t } = usePreferences();
@@ -199,6 +210,7 @@ export function Workbench() {
   const copy = runId
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
+  const runTitle = locale === "zh" ? zhRunTitles[runStatus] ?? t(copy.title) : t(copy.title);
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
   const visibleFollowUpTemplates = runStatus === "completed"
@@ -1275,7 +1287,7 @@ export function Workbench() {
           <header className="runSessionHero">
             <div>
               <span className="eyebrow">{basename(project.path)} · {translateMode(locale, mode)} · {t("conversation.turn", { count: currentTurnIndex + 1 })}</span>
-              <h1>{t(copy.title)}</h1>
+              <h1>{runTitle}</h1>
               <p>{task}</p>
             </div>
           </header>
@@ -1294,15 +1306,6 @@ export function Workbench() {
             />
           ) : null}
 
-          {!terminal && displayDiff.files > 0 ? (
-            <section className="runChangeShortcut" aria-label={t("run.changeShortcut", { count: displayDiff.files })}>
-              <button type="button" onClick={openArtifactChanges}>
-                <FileDiff size={15} />
-                {t("run.changeShortcutAction")}
-              </button>
-            </section>
-          ) : null}
-
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>
               <div className="turnAvatar"><UserRound size={16} /></div>
@@ -1313,27 +1316,6 @@ export function Workbench() {
               </div>
             </section>
           ))}
-
-          {approval ? (
-            <div className="inlineApproval">
-              <ApprovalPanel
-                approval={approval}
-                busy={approvalBusy}
-                onInspectChanges={approval.target.tool === "apply_patch" ? () => {
-                  setWorkspaceChangeSet({
-                    title: t("workspaceFiles.pendingChanges"),
-                    patch: approval.target.patch,
-                    changedFiles: approval.target.files ?? [],
-                    insertions: approval.target.additions,
-                    deletions: approval.target.deletions,
-                  });
-                  setWorkspaceFilesOpen(true);
-                } : undefined}
-                onApprove={approveAction}
-                onDeny={denyAction}
-              />
-            </div>
-          ) : null}
 
           {terminal ? (
             <CompletionSummary
@@ -1363,6 +1345,52 @@ export function Workbench() {
               stopping={runStatus === "cancellation_requested"}
               queuedCount={steeringMessages.filter((guidance) => !guidance.applied).length}
               appliedCount={steeringMessages.filter((guidance) => guidance.applied).length}
+              changeReview={
+                approval?.target.tool === "apply_patch" ? (
+                  <RunChangeReviewPill
+                    title={t("approval.patchNeedsReview")}
+                    meta={t("approval.compactPatchSummary", {
+                      count: approval.target.files?.length ?? 0,
+                      additions: approval.target.additions,
+                      deletions: approval.target.deletions,
+                    })}
+                    decisionRequired
+                    busy={approvalBusy}
+                    onInspect={() => {
+                      setWorkspaceChangeSet({
+                        title: t("workspaceFiles.pendingChanges"),
+                        patch: approval.target.patch,
+                        changedFiles: approval.target.files ?? [],
+                        insertions: approval.target.additions,
+                        deletions: approval.target.deletions,
+                      });
+                      setWorkspaceFilesOpen(true);
+                    }}
+                    onAccept={approveAction}
+                    onReject={() => denyAction(t("approval.defaultDenyReason"))}
+                  />
+                ) : approval ? (
+                  <RunChangeReviewPill
+                    title={t("approval.commandReviewTitle")}
+                    meta={t("approval.commandReviewHint")}
+                    inspectLabel={t("approval.inspectAction")}
+                    decisionRequired
+                    busy={approvalBusy}
+                    onInspect={() => {
+                      setRuntimePanelTarget("overview");
+                      setRuntimeDetailsOpen(true);
+                    }}
+                    onAccept={approveAction}
+                    onReject={() => denyAction(t("approval.defaultDenyReason"))}
+                  />
+                ) : !approval && displayDiff.files > 0 ? (
+                  <RunChangeReviewPill
+                    title={t("run.changeShortcutLabel")}
+                    meta={t("run.changeShortcut", { count: displayDiff.files })}
+                    onInspect={openArtifactChanges}
+                  />
+                ) : undefined
+              }
               onSend={steerRun}
               onStop={() => void cancelRun()}
             />
@@ -1499,6 +1527,54 @@ export function Workbench() {
         onSaveVersion={() => void saveAgentPackVersion()}
       />
     </main>
+  );
+}
+
+function RunChangeReviewPill({
+  title,
+  meta,
+  inspectLabel,
+  decisionRequired = false,
+  busy = false,
+  onInspect,
+  onAccept,
+  onReject,
+}: {
+  title: string;
+  meta: string;
+  inspectLabel?: string;
+  decisionRequired?: boolean;
+  busy?: boolean;
+  onInspect: () => void;
+  onAccept?: () => void;
+  onReject?: () => void;
+}) {
+  const { t } = usePreferences();
+  return (
+    <div className={`composerChangePill ${decisionRequired ? "needsDecision" : ""}`}>
+      <div>
+        <FileDiff size={15} />
+        <span>
+          <strong>{title}</strong>
+          <small>{meta}</small>
+        </span>
+      </div>
+      <div>
+        <button type="button" className="inspect" onClick={onInspect}>
+          {inspectLabel ?? t("approval.inspectChanges")}
+        </button>
+        {decisionRequired && onReject ? (
+          <button type="button" className="reject" disabled={busy} onClick={onReject} aria-label={t("approval.rejectPatch")}>
+            <X size={14} />
+          </button>
+        ) : null}
+        {decisionRequired && onAccept ? (
+          <button type="button" className="accept" disabled={busy} onClick={onAccept} aria-label={t("approval.acceptPatch")}>
+            <Check size={14} />
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
