@@ -78,18 +78,21 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
             <span>{t("progress.summary", { completed: completedSteps, total: plan.length })}</span>
             <i aria-hidden="true"><b style={{ width: `${Math.round((completedSteps / plan.length) * 100)}%` }} /></i>
           </div>
-          <ol>
-            {plan.map((item) => (
-              <li className={`state-${item.state}`} key={item.id ?? item.title}>
-                <span><StepIcon state={item.state} /></span>
-                <div>
-                  <strong>{translateKnownText(locale, item.title)}</strong>
-                  <small>{t(stepStateLabel(item.state))}</small>
-                  {item.detail ? <em>{translateKnownText(locale, item.detail)}</em> : null}
-                </div>
-              </li>
-            ))}
-          </ol>
+          <details className="runStepDetails">
+            <summary>{t("runStatus.viewSteps")}</summary>
+            <ol>
+              {plan.map((item) => (
+                <li className={`state-${item.state}`} key={item.id ?? item.title}>
+                  <span><StepIcon state={item.state} /></span>
+                  <div>
+                    <strong>{translateKnownText(locale, item.title)}</strong>
+                    <small>{t(stepStateLabel(item.state))}</small>
+                    {item.detail ? <em>{translateKnownText(locale, item.detail)}</em> : null}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </details>
         </div>
       ) : null}
     </section>

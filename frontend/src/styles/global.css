@@ -16121,3 +16121,280 @@ button.controlSignal.active {
     padding-block: 11px;
   }
 }
+
+/* Usability hardening: keep the active run page calm and stable. */
+.productContent .runSimpleLayout .inspector {
+  width: min(100%, 860px);
+  min-width: 0;
+  max-width: 860px;
+  min-height: auto;
+  height: auto;
+  margin: 0 auto 48px;
+  position: static;
+  justify-self: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 56px rgba(15, 23, 42, 0.07);
+}
+
+.productContent .runSimpleLayout .inspectorBody {
+  max-height: min(680px, 72vh);
+}
+
+.runStatusTimeline {
+  padding: 0 14px 14px;
+}
+
+.runStatusStepSummary {
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: max-content minmax(160px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.runStatusStepSummary span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.runStatusStepSummary i {
+  height: 6px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 68%, transparent);
+}
+
+.runStatusStepSummary b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--success), color-mix(in srgb, var(--success) 70%, var(--accent)));
+}
+
+.runStatusTimeline > ol {
+  display: none;
+}
+
+.runStepDetails {
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.runStepDetails > summary {
+  min-height: 38px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.runStepDetails > summary::-webkit-details-marker {
+  display: none;
+}
+
+.runStepDetails > summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+
+.runStepDetails[open] > summary {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.runStepDetails[open] > summary::after {
+  transform: rotate(-135deg) translateY(-1px);
+}
+
+.runStepDetails ol,
+.productContent .runSimpleLayout .runStepDetails ol,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails ol {
+  margin: 0;
+  padding: 8px 10px 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  list-style: none;
+}
+
+.runStepDetails li,
+.productContent .runSimpleLayout .runStepDetails li,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-active,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-failed,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li:not(.state-active):not(.state-failed) {
+  min-width: 0;
+  min-height: 46px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.runStepDetails li > span,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+
+.runStepDetails li > div,
+.runStepDetails li strong,
+.runStepDetails li small,
+.runStepDetails li em {
+  min-width: 0;
+  display: block;
+  writing-mode: horizontal-tb;
+}
+
+.runStepDetails li strong,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li strong,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li:not(.state-active):not(.state-failed) strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStepDetails li small {
+  margin-top: 2px;
+  color: currentColor;
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.runStepDetails li em {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runStepDetails li.state-done {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 45%, var(--surface));
+}
+
+.runStepDetails li.state-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 52%, var(--surface));
+}
+
+.runStepDetails li.state-failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 56%, var(--surface));
+}
+
+.completionSummary.tone-failed,
+.completionSummary.tone-cancelled {
+  gap: 14px;
+  padding: 22px;
+}
+
+.completionSummary.tone-failed .completionDiagnosis,
+.completionSummary.tone-cancelled .completionDiagnosis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+}
+
+.completionSummary.tone-failed .diagnosisActions,
+.completionSummary.tone-cancelled .diagnosisActions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.completionSummary.tone-failed .diagnosisActions article,
+.completionSummary.tone-cancelled .diagnosisActions article {
+  min-height: 34px;
+  padding: 0 10px;
+  flex: 1 1 220px;
+}
+
+.completionSummary.tone-failed .completionNextActions,
+.completionSummary.tone-cancelled .completionNextActions {
+  padding: 10px 0 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.completionSummary.tone-failed .completionNextActions > div,
+.completionSummary.tone-cancelled .completionNextActions > div {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.completionSummary.tone-failed .completionNextActions button,
+.completionSummary.tone-cancelled .completionNextActions button {
+  min-height: 36px;
+  width: auto;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.completionSummary.tone-failed .completionNextActions button small,
+.completionSummary.tone-cancelled .completionNextActions button small {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .runStatusNow {
+    grid-template-columns: 1fr;
+  }
+
+  .runStatusStepSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .runStatusStepSummary span {
+    white-space: normal;
+  }
+
+  .completionSummary.tone-failed .completionDiagnosis,
+  .completionSummary.tone-cancelled .completionDiagnosis {
+    grid-template-columns: 1fr;
+  }
+}

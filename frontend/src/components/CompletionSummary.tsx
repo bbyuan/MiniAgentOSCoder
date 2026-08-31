@@ -71,6 +71,8 @@ export function CompletionSummary({
     testsStatus: tests?.status,
   });
   const nextActions = buildNextActions(status, tests?.status);
+  const showEvidence = status === "completed" || completion?.verdict === "passed";
+  const showSignals = status === "completed" || Boolean(diff?.files) || Boolean(tests);
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -113,10 +115,12 @@ export function CompletionSummary({
           ) : null}
         </section>
       ) : null}
-      <div className="completionSignals">
-        <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div>
-        <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
-      </div>
+      {showSignals ? (
+        <div className="completionSignals">
+          <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div>
+          <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
+        </div>
+      ) : null}
       <CodeChangePreview artifacts={artifacts} />
       {hasMoreMessage ? (
         <details className="completionDetails">
@@ -124,15 +128,17 @@ export function CompletionSummary({
           <p>{completionMessage}</p>
         </details>
       ) : null}
-      <CompletionEvidence assessment={completion} />
+      {showEvidence ? <CompletionEvidence assessment={completion} /> : null}
       <section className="completionNextActions" aria-label={t("completion.nextActions")}>
-        <header>
-          <Sparkles size={16} />
-          <div>
-            <strong>{t("completion.nextActions")}</strong>
-            <span>{t(status === "completed" ? "completion.nextActions.ready" : "completion.nextActions.recover")}</span>
-          </div>
-        </header>
+        {status === "completed" ? (
+          <header>
+            <Sparkles size={16} />
+            <div>
+              <strong>{t("completion.nextActions")}</strong>
+              <span>{t("completion.nextActions.ready")}</span>
+            </div>
+          </header>
+        ) : null}
         <div>
           {nextActions.map((action) => (
             <button
@@ -203,13 +209,6 @@ function buildNextActions(status: string, testsStatus?: string): NextAction[] {
     ];
   }
   return [
-    {
-      kind: "inspect",
-      icon: ShieldCheck,
-      label: "completion.nextAction.inspect",
-      description: "completion.nextAction.inspect.desc",
-      prompt: "completion.followUp.inspect",
-    },
     {
       kind: "follow_up",
       icon: RotateCcw,

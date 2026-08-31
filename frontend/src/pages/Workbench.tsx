@@ -1032,7 +1032,7 @@ export function Workbench() {
           />
         </div>
       ) : (
-        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout preflightSimpleLayout" : runtimeDetailsOpen ? "" : "runSimpleLayout"}`}>
+        <div className={`workbenchLayout ${runIsPrepared ? "preflightLayout preflightSimpleLayout" : "runSimpleLayout"}`}>
           <section className={`runCanvas ${runIsPrepared ? "preflightCanvas" : ""}`}>
             {runIsPrepared ? (
               <>
