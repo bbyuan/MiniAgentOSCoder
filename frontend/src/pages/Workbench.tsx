@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FolderOpen, PanelRightClose, PanelRightOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FolderOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -1249,17 +1249,6 @@ export function Workbench() {
               <h1>{t(copy.title)}</h1>
               <p>{task}</p>
             </div>
-            <button
-              type="button"
-              className="runDetailsAction"
-              onClick={() => {
-                if (!runtimeDetailsOpen) setRuntimePanelTarget("overview");
-                setRuntimeDetailsOpen((current) => !current);
-              }}
-            >
-              {runtimeDetailsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-              {t(runtimeDetailsOpen ? "run.hideDetails" : "run.showDetails")}
-            </button>
           </header>
 
           <ConversationHistory conversation={conversation} currentRunId={runId} />
