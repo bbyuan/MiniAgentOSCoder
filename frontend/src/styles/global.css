@@ -17974,3 +17974,347 @@ button.controlSignal.active {
     padding: 20px 18px;
   }
 }
+
+/* Legacy override boundary: responsive rules below are authoritative. */
+.topbarInner,
+.brand,
+.brandCopy,
+.topbarControls,
+.taskComposerOptions,
+.taskPrimaryActions,
+.runSessionHero > div,
+.runStatusNow > div,
+.steeringInlineActions {
+  min-width: 0;
+}
+
+button > svg {
+  flex: 0 0 auto;
+}
+
+.projectSidebar,
+.productContent,
+.runCanvas,
+.runCenterBody,
+.historyDetailContent,
+.advancedSetupBody,
+.inspectorBody {
+  min-width: 0;
+}
+
+.controlViewTabs button {
+  flex-direction: row;
+  gap: 6px;
+}
+
+.controlViewTabs button span {
+  font-size: 10px;
+}
+
+@media (max-width: 1100px) {
+  .productFrame {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    border-inline: 0;
+  }
+
+  .projectSidebar {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 68px;
+    height: 68px;
+    max-height: none;
+    padding: 9px 14px;
+    position: sticky;
+    top: 74px;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .projectSidebar .sidebarProject {
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 9px;
+  }
+
+  .projectSidebar .sidebarProject > span:last-child {
+    min-width: 0;
+  }
+
+  .projectSidebar .sidebarNewTask {
+    width: auto;
+    height: 42px;
+    margin: 0;
+    padding: 0 14px;
+  }
+
+  .projectSidebar .sidebarSectionHeader,
+  .projectSidebar .sidebarRuns {
+    display: none;
+  }
+
+  .projectSidebar .sidebarUtilities {
+    margin: 0;
+    padding: 0;
+    display: block;
+    border: 0;
+  }
+
+  .projectSidebar .sidebarHistory {
+    width: auto;
+    min-height: 42px;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 960px) {
+  .topbarInner {
+    padding-inline: 16px;
+    gap: 14px;
+  }
+
+  .brandMeta {
+    max-width: 34vw;
+  }
+
+  .taskComposerToolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .taskComposerOptions,
+  .taskPrimaryActions {
+    width: 100%;
+  }
+
+  .runCenter {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+    margin: 10px 10px 10px 0;
+    position: relative;
+  }
+
+  .runCenterBody {
+    height: calc(100vh - 102px);
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .historyDetail {
+    position: absolute;
+    inset: 82px 0 0 210px;
+    z-index: 3;
+    display: none;
+    border-left: 1px solid var(--hairline);
+    background: var(--surface);
+  }
+
+  .historyDetail:has(.historyDetailContent) {
+    display: block;
+  }
+
+  .historyRunList:has(+ .historyDetail .historyDetailContent) {
+    visibility: hidden;
+  }
+
+  .historyBackButton {
+    display: inline-grid;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbarInner {
+    padding-inline: 10px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brandMark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brandMeta,
+  .modelChip {
+    display: none;
+  }
+
+  .brandName {
+    max-width: 128px;
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbarControls {
+    gap: 5px;
+  }
+
+  .runtimeChip {
+    width: 38px;
+    min-width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .runtimeChip span:last-child {
+    display: none;
+  }
+
+  .projectSidebar {
+    min-height: 62px;
+    height: 62px;
+    padding: 7px 10px;
+    grid-template-columns: minmax(0, 1fr) 42px 42px;
+  }
+
+  .projectSidebar .sidebarProject {
+    min-height: 46px;
+  }
+
+  .projectSidebar .sidebarProject small {
+    display: none;
+  }
+
+  .projectSidebar .sidebarNewTask,
+  .projectSidebar .sidebarHistory {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .projectSidebar .sidebarNewTask span,
+  .projectSidebar .sidebarHistory span {
+    display: none;
+  }
+
+  .productContent > .taskStage {
+    padding: 24px 14px 38px;
+  }
+
+  .productTaskIntro {
+    text-align: left;
+  }
+
+  .productTaskIntro h1 {
+    font-size: 30px;
+    line-height: 1.12;
+  }
+
+  .taskComposerOptions,
+  .taskPrimaryActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .taskTypeSelect,
+  .exampleFillAction,
+  .runSettingsAction,
+  .startTaskAction {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .runSessionHero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runSessionHero .runDetailsAction {
+    width: fit-content;
+    justify-self: start;
+  }
+
+  .runStatusNow,
+  .historyContinueBand form,
+  .historyEvidenceLine {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historyContinueBand button {
+    justify-content: center;
+  }
+
+  .historyEvidenceLine {
+    gap: 4px;
+  }
+
+  .historyEvidenceLine strong + span {
+    margin-top: 6px;
+  }
+
+  .steeringInlineActions,
+  .followUpTemplates,
+  .runtimeConnectionActions {
+    flex-wrap: wrap;
+  }
+
+  .controlViewTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .brandCopy {
+    display: none;
+  }
+
+  .topbar .segmentedControl {
+    min-width: 72px;
+  }
+
+  .runCenter {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .runCenterBody {
+    height: calc(100dvh - 68px);
+  }
+
+  .historyDetail {
+    inset: 68px 0 0;
+    border-left: 0;
+  }
+
+  .taskQuickStarts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .taskQuickStarts button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .taskPrimaryActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .completionLead {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .completionNewTask {
+    grid-column: 2;
+  }
+}
