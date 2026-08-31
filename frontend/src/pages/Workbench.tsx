@@ -80,18 +80,6 @@ const followUpTemplates: TranslationKey[] = [
   "session.template.explainChanges",
 ];
 
-const zhRunTitles: Record<string, string> = {
-  running: "智能体正在工作",
-  waiting_approval: "需要确认代码变更",
-  applying_patch: "正在应用已确认的修改",
-  testing: "正在验证代码变更",
-  repairing: "智能体正在调整方案",
-  cancellation_requested: "正在停止运行",
-  completed: "任务已完成",
-  failed: "任务需要处理",
-  cancelled: "任务已取消",
-};
-
 export function Workbench() {
   const { locale, t } = usePreferences();
   const [showSplash, setShowSplash] = useState(true);
@@ -210,7 +198,7 @@ export function Workbench() {
   const copy = runId
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
-  const runTitle = locale === "zh" ? zhRunTitles[runStatus] ?? t(copy.title) : t(copy.title);
+  const runTitle = t(copy.title);
   const displayTask = translateKnownText(locale, task);
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
