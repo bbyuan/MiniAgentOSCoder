@@ -8,13 +8,17 @@ import {
   CircleAlert,
   CornerDownRight,
   FileDiff,
+  FilePenLine,
   FileText,
+  FolderTree,
   History,
   Layers3,
   PlugZap,
   RotateCcw,
+  Search,
   ShieldAlert,
   Sparkles,
+  Terminal,
   UserRound,
   Wrench,
   type LucideIcon,
@@ -85,6 +89,12 @@ interface ProcessEvent {
   detail: string;
   chips: string[];
   output?: string;
+}
+
+interface WorkItem extends ProcessEvent {
+  icon: LucideIcon;
+  tone: string;
+  time: string;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -193,6 +203,23 @@ function actionLabel(event: TraceEvent, t: Translator): string {
   if (name === "apply_patch") return t("activity.work.applyPatch");
   if (name === "finish") return t("activity.work.finish");
   return t("activity.work.generic");
+}
+
+function workPresentation(event: TraceEvent): { icon: LucideIcon; tone: string } {
+  const name = actionName(event);
+  if (event.event === "approval.requested" || event.event === "approval.resolved" || event.event === "approval.cancelled") return { icon: ShieldAlert, tone: "approval" };
+  if (event.event === "completion.passed") return { icon: CheckCircle2, tone: "success" };
+  if (event.event === "completion.rejected") return { icon: CircleAlert, tone: "warning" };
+  if (event.event === "policy.evaluated" || event.event === "action.rejected") return { icon: ShieldAlert, tone: "danger" };
+  if (event.event.includes("failed") || event.event.includes("exceeded")) return { icon: CircleAlert, tone: "danger" };
+  if (name === "read_file") return { icon: FileText, tone: "tool" };
+  if (name === "search_code") return { icon: Search, tone: "tool" };
+  if (name === "list_files") return { icon: FolderTree, tone: "tool" };
+  if (name === "run_command") return { icon: Terminal, tone: "action" };
+  if (name === "apply_patch") return { icon: FilePenLine, tone: "patch" };
+  if (name === "finish" || event.event === "report.generated") return { icon: CheckCircle2, tone: "success" };
+  if (event.event.startsWith("user.guidance.")) return { icon: UserRound, tone: "action" };
+  return eventPresentation(event.event);
 }
 
 function actionDetail(event: TraceEvent, t: Translator): string {
@@ -356,25 +383,35 @@ function processEvent(
   return { title: t("activity.title.runtime"), detail: t("activity.detail.system"), chips };
 }
 
+function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translator): WorkItem[] {
+  return events.filter(isProcessEvent).map((event) => {
+    const presentation = workPresentation(event);
+    return {
+      ...processEvent(event, locale, t),
+      icon: presentation.icon,
+      tone: presentation.tone,
+      time: event.time,
+    };
+  });
+}
+
 export function ActivityFeed({ events, status, embedded = false }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
   const [expanded, setExpanded] = useState(true);
-  const processEvents = events.filter(isProcessEvent);
-  const visibleEvents = processEvents.slice(expanded ? -10 : -3);
+  const workItems = buildWorkItems(events, locale, t);
+  const visibleItems = workItems.slice(expanded ? -10 : -3);
   const state = activityState(status);
-  const latestEvent = processEvents[processEvents.length - 1];
-  const latestPresentation = latestEvent ? eventPresentation(latestEvent.event) : null;
-  const LatestIcon = latestPresentation?.icon ?? Activity;
-  const latestProcess = latestEvent ? processEvent(latestEvent, locale, t) : null;
+  const latestItem = workItems[workItems.length - 1];
+  const LatestIcon = latestItem?.icon ?? Activity;
 
-  if (embedded && processEvents.length === 0) return null;
+  if (embedded && workItems.length === 0) return null;
 
   return (
-    <section className={`activityPanel${embedded ? " activityPanelInline" : ""}`} aria-live="polite">
-      <div className="activityHeader">
-        <button type="button" className="activityToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
+    <section className={`agentProcess${embedded ? " agentProcessInline" : ""}`} aria-live="polite">
+      <div className="agentProcessHeader">
+        <button type="button" className="agentProcessToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
-          <span><strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong><small>{t("activity.workLogDescription", { count: processEvents.length })}</small></span>
+          <span><strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong><small>{t("activity.workLogDescription", { count: workItems.length })}</small></span>
         </button>
         <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
@@ -382,34 +419,35 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
         </div>
       </div>
 
-      {!expanded && latestEvent ? (
-        <div className="activityPreview">
-          <div className={`eventIcon tone-${latestPresentation?.tone ?? "runtime"}`}><LatestIcon size={15} /></div>
-          <div><strong>{latestProcess?.title}</strong><span>{latestProcess?.detail}</span></div>
-          <time dateTime={latestEvent.time}>{eventTime(latestEvent.time)}</time>
+      {!expanded && latestItem ? (
+        <div className="agentProcessPreview">
+          <div className={`eventIcon tone-${latestItem.tone}`}><LatestIcon size={15} /></div>
+          <div><strong>{latestItem.title}</strong><span>{latestItem.detail}</span></div>
+          <time dateTime={latestItem.time}>{eventTime(latestItem.time)}</time>
         </div>
       ) : null}
 
-      {expanded && visibleEvents.length === 0 ? (
+      {expanded && visibleItems.length === 0 ? (
         <div className="activityEmpty">
           <div className="emptyGlyph"><Activity size={20} /></div>
           <strong>{t("activity.emptyTitle")}</strong>
           <span>{t("activity.emptyDescription")}</span>
         </div>
       ) : expanded ? (
-        <div className="activityList">
-          {visibleEvents.map((event, index) => {
-            const presentation = eventPresentation(event.event);
-            const Icon = presentation.icon;
-            const item = processEvent(event, locale, t);
+        <ol className="agentProcessList">
+          {visibleItems.map((item, index) => {
+            const Icon = item.icon;
             return (
-              <article className="activityItem" key={`${event.time}-${event.event}-${index}`}>
-                <div className={`eventIcon tone-${presentation.tone}`}>
+              <li className="agentProcessItem" key={`${item.time}-${item.title}-${index}`}>
+                <div className={`eventIcon tone-${item.tone}`}>
                   <Icon size={15} aria-hidden="true" />
                 </div>
-                <div className="eventCopy">
-                  <strong>{item.title}</strong>
-                  <span>{item.detail}</span>
+                <div className="agentProcessBody">
+                  <div className="agentProcessLead">
+                    <strong>{item.title}</strong>
+                    <time dateTime={item.time}>{eventTime(item.time)}</time>
+                  </div>
+                  <p>{item.detail}</p>
                   {item.chips.length ? (
                     <div className="activityChips">
                       {item.chips.slice(0, 3).map((chip) => <em key={chip}>{chip}</em>)}
@@ -422,11 +460,10 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
                     </details>
                   ) : null}
                 </div>
-                <time dateTime={event.time}>{eventTime(event.time)}</time>
-              </article>
+              </li>
             );
           })}
-        </div>
+        </ol>
       ) : null}
     </section>
   );
