@@ -4,6 +4,7 @@ import type {
   ContextCompactionResponse,
   ContextPack,
   CreateMCPServerRequest,
+  CreateHookRequest,
   CreateSkillRequest,
   ExtensionResponse,
   ExtensionSettings,
@@ -78,6 +79,7 @@ interface RuntimePanelsProps {
   onSaveExtensions: (settings: ExtensionSettings) => Promise<void>;
   onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
   onCreateMCPServer: (request: CreateMCPServerRequest) => Promise<void>;
+  onCreateHook: (request: CreateHookRequest) => Promise<void>;
 }
 
 export function RuntimePanels({
@@ -109,6 +111,7 @@ export function RuntimePanels({
   onSaveExtensions,
   onCreateSkill,
   onCreateMCPServer,
+  onCreateHook,
 }: RuntimePanelsProps) {
   const [activeView, setActiveView] = useState<ControlView>(initialTarget);
   const { locale, t } = usePreferences();
@@ -330,7 +333,7 @@ export function RuntimePanels({
 
         {activeView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
         {activeView === "memory" ? <MemoryPanel memory={memory} busy={memoryBusy} onCreate={onCreateMemory} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} /> : null}
-        {activeView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} onCreateSkill={onCreateSkill} onCreateMCPServer={onCreateMCPServer} /> : null}
+        {activeView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} onCreateSkill={onCreateSkill} onCreateMCPServer={onCreateMCPServer} onCreateHook={onCreateHook} /> : null}
         {activeView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
         {activeView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
       </div>

@@ -421,6 +421,15 @@ export interface CreateMCPServerRequest {
   risk?: string;
 }
 
+export interface CreateHookRequest {
+  id: string;
+  name: string;
+  event: "run.before" | "run.after" | "tool.before" | "tool.after";
+  command: string[];
+  timeout_seconds?: number;
+  failure_policy?: "warn" | "block";
+}
+
 export interface ExtensionResponse {
   run_id: string;
   editable: boolean;
@@ -979,6 +988,11 @@ export const daemonApi = {
     }),
   createMCPServer: (runId: string, body: CreateMCPServerRequest) =>
     request<ExtensionResponse>(`/runs/${runId}/extensions/mcp-servers`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createHook: (runId: string, body: CreateHookRequest) =>
+    request<ExtensionResponse>(`/runs/${runId}/extensions/hooks`, {
       method: "POST",
       body: JSON.stringify(body),
     }),

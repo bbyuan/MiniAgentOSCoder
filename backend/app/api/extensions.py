@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.api.store import store
-from app.models import ExtensionSettings, RunPhase
+from app.models import ExtensionSettings, HookEvent, HookFailurePolicy, RunPhase
 from app.runtime.config import load_yaml, yaml
 from app.runtime.extensions import load_extension_catalog, validate_extension_settings
 from app.runtime.paths import default_agent_dir
@@ -41,6 +41,15 @@ class CreateMCPServerRequest(BaseModel):
     env_allow: list[str] = Field(default_factory=list)
     timeout_seconds: int = Field(default=15, ge=1, le=120)
     risk: str = Field(default="high")
+
+
+class CreateHookRequest(BaseModel):
+    id: str = Field(min_length=2, max_length=64)
+    name: str = Field(min_length=1, max_length=80)
+    event: HookEvent = HookEvent.RUN_AFTER
+    command: list[str] = Field(min_length=1, max_length=24)
+    timeout_seconds: int = Field(default=30, ge=1, le=120)
+    failure_policy: HookFailurePolicy = HookFailurePolicy.WARN
 
 
 @router.get("/{run_id}/extensions")
@@ -203,6 +212,39 @@ def create_mcp_server(run_id: str, request: CreateMCPServerRequest) -> dict[str,
     validate_extension_settings(store.extension_catalogs[run_id], refreshed, run.mode)
     store.extension_settings[run_id] = refreshed
     TraceWriter(project.path / "runs").event(run_id, "extension.mcp.created", {"server_id": server_id})
+    return get_extensions(run_id)
+
+
+@router.post("/{run_id}/extensions/hooks")
+def create_hook(run_id: str, request: CreateHookRequest) -> dict[str, object]:
+    run, project = _editable_run(run_id)
+    hook_id = _safe_id(request.id, "Hook")
+    catalog = store.extension_catalogs.get(run_id)
+    if catalog is not None and any(hook.id == hook_id for hook in catalog.hooks):
+        raise HTTPException(status_code=409, detail="Hook id already exists")
+    command = [part.strip() for part in request.command if part.strip()]
+    if not command:
+        raise HTTPException(status_code=422, detail="Hook command must not be empty")
+
+    registry_path = project.path / ".agent" / "hooks.yaml"
+    registry = _load_registry(registry_path, "hooks")
+    entries = registry["hooks"]
+    entries.append({
+        "id": hook_id,
+        "name": request.name.strip(),
+        "event": request.event.value,
+        "command": command,
+        "timeout_seconds": request.timeout_seconds,
+        "failure_policy": request.failure_policy.value,
+    })
+    _write_registry(registry_path, registry)
+
+    refreshed = _refresh_run_extensions(run_id, run.mode)
+    if hook_id not in refreshed.enabled_hook_ids:
+        refreshed.enabled_hook_ids.append(hook_id)
+    validate_extension_settings(store.extension_catalogs[run_id], refreshed, run.mode)
+    store.extension_settings[run_id] = refreshed
+    TraceWriter(project.path / "runs").event(run_id, "extension.hook.created", {"hook_id": hook_id})
     return get_extensions(run_id)
 
 

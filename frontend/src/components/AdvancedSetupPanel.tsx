@@ -4,6 +4,7 @@ import type {
   ExtensionResponse,
   ExtensionSettings,
   CreateMCPServerRequest,
+  CreateHookRequest,
   CreateSkillRequest,
   GovernanceResponse,
   SandboxProfile,
@@ -24,6 +25,7 @@ interface AdvancedSetupPanelProps {
   onSaveExtensions: (settings: ExtensionSettings) => Promise<void>;
   onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
   onCreateMCPServer: (request: CreateMCPServerRequest) => Promise<void>;
+  onCreateHook: (request: CreateHookRequest) => Promise<void>;
 }
 
 export function AdvancedSetupPanel({
@@ -35,6 +37,7 @@ export function AdvancedSetupPanel({
   onSaveExtensions,
   onCreateSkill,
   onCreateMCPServer,
+  onCreateHook,
 }: AdvancedSetupPanelProps) {
   const { t } = usePreferences();
   const [activeTab, setActiveTab] = useState<SetupTab>("governance");
@@ -97,6 +100,7 @@ export function AdvancedSetupPanel({
               onSave={onSaveExtensions}
               onCreateSkill={onCreateSkill}
               onCreateMCPServer={onCreateMCPServer}
+              onCreateHook={onCreateHook}
             />
           )}
         </div>

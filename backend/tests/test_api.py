@@ -153,7 +153,7 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["model_route"]["can_start"] is True
 
 
-def test_create_project_skill_and_mcp_extension(tmp_path: Path) -> None:
+def test_create_project_skill_mcp_and_hook_extension(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
@@ -180,19 +180,34 @@ def test_create_project_skill_and_mcp_extension(tmp_path: Path) -> None:
             "env_allow": ["DEMO_TOKEN"],
         },
     )
+    hook_response = client.post(
+        f"/runs/{run['run_id']}/extensions/hooks",
+        json={
+            "id": "verify_after_run",
+            "name": "Verify after run",
+            "event": "run.after",
+            "command": ["python", "-m", "pytest"],
+            "failure_policy": "warn",
+        },
+    )
 
     assert skill_response.status_code == 200
     assert mcp_response.status_code == 200
-    payload = mcp_response.json()
+    assert hook_response.status_code == 200
+    payload = hook_response.json()
     skill_ids = {skill["id"] for skill in payload["catalog"]["skills"]}
     server_ids = {server["id"] for server in payload["catalog"]["mcp_servers"]}
+    hook_ids = {hook["id"] for hook in payload["catalog"]["hooks"]}
     assert {"bugfix", "project_rule"}.issubset(skill_ids)
     assert "local_tools" in server_ids
+    assert "verify_after_run" in hook_ids
     assert "project_rule" in payload["settings"]["active_skill_ids"]
     assert "local_tools" in payload["settings"]["enabled_mcp_server_ids"]
+    assert "verify_after_run" in payload["settings"]["enabled_hook_ids"]
     assert (tmp_path / ".agent" / "skills" / "project_rule" / "SKILL.md").exists()
     assert "project_rule" in (tmp_path / ".agent" / "skills.yaml").read_text(encoding="utf-8")
     assert "local_tools" in (tmp_path / ".agent" / "mcp.yaml").read_text(encoding="utf-8")
+    assert "verify_after_run" in (tmp_path / ".agent" / "hooks.yaml").read_text(encoding="utf-8")
     assert "root" not in json.dumps(payload["catalog"]["skills"])
 
 

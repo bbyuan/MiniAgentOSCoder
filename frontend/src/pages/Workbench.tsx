@@ -10,6 +10,7 @@ import {
   type ContextPack,
   type CompletionAssessment,
   type CreateMCPServerRequest,
+  type CreateHookRequest,
   type CreateSkillRequest,
   type ConversationResponse,
   type ContextCompactionResponse,
@@ -1039,6 +1040,21 @@ export function Workbench() {
     }
   }
 
+  async function createHook(request: CreateHookRequest) {
+    if (!runId) return;
+    setExtensionsBusy(true);
+    setError(null);
+    try {
+      const latestExtensions = await daemonApi.createHook(runId, request);
+      setExtensions(latestExtensions);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      throw caught;
+    } finally {
+      setExtensionsBusy(false);
+    }
+  }
+
   async function startFollowUp() {
     const nextTask = followUpTask.trim();
     const parentRunId = runId;
@@ -1223,6 +1239,7 @@ export function Workbench() {
                         onSaveExtensions={saveExtensions}
                         onCreateSkill={createSkill}
                         onCreateMCPServer={createMCPServer}
+                        onCreateHook={createHook}
                       />
                     </div>
                   </details>
@@ -1384,6 +1401,7 @@ export function Workbench() {
           onSaveExtensions={saveExtensions}
           onCreateSkill={createSkill}
           onCreateMCPServer={createMCPServer}
+          onCreateHook={createHook}
         /> : null}
         </div>
       )}

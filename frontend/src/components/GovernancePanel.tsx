@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Check, CircleSlash2, Gauge, LockKeyhole, Save, ShieldCheck, Wrench } from "lucide-react";
-import type { ReactNode } from "react";
-import type {
-  GovernanceResponse,
-  SandboxProfile,
-  ToolOverride,
-} from "../api/client";
+import {
+  Check,
+  ChevronDown,
+  CircleAlert,
+  CircleSlash2,
+  Gauge,
+  LockKeyhole,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
+import type { GovernanceResponse, SandboxProfile, ToolOverride } from "../api/client";
 import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -20,16 +24,10 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
   const { locale, t } = usePreferences();
   const [profile, setProfile] = useState<SandboxProfile>("standard");
   const [overrides, setOverrides] = useState<Record<string, ToolOverride>>({});
-  const latestEvaluations = useMemo(
-    () => [...(governance?.evaluations ?? [])].reverse().slice(0, 8),
-    [governance],
-  );
-  const executions = governance?.executions ?? [];
-  const lastExecution = executions.length > 0 ? executions[executions.length - 1] : undefined;
+  const latestEvaluations = useMemo(() => [...(governance?.evaluations ?? [])].reverse().slice(0, 6), [governance]);
   const approvalTools = (governance?.tools ?? []).filter((tool) => tool.effective_policy === "approval_required").length;
   const deniedTools = (governance?.tools ?? []).filter((tool) => tool.effective_policy === "deny").length;
-  const guardDecisions = (governance?.evaluations ?? []).flatMap((evaluation) => evaluation.decisions);
-  const deniedDecisions = guardDecisions.filter((decision) => decision.status === "deny").length;
+  const executions = governance?.executions ?? [];
   const failedExecutions = executions.filter((execution) => execution.timed_out || (execution.returncode ?? 0) !== 0).length;
 
   useEffect(() => {
@@ -38,11 +36,24 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
     setOverrides(governance.settings.tool_overrides);
   }, [governance]);
 
-  async function save() {
+  async function changeProfile(next: SandboxProfile) {
+    const previous = profile;
+    setProfile(next);
     try {
-      await onSave(profile, overrides);
+      await onSave(next, overrides);
     } catch {
-      // The workbench error banner owns request failure feedback.
+      setProfile(previous);
+    }
+  }
+
+  async function changeOverride(tool: string, next: ToolOverride) {
+    const previous = { ...overrides };
+    const updated = { ...overrides, [tool]: next };
+    setOverrides(updated);
+    try {
+      await onSave(profile, updated);
+    } catch {
+      setOverrides(previous);
     }
   }
 
@@ -53,169 +64,78 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
           <h3>{t(setupMode ? "advanced.governance" : "governance.title")}</h3>
           <span>{setupMode ? t("governance.setupDescription") : governance?.editable ? t("governance.editable") : t("governance.readOnly")}</span>
         </div>
-        <ShieldCheck size={15} />
+        <ShieldCheck size={16} />
       </div>
 
-      <div className="governanceSignalGrid">
-        <GovernanceSignal
-          icon={<Wrench size={15} />}
-          label={t("governance.signal.tools")}
-          value={String(governance?.tools.length ?? 0)}
-          detail={t("governance.signal.toolPolicies", { approval: approvalTools, denied: deniedTools })}
-          tone={deniedTools > 0 ? "warning" : "ready"}
-        />
-        <GovernanceSignal
-          icon={<ShieldCheck size={15} />}
-          label={t("governance.signal.guards")}
-          value={String(guardDecisions.length)}
-          detail={t("governance.signal.guardDenied", { count: deniedDecisions })}
-          tone={deniedDecisions > 0 ? "failed" : guardDecisions.length > 0 ? "ready" : "pending"}
-        />
-        <GovernanceSignal
-          icon={<LockKeyhole size={15} />}
-          label={t("governance.signal.sandbox")}
-          value={String(executions.length)}
-          detail={failedExecutions > 0
-            ? t("governance.signal.executionFailed", { count: failedExecutions })
-            : lastExecution?.backend ?? t("governance.signal.notRun")}
-          tone={failedExecutions > 0 ? "failed" : executions.length > 0 ? "ready" : "pending"}
-        />
+      <div className="governanceOverview">
+        <span><ShieldCheck size={18} /></span>
+        <div>
+          <strong>{t(`governance.overview.${profile}` as TranslationKey)}</strong>
+          <small>{t("governance.overviewDescription", { approval: approvalTools, denied: deniedTools })}</small>
+        </div>
+        {busy ? <em>{t("governance.saving")}</em> : null}
       </div>
 
-      <div className="governanceBlock sandboxBlock">
-        <div className="governanceBlockTitle"><Box size={14} /><strong>{t("governance.sandbox")}</strong></div>
+      <div className="governanceLevel">
+        <header>
+          <strong>{t("governance.securityLevel")}</strong>
+          <span>{t("governance.securityLevelHint")}</span>
+        </header>
         <div className="sandboxProfileControl">
           {(["standard", "strict"] as SandboxProfile[]).map((item) => (
-            <button
-              type="button"
-              className={profile === item ? "active" : ""}
-              aria-pressed={profile === item}
-              disabled={!governance?.editable || busy}
-              onClick={() => setProfile(item)}
-              key={item}
-            >
-              {t(`governance.profile.${item}` as TranslationKey)}
+            <button type="button" className={profile === item ? "active" : ""} aria-pressed={profile === item} disabled={!governance?.editable || busy} onClick={() => void changeProfile(item)} key={item}>
+              <span>{item === "standard" ? <Check size={16} /> : <LockKeyhole size={16} />}</span>
+              <strong>{t(`governance.profile.${item}` as TranslationKey)}</strong>
+              <small>{t(`governance.profileHint.${item}` as TranslationKey)}</small>
             </button>
           ))}
         </div>
-        {setupMode ? <p className="sandboxProfileHint">{t(`governance.profileHint.${profile}` as TranslationKey)}</p> : null}
-        {!setupMode ? (
-          <>
-            <div className="sandboxBackend">
-              <Gauge size={13} />
-              <span>{t("governance.backend")}</span>
-              <code>{governance?.capabilities.backend ?? "-"}</code>
-            </div>
-            <div className="capabilityColumns">
-              <div>
-                <span>{t("governance.guarantees")}</span>
-                {(governance?.capabilities.guarantees ?? []).map((item) => (
-                  <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>
-                ))}
-              </div>
-              <div>
-                <span>{t("governance.limitations")}</span>
-                {(governance?.capabilities.limitations ?? []).map((item) => (
-                  <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : null}
       </div>
 
-      <div className="governanceBlock toolsBlock">
-        <div className="governanceBlockTitle"><Wrench size={14} /><strong>{t("governance.tools")}</strong></div>
-        <div className="governanceTools">
-          {(governance?.tools ?? []).map((tool) => (
-            <article key={tool.name}>
-              <div>
-                <strong>{translateKnownText(locale, tool.name)}</strong>
-                <span className={`riskLabel risk-${tool.risk}`}>{translateKnownText(locale, tool.risk)}</span>
-              </div>
-              <p>{translateKnownText(locale, tool.effect)} · {t("governance.effective", { policy: translateKnownText(locale, tool.effective_policy) })}</p>
-              <select
-                aria-label={`${tool.name} ${t("governance.override")}`}
-                value={overrides[tool.name] ?? "inherit"}
-                disabled={!governance?.editable || busy}
-                onChange={(event) => setOverrides((current) => ({
-                  ...current,
-                  [tool.name]: event.target.value as ToolOverride,
-                }))}
-              >
-                <option value="inherit">{t("governance.policy.inherit")}</option>
-                <option value="approval_required">{t("governance.policy.approval")}</option>
-                <option value="deny">{t("governance.policy.deny")}</option>
-              </select>
-            </article>
-          ))}
-        </div>
-        {governance?.editable ? (
-          <button type="button" className="governanceSave" disabled={busy} onClick={save}>
-            <Save size={14} />
-            <span>{busy ? t("governance.saving") : t("governance.save")}</span>
-          </button>
-        ) : null}
-      </div>
-
-      {!setupMode ? <div className="governanceBlock decisionsBlock">
-        <div className="governanceBlockTitle">
-          <ShieldCheck size={14} />
-          <strong>{t("governance.decisions")}</strong>
-          <span>{governance?.evaluations.length ?? 0}</span>
-        </div>
-        {latestEvaluations.length === 0 ? <p className="emptyText">{t("governance.empty")}</p> : (
-          <div className="decisionList">
-            {latestEvaluations.map((evaluation) => (
-              <article key={evaluation.evaluation_id}>
-                <header>
-                  <strong>{translateKnownText(locale, evaluation.tool)}</strong>
-                  <code>{evaluation.action_id.slice(-8)}</code>
-                  <span className={`outcome outcome-${evaluation.outcome}`}>{translateKnownText(locale, evaluation.outcome)}</span>
-                </header>
-                {evaluation.decisions.map((decision) => (
-                  <div className="guardDecision" key={`${evaluation.evaluation_id}-${decision.guard}`}>
-                    <i className={`decisionDot status-${decision.status}`} />
-                    <strong>{translateKnownText(locale, decision.guard)}</strong>
-                    <span>{translateKnownText(locale, decision.reason)}</span>
-                    <small>{decision.duration_ms.toFixed(2)} ms</small>
-                  </div>
-                ))}
+      <details className="governanceAdvanced">
+        <summary><Wrench size={15} /><span><strong>{t("governance.advancedControls")}</strong><small>{t("governance.advancedControlsHint")}</small></span><ChevronDown size={15} /></summary>
+        <div>
+          <div className="governanceTools">
+            {(governance?.tools ?? []).map((tool) => (
+              <article key={tool.name}>
+                <div>
+                  <strong>{translateKnownText(locale, tool.name)}</strong>
+                  <small>{translateKnownText(locale, tool.description || tool.effect)}</small>
+                </div>
+                <select aria-label={`${tool.name} ${t("governance.override")}`} value={overrides[tool.name] ?? "inherit"} disabled={!governance?.editable || busy} onChange={(event) => void changeOverride(tool.name, event.target.value as ToolOverride)}>
+                  <option value="inherit">{t("governance.policy.inherit")}</option>
+                  <option value="approval_required">{t("governance.policy.approval")}</option>
+                  <option value="deny">{t("governance.policy.deny")}</option>
+                </select>
               </article>
             ))}
           </div>
-        )}
-        {(governance?.executions.length ?? 0) > 0 ? (
-          <div className="executionSummary">
-            <span>{t("governance.executions")}</span>
-            <strong>{executions.length}</strong>
-            <code>{lastExecution?.backend}</code>
-          </div>
-        ) : null}
-      </div> : null}
-    </section>
-  );
-}
 
-function GovernanceSignal({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  detail: string;
-  tone: "ready" | "pending" | "warning" | "failed";
-}) {
-  return (
-    <div className={`governanceSignal tone-${tone}`}>
-      <span>{icon}</span>
-      <small>{label}</small>
-      <strong title={value}>{value}</strong>
-      <em title={detail}>{detail}</em>
-    </div>
+          {!setupMode ? (
+            <details className="governanceTechnical">
+              <summary><Gauge size={14} />{t("governance.technicalDetails")}<ChevronDown size={14} /></summary>
+              <div className="governanceTechnicalBody">
+                <div className="sandboxBackend"><Gauge size={13} /><span>{t("governance.backend")}</span><code>{governance?.capabilities.backend ?? "-"}</code></div>
+                <div className="capabilityColumns">
+                  <div><span>{t("governance.guarantees")}</span>{(governance?.capabilities.guarantees ?? []).map((item) => <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>)}</div>
+                  <div><span>{t("governance.limitations")}</span>{(governance?.capabilities.limitations ?? []).map((item) => <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>)}</div>
+                </div>
+                <div className="governanceRuntimeSummary">
+                  <span>{failedExecutions > 0 ? <CircleAlert size={13} /> : <Check size={13} />}{t("governance.executions")}</span>
+                  <strong>{executions.length}</strong>
+                </div>
+                <div className="decisionList">
+                  {latestEvaluations.length === 0 ? <p className="emptyText">{t("governance.empty")}</p> : latestEvaluations.map((evaluation) => (
+                    <article key={evaluation.evaluation_id}>
+                      <header><strong>{translateKnownText(locale, evaluation.tool)}</strong><span className={`outcome outcome-${evaluation.outcome}`}>{translateKnownText(locale, evaluation.outcome)}</span></header>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+          ) : null}
+        </div>
+      </details>
+    </section>
   );
 }
