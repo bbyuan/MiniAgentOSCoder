@@ -6461,10 +6461,11 @@ button.controlSignal:focus-visible {
 
 .completionFailureReason {
   grid-column: 1 / -1;
-  padding: 13px 14px;
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
-  border-radius: 7px;
-  background: var(--danger-soft);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
+  border-left: 3px solid var(--danger);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger-soft) 46%, var(--surface-raised));
 }
 
 .completionFailureReason strong,
@@ -6496,15 +6497,38 @@ button.controlSignal:focus-visible {
   white-space: pre-wrap;
 }
 
+.completionContextNote {
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.completionContextNote svg {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+}
+
 .completionDiagnosis {
-  padding: 13px;
+  padding: 14px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
-  border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--warning) 20%, var(--border));
   border-radius: 8px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--warning-soft) 58%, var(--surface)), var(--surface));
+    linear-gradient(180deg, color-mix(in srgb, var(--warning-soft) 26%, var(--surface)), var(--surface));
 }
 
 .completionDiagnosis > header {
@@ -14518,6 +14542,7 @@ button.controlSignal.active {
 .completionSummary > .completionNextActions,
 .completionSummary > .completionDiagnosis,
 .completionSummary > .completionFailureReason,
+.completionSummary > .completionContextNote,
 .completionSummary > .completionDetails,
 .completionSummary > .completionSignals {
   grid-column: 1;

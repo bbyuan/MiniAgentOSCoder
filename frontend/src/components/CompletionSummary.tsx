@@ -64,7 +64,11 @@ export function CompletionSummary({
   });
   const showEvidence = status === "completed" || completion?.verdict === "passed";
   const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
-  const showSignals = Boolean(tests);
+  const failedWithOnlyPassedTests = status !== "completed" && tests?.status === "Passed" && !hasCodeDiff;
+  const showSignals = Boolean(tests && !failedWithOnlyPassedTests);
+  const leadMessage = status === "failed"
+    ? failureLeadMessage(terminationReason, displayedObservationError, t)
+    : messagePreview;
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -72,7 +76,7 @@ export function CompletionSummary({
         <StatusIcon size={22} />
         <div>
           <strong>{t(status === "completed" ? "completion.done" : status === "cancelled" ? "completion.cancelled" : "completion.failed")}</strong>
-          <p>{messagePreview}</p>
+          <p>{leadMessage}</p>
         </div>
       </div>
       {status === "failed" && (reason || observationError) ? (
@@ -80,6 +84,12 @@ export function CompletionSummary({
           <strong>{t("completion.failureReason")}</strong>
           {reason ? <p>{reason}</p> : null}
           {displayedObservationError && displayedObservationError !== reason ? <code>{displayedObservationError}</code> : null}
+        </div>
+      ) : null}
+      {failedWithOnlyPassedTests ? (
+        <div className="completionContextNote">
+          <FlaskConical size={16} />
+          <span>{t("completion.testsContextOnly")}</span>
         </div>
       ) : null}
       {diagnosis ? (
@@ -138,6 +148,20 @@ export function CompletionSummary({
       ) : null}
     </section>
   );
+}
+
+function failureLeadMessage(
+  terminationReason: string | undefined,
+  observationError: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  if (terminationReason === "invalid_action_ir" || /unable to recognize|无法识别|action/i.test(observationError)) {
+    return t("completion.failedLead.invalidAction");
+  }
+  if (terminationReason?.startsWith("max_")) return t("completion.failedLead.budget");
+  if (terminationReason === "model_error") return t("completion.failedLead.model");
+  if (terminationReason === "worker_error") return t("completion.failedLead.runtime");
+  return t("completion.failedLead.generic");
 }
 
 interface FailureDiagnosisInput {
