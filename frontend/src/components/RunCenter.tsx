@@ -24,7 +24,7 @@ import {
   type HistoryRun,
   type HistoryRunDetail,
 } from "../api/client";
-import { translateKnownText, translateMode, translateStatus, type TranslationKey } from "../i18n";
+import { localizeErrorMessage, translateKnownText, translateMode, translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import { localizeRunReport } from "../reportLocalization";
 import { CompletionEvidence } from "./CompletionEvidence";
@@ -114,7 +114,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
         setDetail(undefined);
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.loadError"));
+      setError(localizeErrorMessage(locale, caught, t("history.loadError")));
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
     try {
       setDetail(await daemonApi.getHistoryRun(runId));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.loadError"));
+      setError(localizeErrorMessage(locale, caught, t("history.loadError")));
     } finally {
       setDetailLoading(false);
     }
@@ -156,7 +156,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
       setDetail(undefined);
       setEvaluationOpen(false);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.compareError"));
+      setError(localizeErrorMessage(locale, caught, t("history.compareError")));
     } finally {
       setDetailLoading(false);
     }
@@ -171,7 +171,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
       setDetail({ ...detail, run: { ...detail.run, archived } });
       await refresh(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.archiveError"));
+      setError(localizeErrorMessage(locale, caught, t("history.archiveError")));
     } finally {
       setDetailLoading(false);
     }
@@ -184,7 +184,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
     try {
       await onResume(detail.run.run_id);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+      setError(localizeErrorMessage(locale, caught, t("history.resumeError")));
     } finally {
       setDetailLoading(false);
     }
@@ -200,7 +200,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
       setEvaluation(await daemonApi.getEvaluationSummary(projectId || undefined));
     } catch (caught) {
       setEvaluation(undefined);
-      setError(caught instanceof Error ? caught.message : t("evaluation.loadError"));
+      setError(localizeErrorMessage(locale, caught, t("evaluation.loadError")));
     } finally {
       setDetailLoading(false);
     }

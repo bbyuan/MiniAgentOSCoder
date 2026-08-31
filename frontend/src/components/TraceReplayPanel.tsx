@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw, ShieldCheck, Terminal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { daemonApi, type ReplayResponse, type TraceEvent } from "../api/client";
-import { translateKnownText, type TranslationKey } from "../i18n";
+import { localizeErrorMessage, translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface TraceReplayPanelProps {
@@ -63,7 +63,7 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
       setCursor(0);
       setPlaying(response.events.length > 1);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("replay.loadFailed"));
+      setError(localizeErrorMessage(locale, caught, t("replay.loadFailed")));
     } finally {
       setLoading(false);
     }

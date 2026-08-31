@@ -21,7 +21,7 @@ import type {
   ExtensionSettings,
   TraceEvent,
 } from "../api/client";
-import { translateExtensionDiagnostic, translateKnownText } from "../i18n";
+import { localizeErrorMessage, translateExtensionDiagnostic, translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ExtensionPanelProps {
@@ -94,7 +94,7 @@ export function ExtensionPanel({
       await onSave(next);
     } catch (caught) {
       setSettings(previous);
-      setActionError(errorMessage(caught, t("extensions.actionFailed")));
+      setActionError(errorMessage(locale, caught, t("extensions.actionFailed")));
     }
   }
 
@@ -180,7 +180,7 @@ export function ExtensionPanel({
           </div>
 
           {creator === "skill" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
               <label className="wide">
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={skillDraft.name} placeholder={t("extensions.skillNamePlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -201,7 +201,7 @@ export function ExtensionPanel({
           ) : null}
 
           {creator === "mcp" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
               <label className="wide">
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={mcpDraft.name} placeholder={t("extensions.mcpNamePlaceholder")} onChange={(event) => setMcpDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -223,7 +223,7 @@ export function ExtensionPanel({
           ) : null}
 
           {creator === "hook" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
               <label>
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={hookDraft.name} placeholder={t("extensions.hookNamePlaceholder")} onChange={(event) => setHookDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -370,6 +370,6 @@ function eventLabel(event: string, t: (key: "extensions.event.runBefore" | "exte
   return t(labels[event as keyof typeof labels] ?? "extensions.event.runAfter");
 }
 
-function errorMessage(caught: unknown, fallback: string): string {
-  return caught instanceof Error && caught.message.trim() ? caught.message : fallback;
+function errorMessage(locale: "zh" | "en", caught: unknown, fallback: string): string {
+  return localizeErrorMessage(locale, caught, fallback);
 }

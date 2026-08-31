@@ -59,7 +59,7 @@ import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
-import { translateMode, type TranslationKey } from "../i18n";
+import { localizeErrorMessage, translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -252,7 +252,7 @@ export function Workbench() {
       if (history) setRecentProjects(history.projects);
       await loadProjectRuns(opened.project_id);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.openProject"));
+      setError(localizeErrorMessage(locale, caught, t("error.openProject")));
     } finally {
       setProjectBusy(false);
     }
@@ -343,7 +343,7 @@ export function Workbench() {
       setHistoryRunId(undefined);
       void loadProjectRuns(resumed.project.project_id);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+      setError(localizeErrorMessage(locale, caught, t("history.resumeError")));
       throw caught;
     } finally {
       setBusy(false);
@@ -450,7 +450,7 @@ export function Workbench() {
       void loadProjectRuns(opened.project_id);
       subscribeToRun(run.run_id, traceResponse.events.length);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+      setError(localizeErrorMessage(locale, caught, t("history.resumeError")));
       throw caught;
     } finally {
       setBusy(false);
@@ -462,7 +462,7 @@ export function Workbench() {
       const selected = await chooseProjectDirectory();
       if (selected) await openWorkspace(selected);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.openProject"));
+      setError(localizeErrorMessage(locale, caught, t("error.openProject")));
     }
   }
 
@@ -483,7 +483,7 @@ export function Workbench() {
       if (runId) resetRunState(false);
       setModelSetupOpen(false);
     } catch (caught) {
-      setModelSetupError(caught instanceof Error ? caught.message : t("modelSetup.failed"));
+      setModelSetupError(localizeErrorMessage(locale, caught, t("modelSetup.failed")));
     } finally {
       setModelSetupBusy(false);
     }
@@ -582,7 +582,7 @@ export function Workbench() {
         subscribeToRun(run.run_id, traceResponse.events.length);
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.prepareRun"));
+      setError(localizeErrorMessage(locale, caught, t("error.prepareRun")));
     } finally {
       setBusy(false);
     }
@@ -616,7 +616,7 @@ export function Workbench() {
       void loadProjectRuns();
       subscribeToRun(runId, latestTrace.events.length);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.startRun"));
+      setError(localizeErrorMessage(locale, caught, t("error.startRun")));
     } finally {
       setBusy(false);
     }
@@ -746,7 +746,7 @@ export function Workbench() {
         setConversation(latestConversation);
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
+      setError(localizeErrorMessage(locale, caught, t("error.cancelRun")));
     }
   }
 
@@ -761,7 +761,7 @@ export function Workbench() {
         setRunStatus("repairing");
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.steerRun"));
+      setError(localizeErrorMessage(locale, caught, t("error.steerRun")));
       throw caught;
     } finally {
       setSteeringBusy(false);
@@ -777,7 +777,7 @@ export function Workbench() {
       resetRunState();
       void loadProjectRuns();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.cancelRun"));
+      setError(localizeErrorMessage(locale, caught, t("error.cancelRun")));
     } finally {
       setBusy(false);
     }
@@ -848,7 +848,7 @@ export function Workbench() {
       setApproval(null);
       setRunStatus(approvedTool === "apply_patch" ? "applying_patch" : "running");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.approveAction"));
+      setError(localizeErrorMessage(locale, caught, t("error.approveAction")));
     } finally {
       setApprovalBusy(false);
     }
@@ -863,7 +863,7 @@ export function Workbench() {
       setApproval(null);
       setRunStatus("repairing");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.denyAction"));
+      setError(localizeErrorMessage(locale, caught, t("error.denyAction")));
     } finally {
       setApprovalBusy(false);
     }
@@ -886,7 +886,7 @@ export function Workbench() {
       setTraceEvents(latestTrace.events);
       setReport(latestReport);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.rollback"));
+      setError(localizeErrorMessage(locale, caught, t("error.rollback")));
     } finally {
       setRollbackBusy(undefined);
     }
@@ -912,7 +912,7 @@ export function Workbench() {
       setModelRoute(latestModelRoute);
       return result;
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.compactContext"));
+      setError(localizeErrorMessage(locale, caught, t("error.compactContext")));
       throw caught;
     } finally {
       setContextBusy(false);
@@ -933,7 +933,7 @@ export function Workbench() {
       await daemonApi.createMemory(runId, input);
       await refreshMemory();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.memoryWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.memoryWrite")));
       throw caught;
     } finally {
       setMemoryBusy(false);
@@ -948,7 +948,7 @@ export function Workbench() {
       await daemonApi.updateMemory(runId, memoryId, input);
       await refreshMemory();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.memoryWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.memoryWrite")));
       throw caught;
     } finally {
       setMemoryBusy(false);
@@ -963,7 +963,7 @@ export function Workbench() {
       await daemonApi.deleteMemory(runId, memoryId);
       await refreshMemory();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.memoryDelete"));
+      setError(localizeErrorMessage(locale, caught, t("error.memoryDelete")));
       throw caught;
     } finally {
       setMemoryBusy(false);
@@ -983,7 +983,7 @@ export function Workbench() {
       setGovernance(latestGovernance);
       setTraceEvents(latestTrace.events);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.governanceWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.governanceWrite")));
       throw caught;
     } finally {
       setGovernanceBusy(false);
@@ -1006,7 +1006,7 @@ export function Workbench() {
       setAdmission(latestAdmission);
       setModelRoute(latestModelRoute);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
     } finally {
       setExtensionsBusy(false);
@@ -1021,7 +1021,7 @@ export function Workbench() {
       const latestExtensions = await daemonApi.createSkill(runId, request);
       setExtensions(latestExtensions);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
     } finally {
       setExtensionsBusy(false);
@@ -1036,7 +1036,7 @@ export function Workbench() {
       const latestExtensions = await daemonApi.createMCPServer(runId, request);
       setExtensions(latestExtensions);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
     } finally {
       setExtensionsBusy(false);
@@ -1051,7 +1051,7 @@ export function Workbench() {
       const latestExtensions = await daemonApi.createHook(runId, request);
       setExtensions(latestExtensions);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
     } finally {
       setExtensionsBusy(false);
@@ -1091,7 +1091,7 @@ export function Workbench() {
       setAgentPackVersions(versionResponse.versions);
       setAgentPackDrift(drift);
     } catch (caught) {
-      setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.loadError"));
+      setAgentPackError(localizeErrorMessage(locale, caught, t("agentPack.loadError")));
     } finally {
       setAgentPackBusy(false);
     }
@@ -1112,7 +1112,7 @@ export function Workbench() {
       setAgentPackVersions(versionResponse.versions);
       setAgentPackDrift(drift);
     } catch (caught) {
-      setAgentPackError(caught instanceof Error ? caught.message : t("agentPack.saveError"));
+      setAgentPackError(localizeErrorMessage(locale, caught, t("agentPack.saveError")));
     } finally {
       setAgentPackVersionBusy(false);
     }

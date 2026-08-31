@@ -413,11 +413,11 @@ function numberValue(value: unknown): number {
 function localizeEvidenceDetail(detail: string, locale: "zh" | "en"): string {
   if (locale === "en") return detail;
   return detail
-    .replace("Context Pack is not available yet", "上下文包尚未就绪")
+    .replace("Context Pack is not available yet", "任务上下文尚未就绪")
     .replace("No test summary is available yet", "尚无测试摘要")
     .replace("No structured completion assessment yet", "尚无结构化完成验收")
     .replace("selected items", "个已选上下文项")
-    .replace("tokens", "Token")
+    .replace("tokens", "词元")
     .replace("protocol items", "个协议项")
     .replace("provider requests", "次真实模型请求")
     .replace("cache hits", "次缓存命中")
@@ -427,9 +427,9 @@ function localizeEvidenceDetail(detail: string, locale: "zh" | "en"): string {
     .replace("policy evaluations", "次策略评估")
     .replace("approvals", "次审批")
     .replace("pending", "待处理")
-    .replace("skill activations", "次 Skill 激活")
-    .replace("MCP calls", "次 MCP 调用")
-    .replace("hook events", "次 Hook 事件")
+    .replace("skill activations", "次项目规则激活")
+    .replace("MCP calls", "次外部工具调用")
+    .replace("hook events", "次自动检查事件")
     .replace("checks passed", "项检查通过")
     .replace("required checks failed", "项必需检查失败")
     .replace("Passed", "通过")
