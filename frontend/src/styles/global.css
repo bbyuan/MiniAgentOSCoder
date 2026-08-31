@@ -20014,3 +20014,71 @@ button > svg {
   position: relative;
   z-index: 0;
 }
+
+/* Run center detail should never require horizontal scrolling to read. */
+.runCenter,
+.runCenterBody,
+.historyDetail,
+.historyDetailContent {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.historyDetailContent > * {
+  min-width: 0;
+}
+
+.historyDetailHeader h3,
+.historyDetailHeader p,
+.historyContinueBand strong,
+.historyContinueBand span,
+.historyDetailSection p {
+  overflow-wrap: anywhere;
+}
+
+.historyContinueBand.compact {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.historyContinueCta {
+  width: fit-content;
+  max-width: 100%;
+  justify-self: end;
+  white-space: normal;
+}
+
+.historyMetricGrid {
+  grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+}
+
+.historyMetricGrid strong,
+.historyMetricGrid span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.historyDetailSection,
+.historyTechnicalMetrics,
+.historyPatchPreview,
+.historyMetricGrid {
+  max-width: calc(100% - 68px);
+}
+
+@media (max-width: 760px) {
+  .historyDetailSection,
+  .historyTechnicalMetrics,
+  .historyPatchPreview,
+  .historyMetricGrid {
+    max-width: calc(100% - 36px);
+  }
+
+  .historyContinueCta {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1120px) and (min-width: 961px) {
+  .runCenterBody {
+    grid-template-columns: 210px minmax(250px, 0.86fr) minmax(0, 1.14fr);
+  }
+}
