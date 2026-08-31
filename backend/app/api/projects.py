@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from app.api.store import ProjectRecord, store
 from app.context import build_workspace_index, scan_workspace, write_project_profile
+from app.context.workspace_scan import IGNORED_DIRS, LANGUAGE_BY_SUFFIX
+from app.guards import PathEscape, resolve_workspace_path
 from app.runtime.agent_pack import (
     build_agent_pack_manifest,
     compare_agent_pack_drift,
@@ -23,6 +25,11 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 class OpenProjectRequest(BaseModel):
     path: str
+
+
+MAX_WORKSPACE_BROWSER_ITEMS = 900
+MAX_FILE_PREVIEW_BYTES = 220_000
+MAX_FILE_PREVIEW_LINES = 1_200
 
 
 @router.post("/select-directory")
@@ -71,6 +78,121 @@ def current_project() -> dict[str, object]:
         "path": str(project.path),
         "profile": project.profile,
         "status": "ready",
+    }
+
+
+@router.get("/{project_id}/files")
+def list_project_files(project_id: str, query: str = "") -> dict[str, object]:
+    project = store.projects.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    items: list[dict[str, object]] = []
+    truncated = False
+    normalized_query = query.strip().lower()
+    try:
+        root = resolve_workspace_path(project.path, ".")
+    except PathEscape as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix().lower()):
+        relative = path.relative_to(root)
+        if _is_ignored(relative):
+            if path.is_dir():
+                continue
+            continue
+        rel_path = relative.as_posix()
+        if normalized_query and normalized_query not in rel_path.lower():
+            continue
+        if len(items) >= MAX_WORKSPACE_BROWSER_ITEMS:
+            truncated = True
+            break
+        if path.is_dir():
+            items.append({
+                "path": rel_path,
+                "name": path.name,
+                "kind": "directory",
+                "size": 0,
+                "language": "",
+                "modified_at": path.stat().st_mtime,
+            })
+        elif path.is_file():
+            stat = path.stat()
+            items.append({
+                "path": rel_path,
+                "name": path.name,
+                "kind": "file",
+                "size": stat.st_size,
+                "language": LANGUAGE_BY_SUFFIX.get(path.suffix, path.suffix.lstrip(".")),
+                "modified_at": stat.st_mtime,
+            })
+
+    return {
+        "project_id": project.project_id,
+        "root": str(project.path),
+        "items": items,
+        "total": len(items),
+        "truncated": truncated,
+    }
+
+
+@router.get("/{project_id}/files/content")
+def read_project_file(project_id: str, path: str) -> dict[str, object]:
+    project = store.projects.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        resolved = resolve_workspace_path(project.path, path)
+    except PathEscape as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    if _is_ignored(resolved.relative_to(project.path)):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    size = resolved.stat().st_size
+    if size > MAX_FILE_PREVIEW_BYTES:
+        return {
+            "project_id": project.project_id,
+            "path": resolved.relative_to(project.path).as_posix(),
+            "available": False,
+            "content": "",
+            "language": LANGUAGE_BY_SUFFIX.get(resolved.suffix, resolved.suffix.lstrip(".")),
+            "size": size,
+            "truncated": False,
+            "reason": "File is too large to preview",
+        }
+
+    data = resolved.read_bytes()
+    if b"\0" in data[:4096]:
+        return {
+            "project_id": project.project_id,
+            "path": resolved.relative_to(project.path).as_posix(),
+            "available": False,
+            "content": "",
+            "language": "",
+            "size": size,
+            "truncated": False,
+            "reason": "Binary files cannot be previewed",
+        }
+
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=415, detail="File is not valid UTF-8 text") from exc
+
+    lines = text.splitlines()
+    truncated = len(lines) > MAX_FILE_PREVIEW_LINES
+    content = "\n".join(lines[:MAX_FILE_PREVIEW_LINES]) if truncated else text
+    return {
+        "project_id": project.project_id,
+        "path": resolved.relative_to(project.path).as_posix(),
+        "available": True,
+        "content": content,
+        "language": LANGUAGE_BY_SUFFIX.get(resolved.suffix, resolved.suffix.lstrip(".")),
+        "size": size,
+        "truncated": truncated,
+        "reason": "",
     }
 
 
@@ -167,3 +289,7 @@ def create_agent_pack_version(project_id: str, mode: str = "Feature") -> dict[st
         "project_id": project.project_id,
         "version": version,
     }
+
+
+def _is_ignored(path: Path) -> bool:
+    return any(part in IGNORED_DIRS or part.startswith(".tmp-") for part in path.parts)

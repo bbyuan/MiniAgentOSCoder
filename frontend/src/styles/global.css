@@ -16779,6 +16779,383 @@ button.controlSignal.active {
   padding: 22px;
 }
 
+/* Project files: read-only workspace browser for user trust and inspection. */
+.workspaceFilesBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #0a0d12 44%, transparent), color-mix(in srgb, #0a0d12 32%, transparent)),
+    color-mix(in srgb, #0a0d12 42%, transparent);
+}
+
+.workspaceFilesDialog {
+  width: min(1320px, calc(100vw - 48px));
+  height: min(860px, calc(100dvh - 48px));
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 60%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow: 0 32px 110px rgba(15, 23, 42, 0.3), 0 1px 0 rgba(255, 255, 255, 0.48) inset;
+}
+
+.workspaceFilesHeader {
+  min-width: 0;
+  min-height: 96px;
+  padding: 22px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  border-bottom: 1px solid var(--hairline);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface) 88%, transparent));
+}
+
+.workspaceFilesHeader h2,
+.workspaceFilesHeader p {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceFilesHeader h2 {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.workspaceFilesHeader p {
+  margin-top: 5px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.workspaceFilesHeaderActions {
+  display: inline-flex;
+  gap: 9px;
+}
+
+.workspaceFilesHeaderActions button {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+}
+
+.workspaceFilesToolbar {
+  min-width: 0;
+  padding: 14px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.workspaceFilesToolbar label {
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  background: var(--surface-raised);
+}
+
+.workspaceFilesToolbar input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 14px;
+}
+
+.workspaceFilesToolbar > span {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.workspaceFilesError {
+  margin: 12px 26px 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, var(--border));
+  border-radius: 8px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger-soft) 50%, var(--surface));
+  font-size: 13px;
+}
+
+.workspaceFilesBody {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+}
+
+.workspaceFilesList {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  border-right: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface-subtle) 52%, var(--surface));
+}
+
+.workspaceFilesList button {
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workspaceFilesList button:hover {
+  border-color: color-mix(in srgb, var(--border) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.workspaceFilesList button.active {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface-raised));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.workspaceFilesList button > svg {
+  color: currentColor;
+}
+
+.workspaceFilesList button span,
+.workspaceFilesList button strong,
+.workspaceFilesList button small {
+  min-width: 0;
+  overflow: hidden;
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceFilesList button strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.workspaceFilesList button small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.workspaceFilesList button em {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.workspaceFilePreview {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--surface-raised);
+}
+
+.workspaceFilePreview > header {
+  min-width: 0;
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.workspaceFilePreview > header > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.workspaceFilePreview > header svg {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 44%, var(--surface));
+}
+
+.workspaceFilePreview > header span,
+.workspaceFilePreview > header strong,
+.workspaceFilePreview > header small {
+  min-width: 0;
+  overflow: hidden;
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceFilePreview > header strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.workspaceFilePreview > header small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.workspaceFilePreview pre {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  background: color-mix(in srgb, var(--text) 3.5%, var(--surface));
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workspaceFilePreview code {
+  min-width: max-content;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.workspaceFilePreview code span {
+  padding: 0 12px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
+  text-align: right;
+  user-select: none;
+}
+
+.workspaceFilePreview code b {
+  padding: 0 14px;
+  font-weight: 500;
+}
+
+.workspaceFilesLoading,
+.workspaceFilesEmpty,
+.workspaceFilePlaceholder,
+.workspaceFileUnavailable {
+  min-height: 220px;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.workspaceFilesLoading.preview {
+  min-height: 100%;
+}
+
+.workspaceFilePlaceholder svg,
+.workspaceFileUnavailable svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+}
+
+.workspaceFilePlaceholder strong,
+.workspaceFileUnavailable strong {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.workspaceFileNote,
+.workspaceFilesDialog > footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--hairline);
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .workspaceFilesBackdrop {
+    padding: 10px;
+  }
+
+  .workspaceFilesDialog {
+    width: calc(100vw - 20px);
+    height: calc(100dvh - 20px);
+  }
+
+  .workspaceFilesBody {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceFilesList {
+    max-height: 260px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+}
+
+@media (max-width: 620px) {
+  .workspaceFilesHeader,
+  .workspaceFilesToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceFilesHeaderActions {
+    justify-self: start;
+  }
+}
+
 .completionSummary.tone-failed .completionDiagnosis,
 .completionSummary.tone-cancelled .completionDiagnosis {
   display: grid;

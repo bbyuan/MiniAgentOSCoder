@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, Clock3, FolderGit2, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
+import { CheckCircle2, CircleAlert, Clock3, FolderGit2, FolderTree, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
 import type { HistoryRun, OpenProjectResponse } from "../api/client";
 import { translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -14,6 +14,7 @@ interface ProjectSidebarProps {
   onChangeProject: () => void;
   onOpenRun: (runId: string) => void;
   onOpenHistory: () => void;
+  onOpenFiles: () => void;
   onRefresh: () => void;
 }
 
@@ -37,6 +38,7 @@ export function ProjectSidebar({
   onChangeProject,
   onOpenRun,
   onOpenHistory,
+  onOpenFiles,
   onRefresh,
 }: ProjectSidebarProps) {
   const { locale, t } = usePreferences();
@@ -78,6 +80,10 @@ export function ProjectSidebar({
       </nav>
 
       <div className="sidebarUtilities">
+        <button className="sidebarHistory" type="button" onClick={onOpenFiles}>
+          <FolderTree size={15} />
+          <span>{t("sidebar.projectFiles")}</span>
+        </button>
         <button className="sidebarHistory" type="button" onClick={onOpenHistory}>
           <History size={15} />
           <span>{t("sidebar.allHistory")}</span>

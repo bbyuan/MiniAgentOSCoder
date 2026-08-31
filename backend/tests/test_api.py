@@ -113,6 +113,42 @@ def test_open_project_scans_workspace(tmp_path: Path) -> None:
     assert (tmp_path / ".agent" / "index" / "files.json").exists()
 
 
+def test_project_files_api_lists_readable_workspace_files(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("def main():\n    return 42\n", encoding="utf-8")
+    (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "config").write_text("hidden", encoding="utf-8")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    response = client.get(f"/projects/{project['project_id']}/files")
+
+    assert response.status_code == 200
+    paths = [item["path"] for item in response.json()["items"]]
+    assert "README.md" in paths
+    assert "src/app.py" in paths
+    assert ".git/config" not in paths
+    assert ".agent/project-profile.json" not in paths
+
+
+def test_project_file_content_api_reads_text_and_blocks_escape(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("print('hello')\n", encoding="utf-8")
+    outside = tmp_path.parent / "outside.txt"
+    outside.write_text("secret", encoding="utf-8")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+
+    content = client.get(f"/projects/{project['project_id']}/files/content", params={"path": "src/app.py"})
+    escaped = client.get(f"/projects/{project['project_id']}/files/content", params={"path": "../outside.txt"})
+
+    assert content.status_code == 200
+    assert content.json()["available"] is True
+    assert content.json()["content"] == "print('hello')\n"
+    assert escaped.status_code == 400
+
+
 def test_create_run_and_read_trace(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
     client = make_client()

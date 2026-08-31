@@ -58,6 +58,7 @@ import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
+import { WorkspaceFilesDialog } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { localizeErrorMessage, translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -140,6 +141,7 @@ export function Workbench() {
   const [projectProtocols, setProjectProtocols] = useState<ProjectProtocols>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
+  const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
   const streamCleanup = useRef<(() => void) | null>(null);
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -1166,6 +1168,7 @@ export function Workbench() {
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
             onOpenHistory={() => openHistory()}
+            onOpenFiles={() => setWorkspaceFilesOpen(true)}
             onRefresh={() => void loadProjectRuns()}
           />
           <div className="productContent">
@@ -1404,6 +1407,11 @@ export function Workbench() {
           setHistoryRunId(undefined);
           void loadProjectRuns();
         }}
+      />
+      <WorkspaceFilesDialog
+        open={workspaceFilesOpen}
+        project={project}
+        onClose={() => setWorkspaceFilesOpen(false)}
       />
       <ModelSetupDialog
         open={modelSetupOpen}

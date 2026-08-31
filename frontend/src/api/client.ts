@@ -26,6 +26,34 @@ export interface OpenProjectResponse {
   };
 }
 
+export interface WorkspaceFileItem {
+  path: string;
+  name: string;
+  kind: "file" | "directory";
+  size: number;
+  language: string;
+  modified_at: number;
+}
+
+export interface WorkspaceFilesResponse {
+  project_id: string;
+  root: string;
+  items: WorkspaceFileItem[];
+  total: number;
+  truncated: boolean;
+}
+
+export interface WorkspaceFileContent {
+  project_id: string;
+  path: string;
+  available: boolean;
+  content: string;
+  language: string;
+  size: number;
+  truncated: boolean;
+  reason: string;
+}
+
 export interface AgentContract {
   agent_id: string;
   effects: {
@@ -929,6 +957,12 @@ export const daemonApi = {
     request<AgentPackDrift>(`/projects/${projectId}/agent-pack/drift${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`),
   getProjectProtocols: (projectId: string) =>
     request<ProjectProtocols>(`/projects/${projectId}/protocols`),
+  getProjectFiles: (projectId: string, query = "") =>
+    request<WorkspaceFilesResponse>(
+      `/projects/${projectId}/files${query ? `?query=${encodeURIComponent(query)}` : ""}`,
+    ),
+  getProjectFileContent: (projectId: string, path: string) =>
+    request<WorkspaceFileContent>(`/projects/${projectId}/files/content?path=${encodeURIComponent(path)}`),
   saveAgentPackVersion: (projectId: string, mode?: RunMode) =>
     request<{ project_id: string; version: AgentPackVersion }>(
       `/projects/${projectId}/agent-pack/versions${mode ? `?mode=${encodeURIComponent(mode)}` : ""}`,
