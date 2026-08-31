@@ -289,7 +289,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
                 <div className="historyRunCopy">
                   <div className="historyRunTitle"><strong>{run.task}</strong>{run.archived ? <Archive size={13} /> : null}</div>
                   <div className="historyRunMeta"><span>{projectNames.get(run.project_id) ?? basename(run.project_path)}</span><span>{translateMode(locale, run.mode)}</span><span>{formatDate(run.updated_at, locale)}</span></div>
-                  <div className="historyRunSignals"><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><span>{run.total_tokens.toLocaleString()} tokens</span><span>{run.tool_calls} {t("history.toolsShort")}</span></div>
+                  <div className="historyRunSignals"><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><span>{t("history.tokensValue", { count: run.total_tokens.toLocaleString() })}</span><span>{run.tool_calls} {t("history.toolsShort")}</span></div>
                 </div>
               </article>
             ))}
@@ -333,6 +333,7 @@ function RunDetail({
   const { locale, t } = usePreferences();
   const [followUp, setFollowUp] = useState("");
   const { run } = detail;
+  const changedFiles = changedFilesForDetail(detail);
   const continueEligible = ["completed", "failed", "cancelled", "interrupted"].includes(run.status);
   const resumeEligible = ["interrupted", "failed", "cancelled"].includes(run.status);
   async function submitFollowUp(event: FormEvent) {
@@ -386,22 +387,29 @@ function RunDetail({
           ) : null}
         </section>
       ) : null}
-      <div className="historyMetricGrid">
-        <Metric label={t("history.metric.steps")} value={run.steps} />
-        <Metric label={t("history.metric.modelCalls")} value={run.model_calls} />
-        <Metric label={t("history.metric.toolCalls")} value={run.tool_calls} />
-        <Metric label={t("history.metric.totalTokens")} value={run.total_tokens.toLocaleString()} />
-        <Metric label={t("history.metric.patches")} value={run.applied_patches} />
+      <HistoryPatchPreview detail={detail} />
+      <div className="historyMetricGrid historyMetricGridPrimary">
+        <Metric label={t("history.changedFiles")} value={t("diff.files", { count: changedFiles.length })} />
+        <Metric label={t("history.tests")} value={translateKnownText(locale, run.test_status)} />
         <Metric label={t("history.metric.duration")} value={formatDuration(run.duration_ms, t("history.notAvailable"))} />
+        <Metric label={t("history.metric.totalTokens")} value={run.total_tokens.toLocaleString()} />
       </div>
       <DetailSection title={t("history.result")}>
         <p>{run.final_message || run.termination_reason || t("history.noResult")}</p>
         <div className="historyEvidenceLine"><span>{t("history.tests")}</span><strong>{translateKnownText(locale, run.test_status)}</strong><span>{t("history.traceEvents")}</span><strong>{detail.trace.event_count}</strong></div>
       </DetailSection>
-      <HistoryPatchPreview detail={detail} />
       <section className="historyDetailSection">
         <CompletionEvidence assessment={run.completion} />
       </section>
+      <details className="historyTechnicalMetrics">
+        <summary>{t("history.runData")}<ChevronDown size={15} /></summary>
+        <div className="historyMetricGrid">
+          <Metric label={t("history.metric.steps")} value={run.steps} />
+          <Metric label={t("history.metric.modelCalls")} value={run.model_calls} />
+          <Metric label={t("history.metric.toolCalls")} value={run.tool_calls} />
+          <Metric label={t("history.metric.patches")} value={run.applied_patches} />
+        </div>
+      </details>
       <DetailSection title={t("history.report")}>
         {detail.report.available ? <pre className="historyReport">{localizeRunReport(detail.report.content, locale)}</pre> : <p>{t("history.reportUnavailable")}</p>}
         {detail.report.truncated ? <span className="historyNote">{t("history.reportTruncated")}</span> : null}
@@ -415,9 +423,9 @@ function RunDetail({
 
 function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
   const { t } = usePreferences();
-  const { run, patch } = detail;
+  const { patch } = detail;
   const lines = patch.content.split("\n");
-  const files = run.changed_files.length ? run.changed_files : historyChangedFiles(lines);
+  const files = changedFilesForDetail(detail);
   const insertions = lines.filter((line) => line.startsWith("+") && !line.startsWith("+++")).length;
   const deletions = lines.filter((line) => line.startsWith("-") && !line.startsWith("---")).length;
   const visibleLines = lines.slice(0, 180);
@@ -460,6 +468,10 @@ function historyChangedFiles(lines: string[]): string[] {
     if (file && file !== "/dev/null") files.add(file);
   });
   return [...files];
+}
+
+function changedFilesForDetail(detail: HistoryRunDetail): string[] {
+  return detail.run.changed_files.length ? detail.run.changed_files : historyChangedFiles(detail.patch.content.split("\n"));
 }
 
 function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison; onBack: () => void }) {

@@ -18854,3 +18854,480 @@ button > svg {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Run Center product polish: history reads like conversations, details prioritize outcome and diffs. */
+.runCenterBackdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #0a0d12 54%, transparent), color-mix(in srgb, #0a0d12 38%, transparent)),
+    color-mix(in srgb, #0a0d12 48%, transparent);
+}
+
+.runCenter {
+  width: min(1560px, 96vw);
+  height: min(980px, 90vh);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 62%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow: 0 32px 110px rgba(15, 23, 42, 0.28), 0 1px 0 rgba(255, 255, 255, 0.44) inset;
+}
+
+.runCenterHeader {
+  height: 82px;
+  padding: 0 28px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
+}
+
+.runCenterHeader h2 {
+  font-size: 24px;
+  font-weight: 780;
+}
+
+.runCenterHeader .eyebrow {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.runCenterHeaderActions {
+  gap: 10px;
+}
+
+.runCenterHeaderActions > span {
+  font-size: 13px;
+}
+
+.historyInsightsButton {
+  min-height: 42px;
+  padding: 0 14px;
+  border-color: color-mix(in srgb, var(--border) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  font-size: 13px;
+}
+
+.runCenterBody {
+  height: calc(100% - 82px);
+  grid-template-columns: 260px minmax(390px, 0.88fr) minmax(520px, 1.12fr);
+  background: color-mix(in srgb, var(--canvas) 76%, var(--surface));
+}
+
+.historyFilters {
+  padding: 24px 20px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-subtle) 80%, transparent), transparent 220px),
+    color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+.historyFilters form {
+  gap: 18px;
+}
+
+.historyFilters label > span:first-child {
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.historySearch,
+.historyFilters select {
+  height: 44px;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+}
+
+.historySearch input,
+.historyFilters select,
+.historyCheckbox {
+  font-size: 13px;
+}
+
+.historyFilterButton {
+  min-height: 44px;
+  margin-top: 2px;
+  border-color: color-mix(in srgb, var(--text) 82%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.historyCompareControl {
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+}
+
+.historyCompareControl strong {
+  font-size: 13px;
+}
+
+.historyCompareControl span {
+  font-size: 12px;
+}
+
+.historyCompareControl button:not(.historyClearButton) {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+.historyRunList {
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+}
+
+.historyRunRow {
+  min-height: 118px;
+  padding: 18px 22px 16px 52px;
+  border-bottom-color: color-mix(in srgb, var(--border) 72%, transparent);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px transparent;
+}
+
+.historyRunRow:hover {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+.historyRunRow.active {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 64%, transparent), color-mix(in srgb, var(--surface-raised) 88%, transparent));
+  box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.historyRunTitle strong {
+  font-size: 15px;
+  line-height: 1.42;
+  font-weight: 760;
+}
+
+.historyRunMeta {
+  margin-top: 9px;
+  font-size: 12px;
+}
+
+.historyRunSignals {
+  margin-top: 12px;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.historyStatus {
+  max-width: 170px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.runCompareCheck {
+  top: 22px;
+  left: 20px;
+}
+
+.runCompareCheck > span {
+  width: 19px;
+  height: 19px;
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent);
+  border-radius: 5px;
+}
+
+.historyDetail {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.historyDetailContent {
+  display: grid;
+  align-content: start;
+}
+
+.historyDetailHeader {
+  min-height: 158px;
+  padding: 30px 34px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
+}
+
+.historyDetailHeader h3 {
+  max-width: 760px;
+  margin-top: 13px;
+  font-size: 24px;
+  line-height: 1.28;
+  font-weight: 780;
+}
+
+.historyDetailHeader p {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.historyContinueBand {
+  padding: 22px 34px 24px;
+  gap: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+}
+
+.historyContinueBand strong {
+  font-size: 16px;
+}
+
+.historyContinueBand span {
+  max-width: 640px;
+  font-size: 13px;
+}
+
+.historyContinueBand form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.historyContinueBand textarea {
+  min-height: 92px;
+  padding: 14px;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.historyContinueBand button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+}
+
+.historyResumeBand {
+  padding: 16px 34px;
+  background: color-mix(in srgb, var(--warning-soft) 44%, var(--surface));
+}
+
+.historyPatchPreview {
+  margin: 22px 34px 0;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border-strong) 60%, transparent);
+  background: var(--surface-raised);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.055);
+}
+
+.historyPatchPreview > summary {
+  min-height: 58px;
+  padding: 0 18px;
+}
+
+.historyPatchPreview > summary strong {
+  font-size: 15px;
+}
+
+.historyPatchStats {
+  padding: 5px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.historyPatchStats b {
+  font-size: 12px;
+}
+
+.historyPatchFiles {
+  padding: 11px 14px;
+  background: color-mix(in srgb, var(--surface-subtle) 54%, transparent);
+}
+
+.historyPatchPreview pre {
+  max-height: 360px;
+  font-size: 11px;
+}
+
+.historyMetricGrid {
+  margin: 18px 34px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  border: 0;
+}
+
+.historyMetricGrid > div,
+.historyMetricGrid > div:nth-child(3n),
+.historyMetricGrid > div:nth-last-child(-n + 3) {
+  min-height: 76px;
+  padding: 14px;
+  display: grid;
+  align-content: center;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+}
+
+.historyMetricGrid span {
+  font-size: 12px;
+}
+
+.historyMetricGrid strong {
+  margin-top: 7px;
+  font-size: 20px;
+  font-weight: 760;
+}
+
+.historyMetricGridPrimary > div:first-child strong {
+  color: var(--accent);
+}
+
+.historyDetailSection {
+  margin: 18px 34px 0;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+}
+
+.historyDetailSection h4 {
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 760;
+  text-transform: none;
+}
+
+.historyDetailSection p {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.historyEvidenceLine {
+  margin-top: 16px;
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+}
+
+.historyEvidenceLine span,
+.historyEvidenceLine strong {
+  font-size: 12px;
+}
+
+.historyTechnicalMetrics {
+  margin: 18px 34px 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 64%, transparent);
+}
+
+.historyTechnicalMetrics > summary {
+  min-height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 720;
+  list-style: none;
+  cursor: pointer;
+}
+
+.historyTechnicalMetrics > summary::-webkit-details-marker {
+  display: none;
+}
+
+.historyTechnicalMetrics[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.historyTechnicalMetrics .historyMetricGrid {
+  margin: 0;
+  padding: 0 16px 16px;
+}
+
+.historyReport,
+.historyTrace code {
+  font-size: 11px;
+}
+
+.comparisonHeader {
+  padding: 30px 34px 24px;
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+}
+
+.comparisonRuns,
+.comparisonOutcome,
+.comparisonTable {
+  margin: 18px 34px 0;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.comparisonRuns,
+.comparisonOutcome {
+  border-bottom: 1px solid var(--hairline);
+}
+
+@media (max-width: 1120px) {
+  .runCenterBody {
+    grid-template-columns: 230px minmax(320px, 0.9fr) minmax(450px, 1.1fr);
+  }
+
+  .historyMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .runCenter {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+  }
+
+  .runCenterBody {
+    height: calc(100vh - 102px);
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .historyDetail {
+    inset: 82px 0 0 220px;
+  }
+}
+
+@media (max-width: 760px) {
+  .runCenterBackdrop {
+    padding: 0;
+  }
+
+  .runCenter {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .runCenterBody {
+    height: calc(100dvh - 82px);
+  }
+
+  .historyFilters {
+    padding: 12px;
+  }
+
+  .historyDetailHeader,
+  .historyContinueBand,
+  .historyResumeBand {
+    padding-inline: 18px;
+  }
+
+  .historyPatchPreview,
+  .historyMetricGrid,
+  .historyDetailSection,
+  .historyTechnicalMetrics,
+  .comparisonRuns,
+  .comparisonOutcome,
+  .comparisonTable {
+    margin-inline: 18px;
+  }
+}
