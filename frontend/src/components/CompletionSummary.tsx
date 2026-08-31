@@ -117,11 +117,11 @@ export function CompletionSummary({
         <details className="completionDetails">
           <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>
           <div className="completionFullMessage">
-            <p>{fullMessage.lead}</p>
+            <p className="completionFullLead">{fullMessage.lead}</p>
             {fullMessage.items.length ? (
-              <ul>
-                {fullMessage.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
-              </ul>
+              <div className="completionDetailGrid">
+                {fullMessage.items.map((item, index) => <article key={`${index}-${item}`}><span>{item}</span></article>)}
+              </div>
             ) : null}
           </div>
         </details>
@@ -229,14 +229,20 @@ function previewCompletionMessage(message: string, limit = 120): string {
 
 function formatCompletionMessage(message: string): { lead: string; items: string[] } {
   const normalized = message.replace(/\s+/g, " ").trim();
-  const parts = splitCompletionMessage(normalized);
+  const parts = splitCompletionMessage(normalized).map(cleanCompletionItem).filter(Boolean);
   if (parts.length <= 1) return { lead: normalized, items: [] };
   return { lead: parts[0], items: parts.slice(1, 7) };
 }
 
 function splitCompletionMessage(message: string): string[] {
+  const prepared = message
+    .replace(/\s+[-*]\s+(?=[A-Za-z0-9_.\u4e00-\u9fff])/g, "\n- ")
+    .replace(/\s+(\d+[.、])\s+/g, "\n$1 ");
+  const structuralParts = prepared.split(/\n+/).map((part) => part.trim()).filter(Boolean);
+  if (structuralParts.length > 1) return rebalanceCompletionParts(structuralParts);
+
   const semicolonParts = message.split(/[;；]/).map((part) => part.trim()).filter(Boolean);
-  if (semicolonParts.length > 1) return semicolonParts;
+  if (semicolonParts.length > 1) return rebalanceCompletionParts(semicolonParts);
 
   const parts: string[] = [];
   let start = 0;
@@ -248,5 +254,25 @@ function splitCompletionMessage(message: string): string[] {
   }
   const rest = message.slice(start).trim();
   if (rest) parts.push(rest);
-  return parts.length ? parts : [message];
+  return rebalanceCompletionParts(parts.length ? parts : [message]);
+}
+
+function rebalanceCompletionParts(parts: string[]): string[] {
+  const balanced: string[] = [];
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const colonIndex = trimmed.search(/[：:]/);
+    if (trimmed.length > 180 && colonIndex > 12 && colonIndex < 80) {
+      balanced.push(trimmed.slice(0, colonIndex + 1).trim());
+      balanced.push(trimmed.slice(colonIndex + 1).trim());
+    } else {
+      balanced.push(trimmed);
+    }
+  }
+  return balanced;
+}
+
+function cleanCompletionItem(item: string): string {
+  return item.replace(/^[-*]\s+/, "").replace(/^\d+[.、]\s*/, "").trim();
 }
