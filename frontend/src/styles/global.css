@@ -18826,3 +18826,20 @@ button > svg {
     font-size: 10px;
   }
 }
+
+/* Sidebar should stay anchored to the product frame, not react to detail expansion. */
+@media (min-width: 901px) {
+  .productFrame > .projectSidebar {
+    position: relative;
+    top: auto;
+    align-self: stretch;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 900px) {
+  .productFrame > .projectSidebar {
+    position: relative;
+    top: auto;
+  }
+}
