@@ -18510,3 +18510,206 @@ button > svg {
     top: auto;
   }
 }
+
+/* Task composer product polish: focused, compact, and less demo-like. */
+.productContent > .taskStage {
+  min-height: calc(100vh - 74px);
+  padding: clamp(30px, 5vh, 56px) clamp(22px, 5vw, 72px) 52px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.productTaskSetup {
+  width: min(100%, 1080px);
+}
+
+.productTaskIntro {
+  width: min(100%, 980px);
+  margin: 0 auto 18px;
+  text-align: left;
+}
+
+.productTaskIntro h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(34px, 3.3vw, 48px);
+  line-height: 1.08;
+  font-weight: 780;
+}
+
+.productTaskIntro p {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.52;
+}
+
+.taskQuickStarts {
+  width: min(100%, 980px);
+  margin: 0 auto 12px;
+  justify-content: flex-start;
+}
+
+.taskQuickStarts button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.productTaskSetup .taskComposerProduct {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  border-color: color-mix(in srgb, var(--border-strong) 74%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 70px rgba(15, 23, 42, 0.08);
+}
+
+.productTaskSetup .taskComposerProduct:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border-strong));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 22px 76px rgba(15, 23, 42, 0.1), 0 0 0 3px color-mix(in srgb, var(--accent-soft) 54%, transparent);
+}
+
+.productTaskSetup .taskComposerProduct textarea {
+  min-height: clamp(220px, 31vh, 330px);
+  padding: 24px 26px;
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.productTaskSetup .taskComposerProduct textarea::placeholder {
+  color: color-mix(in srgb, var(--text-tertiary) 88%, transparent);
+}
+
+.productTaskSetup .taskComposerToolbar {
+  min-height: 58px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.productTaskSetup .taskComposerOptions,
+.productTaskSetup .taskPrimaryActions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.productTaskSetup .taskPrimaryActions {
+  justify-content: flex-end;
+}
+
+.productTaskSetup .taskTypeSelect {
+  min-width: 150px;
+  height: 38px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+}
+
+.productTaskSetup .exampleFillAction,
+.productTaskSetup .runSettingsAction,
+.productTaskSetup .startTaskAction {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+.productTaskSetup .startTaskAction {
+  min-width: 132px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 96%, var(--accent)), var(--text));
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+}
+
+.productTaskSetup .startTaskAction:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.projectSidebar {
+  padding-top: 18px;
+}
+
+.sidebarProject {
+  min-height: 54px;
+}
+
+.sidebarNewTask {
+  height: 42px;
+  margin-block: 14px 24px;
+}
+
+.sidebarSectionHeader {
+  min-height: 36px;
+  margin-top: 0;
+  padding-inline: 6px;
+}
+
+.sidebarRuns {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.sidebarRuns > button {
+  min-height: 50px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.sidebarRuns > button:hover,
+.sidebarRuns > button.active {
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.sidebarRunIcon {
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+@media (max-width: 1100px) {
+  .productContent > .taskStage {
+    padding-top: 26px;
+  }
+
+  .productTaskIntro h1 {
+    font-size: clamp(30px, 5vw, 42px);
+  }
+}
+
+@media (max-width: 760px) {
+  .productContent > .taskStage {
+    padding: 22px 14px 36px;
+  }
+
+  .productTaskIntro {
+    margin-bottom: 14px;
+  }
+
+  .productTaskIntro h1 {
+    font-size: 30px;
+  }
+
+  .productTaskSetup .taskComposerProduct textarea {
+    min-height: 190px;
+    padding: 20px 18px;
+  }
+
+  .productTaskSetup .taskComposerToolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productTaskSetup .taskComposerOptions,
+  .productTaskSetup .taskPrimaryActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
