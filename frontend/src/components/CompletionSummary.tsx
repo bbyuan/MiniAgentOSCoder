@@ -3,10 +3,8 @@ import {
   CheckCircle2,
   ChevronDown,
   CircleAlert,
-  FileDiff,
   FlaskConical,
   ListChecks,
-  Plus,
   ShieldCheck,
 } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
@@ -23,7 +21,6 @@ interface CompletionSummaryProps {
   lastObservation?: Record<string, unknown>;
   artifacts?: RunArtifacts;
   completion?: CompletionAssessment | null;
-  onNewTask: () => void;
   onInspectRun?: () => void;
 }
 
@@ -34,7 +31,6 @@ export function CompletionSummary({
   lastObservation,
   artifacts,
   completion,
-  onNewTask,
   onInspectRun,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
@@ -67,7 +63,7 @@ export function CompletionSummary({
   });
   const showEvidence = status === "completed" || completion?.verdict === "passed";
   const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
-  const showSignals = Boolean(tests) || (status === "completed" && !hasCodeDiff);
+  const showSignals = Boolean(tests);
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -77,10 +73,6 @@ export function CompletionSummary({
           <strong>{t(status === "completed" ? "completion.done" : status === "cancelled" ? "completion.cancelled" : "completion.failed")}</strong>
           <p>{messagePreview}</p>
         </div>
-        <button type="button" className="completionNewTask" onClick={onNewTask}>
-          <Plus size={15} />
-          {t("completion.newTask")}
-        </button>
       </div>
       {status === "failed" && (reason || observationError) ? (
         <div className="completionFailureReason">
@@ -117,7 +109,6 @@ export function CompletionSummary({
       <CodeChangePreview artifacts={artifacts} />
       {showSignals ? (
         <div className="completionSignals">
-          {!hasCodeDiff ? <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div> : null}
           <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
         </div>
       ) : null}
@@ -213,7 +204,7 @@ function localizeRuntimeError(error: string, locale: "zh" | "en"): string {
   return locale === "zh" ? `运行阶段切换失败：${from} → ${to}` : `Run phase transition failed: ${from} → ${to}`;
 }
 
-function previewCompletionMessage(message: string, limit = 180): string {
+function previewCompletionMessage(message: string, limit = 120): string {
   const normalized = message.replace(/\s+/g, " ").trim();
   if (normalized.length <= limit) return normalized;
 

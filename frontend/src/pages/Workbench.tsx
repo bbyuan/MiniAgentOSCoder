@@ -1303,7 +1303,6 @@ export function Workbench() {
               lastObservation={lastObservation}
               artifacts={artifacts}
               completion={completion}
-              onNewTask={() => resetRunState(true)}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);

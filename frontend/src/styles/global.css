@@ -19734,3 +19734,107 @@ button > svg {
     justify-content: center;
   }
 }
+
+/* Runtime inspector hardening: settings panes should scroll naturally, never overlap. */
+.inspectorBody {
+  overflow-x: hidden;
+}
+
+.inspectorBody .governanceSection {
+  padding-bottom: 24px;
+}
+
+.inspectorBody .governanceOverview,
+.inspectorBody .governanceLevel,
+.inspectorBody .governanceAdvanced {
+  position: relative;
+  z-index: auto;
+  flex: none;
+}
+
+.inspectorBody .governanceLevel {
+  overflow: visible;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+}
+
+.inspectorBody .governanceLevel .sandboxProfileControl {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 12px;
+}
+
+.inspectorBody .governanceLevel .sandboxProfileControl button {
+  min-height: 66px;
+}
+
+.inspectorBody .governanceAdvanced {
+  margin-top: 12px;
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+}
+
+.inspectorBody .governanceAdvanced > summary {
+  min-height: 60px;
+  padding: 10px 14px;
+}
+
+.inspectorBody .governanceAdvanced > summary strong {
+  font-size: 13px;
+}
+
+.inspectorBody .governanceAdvanced > summary small {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.inspectorBody .controlSettingsTabs {
+  min-height: 48px;
+  gap: 8px;
+}
+
+.inspectorBody .controlSettingsTabs button {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+/* Completion result polish: make the outcome scannable before exposing details. */
+.completionSummary {
+  gap: 14px;
+}
+
+.completionLead {
+  grid-template-columns: 42px minmax(0, 1fr);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.completionLead > svg {
+  width: 42px;
+  height: 42px;
+}
+
+.completionLead strong {
+  font-size: 22px;
+}
+
+.completionLead p {
+  max-width: 820px;
+  -webkit-line-clamp: 3;
+}
+
+.completionSummary .codeChangePreview {
+  order: 1;
+}
+
+.completionSummary .completionSignals {
+  order: 2;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.completionSummary .completionDetails {
+  order: 3;
+}
+
+.completionSummary .completionEvidenceDisclosure {
+  order: 4;
+}
