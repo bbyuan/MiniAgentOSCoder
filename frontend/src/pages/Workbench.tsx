@@ -58,7 +58,7 @@ import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
-import { WorkspaceFilesDialog } from "../components/WorkspaceFilesDialog";
+import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { localizeErrorMessage, translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -142,6 +142,7 @@ export function Workbench() {
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
+  const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
   const streamCleanup = useRef<(() => void) | null>(null);
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -813,6 +814,7 @@ export function Workbench() {
     setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
+    setWorkspaceChangeSet(undefined);
     setError(null);
     if (clearTask) setTask("");
   }
@@ -869,6 +871,19 @@ export function Workbench() {
     } finally {
       setApprovalBusy(false);
     }
+  }
+
+  function openArtifactChanges() {
+    const diff = artifacts?.diff_summary;
+    if (!diff) return;
+    setWorkspaceChangeSet({
+      title: t("workspaceFiles.appliedChanges"),
+      patch: artifacts?.diff_preview?.content ?? "",
+      changedFiles: [],
+      insertions: diff.insertions,
+      deletions: diff.deletions,
+    });
+    setWorkspaceFilesOpen(true);
   }
 
   async function rollbackToCheckpoint(checkpointId: string) {
@@ -1168,7 +1183,10 @@ export function Workbench() {
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
             onOpenHistory={() => openHistory()}
-            onOpenFiles={() => setWorkspaceFilesOpen(true)}
+            onOpenFiles={() => {
+              setWorkspaceChangeSet(undefined);
+              setWorkspaceFilesOpen(true);
+            }}
             onRefresh={() => void loadProjectRuns()}
           />
           <div className="productContent">
@@ -1268,7 +1286,7 @@ export function Workbench() {
             />
           ) : null}
 
-          {!terminal && displayDiff.files > 0 ? <CodeChangePreview artifacts={artifacts} compact /> : null}
+          {!terminal && displayDiff.files > 0 ? <CodeChangePreview artifacts={artifacts} compact onInspectChanges={openArtifactChanges} /> : null}
 
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>
@@ -1283,7 +1301,22 @@ export function Workbench() {
 
           {approval ? (
             <div className="inlineApproval">
-              <ApprovalPanel approval={approval} busy={approvalBusy} onApprove={approveAction} onDeny={denyAction} />
+              <ApprovalPanel
+                approval={approval}
+                busy={approvalBusy}
+                onInspectChanges={approval.target.tool === "apply_patch" ? () => {
+                  setWorkspaceChangeSet({
+                    title: t("workspaceFiles.pendingChanges"),
+                    patch: approval.target.patch,
+                    changedFiles: approval.target.files ?? [],
+                    insertions: approval.target.additions,
+                    deletions: approval.target.deletions,
+                  });
+                  setWorkspaceFilesOpen(true);
+                } : undefined}
+                onApprove={approveAction}
+                onDeny={denyAction}
+              />
             </div>
           ) : null}
 
@@ -1295,6 +1328,7 @@ export function Workbench() {
               lastObservation={lastObservation}
               artifacts={artifacts}
               completion={completion}
+              onInspectChanges={hasVisibleDiff(artifacts) ? openArtifactChanges : undefined}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);
@@ -1411,7 +1445,11 @@ export function Workbench() {
       <WorkspaceFilesDialog
         open={workspaceFilesOpen}
         project={project}
-        onClose={() => setWorkspaceFilesOpen(false)}
+        changeSet={workspaceChangeSet}
+        onClose={() => {
+          setWorkspaceFilesOpen(false);
+          setWorkspaceChangeSet(undefined);
+        }}
       />
       <ModelSetupDialog
         open={modelSetupOpen}
@@ -1537,6 +1575,11 @@ function ErrorBanner({ message }: { message: string }) {
 
 function basename(path: string): string {
   return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path;
+}
+
+function hasVisibleDiff(artifacts: RunArtifacts | undefined): boolean {
+  const diff = artifacts?.diff_summary;
+  return Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
 }
 
 function isApprovalRequest(value: unknown): value is ApprovalRequest {

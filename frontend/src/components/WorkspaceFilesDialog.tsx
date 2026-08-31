@@ -1,36 +1,71 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, FileCode2, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
+import { AlertCircle, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { daemonApi, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
 import { localizeErrorMessage, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+import { buildDiffFiles } from "./DiffReview";
+
+export interface WorkspaceChangeSet {
+  title: string;
+  patch: string;
+  changedFiles: string[];
+  insertions: number;
+  deletions: number;
+}
 
 interface WorkspaceFilesDialogProps {
   open: boolean;
   project?: OpenProjectResponse;
+  changeSet?: WorkspaceChangeSet;
   onClose: () => void;
 }
 
-export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesDialogProps) {
+export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: WorkspaceFilesDialogProps) {
   const { locale, t } = usePreferences();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<WorkspaceFileItem[]>([]);
   const [truncated, setTruncated] = useState(false);
   const [selectedPath, setSelectedPath] = useState("");
   const [content, setContent] = useState<WorkspaceFileContent>();
+  const [previewMode, setPreviewMode] = useState<"source" | "diff">("source");
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
   const [error, setError] = useState("");
 
   const files = useMemo(() => items.filter((item) => item.kind === "file"), [items]);
-  const selectedItem = files.find((item) => item.path === selectedPath);
+  const changed = useMemo(() => buildDiffFiles(changeSet?.patch ?? "", changeSet?.changedFiles ?? []), [changeSet]);
+  const changedByPath = useMemo(() => new Map(changed.map((file) => [file.path, file])), [changed]);
+  const displayFiles = useMemo(() => {
+    const byPath = new Map(files.map((file) => [file.path, file]));
+    for (const file of changed) {
+      if (byPath.has(file.path)) continue;
+      byPath.set(file.path, {
+        path: file.path,
+        name: file.path.split("/").pop() || file.path,
+        kind: "file",
+        size: 0,
+        language: "",
+        modified_at: 0,
+      });
+    }
+    return [...byPath.values()].sort((left, right) => {
+      const leftChanged = changedByPath.has(left.path) ? 0 : 1;
+      const rightChanged = changedByPath.has(right.path) ? 0 : 1;
+      return leftChanged - rightChanged || left.path.localeCompare(right.path);
+    });
+  }, [files, changed, changedByPath]);
+  const selectedItem = displayFiles.find((item) => item.path === selectedPath);
+  const selectedDiff = changedByPath.get(selectedPath);
+  const hasChanges = Boolean(changeSet && changed.length > 0);
 
   useEffect(() => {
     if (!open || !project) return;
     setQuery("");
-    setSelectedPath("");
+    setSelectedPath(changeSet?.changedFiles[0] ?? "");
+    setPreviewMode(changeSet ? "diff" : "source");
     setContent(undefined);
     void loadFiles("");
-  }, [open, project?.project_id]);
+  }, [open, project?.project_id, changeSet?.title]);
 
   useEffect(() => {
     if (!open || !project) return;
@@ -40,6 +75,11 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
 
   useEffect(() => {
     if (!open || !project || !selectedPath) return;
+    if (!files.some((file) => file.path === selectedPath)) {
+      setContent(undefined);
+      setLoadingContent(false);
+      return;
+    }
     let cancelled = false;
     setLoadingContent(true);
     setError("");
@@ -56,7 +96,7 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
     return () => {
       cancelled = true;
     };
-  }, [open, project?.project_id, selectedPath]);
+  }, [open, project?.project_id, selectedPath, files]);
 
   if (!open || !project) return null;
 
@@ -69,7 +109,11 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
       setItems(response.items);
       setTruncated(response.truncated);
       const nextFiles = response.items.filter((item) => item.kind === "file");
-      setSelectedPath((current) => nextFiles.some((item) => item.path === current) ? current : nextFiles[0]?.path ?? "");
+      setSelectedPath((current) => {
+        if (nextFiles.some((item) => item.path === current)) return current;
+        const changedPath = changeSet?.changedFiles.find((path) => nextFiles.some((item) => item.path === path));
+        return changedPath ?? nextFiles[0]?.path ?? "";
+      });
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadFailed")));
     } finally {
@@ -84,7 +128,7 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
           <div>
             <span className="eyebrow">{t("workspaceFiles.eyebrow")}</span>
             <h2>{t("workspaceFiles.title")}</h2>
-            <p>{project.path}</p>
+            <p>{changeSet ? changeSet.title : project.path}</p>
           </div>
           <div className="workspaceFilesHeaderActions">
             <button type="button" onClick={() => void loadFiles()} disabled={loadingFiles} title={t("history.refresh")} aria-label={t("history.refresh")}>
@@ -101,7 +145,7 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
             <Search size={16} />
             <input value={query} placeholder={t("workspaceFiles.search")} onChange={(event) => setQuery(event.target.value)} />
           </label>
-          <span>{t("workspaceFiles.count", { count: files.length })}</span>
+          <span>{hasChanges ? t("workspaceFiles.changeCount", { count: changed.length, additions: changeSet?.insertions ?? 0, deletions: changeSet?.deletions ?? 0 }) : t("workspaceFiles.count", { count: files.length })}</span>
         </div>
 
         {error ? (
@@ -113,7 +157,7 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
             {loadingFiles && !items.length ? (
               <div className="workspaceFilesLoading"><LoaderCircle className="spin" size={16} />{t("workspaceFiles.loading")}</div>
             ) : null}
-            {files.map((file) => (
+            {displayFiles.map((file) => (
               <button
                 type="button"
                 className={file.path === selectedPath ? "active" : ""}
@@ -125,10 +169,14 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
                   <strong>{file.name}</strong>
                   <small>{file.path}</small>
                 </span>
-                <em>{formatBytes(file.size)}</em>
+                {changedByPath.has(file.path) ? (
+                  <em className="changed">{t("workspaceFiles.changedBadge")}</em>
+                ) : (
+                  <em>{formatBytes(file.size)}</em>
+                )}
               </button>
             ))}
-            {!loadingFiles && !files.length ? (
+            {!loadingFiles && !displayFiles.length ? (
               <p className="workspaceFilesEmpty">{t("workspaceFiles.empty")}</p>
             ) : null}
           </nav>
@@ -137,15 +185,34 @@ export function WorkspaceFilesDialog({ open, project, onClose }: WorkspaceFilesD
             {selectedItem ? (
               <>
                 <header>
-                  <div>
-                    <FolderTree size={16} />
+                  <div className="workspaceFileIdentity">
+                    {selectedDiff ? <FileDiff size={16} /> : <FolderTree size={16} />}
                     <span>
                       <strong>{selectedItem.path}</strong>
                       <small>{selectedItem.language || t("workspaceFiles.textFile")} · {formatBytes(selectedItem.size)}</small>
                     </span>
                   </div>
+                  {selectedDiff ? (
+                    <div className="workspacePreviewTabs" role="tablist" aria-label={t("workspaceFiles.previewMode")}>
+                      <button type="button" className={previewMode === "source" ? "active" : ""} onClick={() => setPreviewMode("source")}>{t("workspaceFiles.sourceTab")}</button>
+                      <button type="button" className={previewMode === "diff" ? "active" : ""} onClick={() => setPreviewMode("diff")}>{t("workspaceFiles.diffTab")}</button>
+                    </div>
+                  ) : null}
                 </header>
-                {loadingContent ? (
+                {previewMode === "diff" && selectedDiff ? (
+                  <div className="workspaceDiffPreview">
+                    <div><strong>{selectedDiff.path}</strong><span><b className="positive">+{selectedDiff.additions}</b><b className="negative">-{selectedDiff.deletions}</b></span></div>
+                    {selectedDiff.hasPatch ? (
+                      <pre tabIndex={0}>
+                        {selectedDiff.lines.map((line, index) => (
+                          <code className={`line-${classifyDiffLine(line)}`} key={`${selectedDiff.path}-${index}-${line}`}>
+                            {line || " "}
+                          </code>
+                        ))}
+                      </pre>
+                    ) : <p>{t("codeDiff.noFilePreview")}</p>}
+                  </div>
+                ) : loadingContent ? (
                   <div className="workspaceFilesLoading preview"><LoaderCircle className="spin" size={16} />{t("workspaceFiles.loadingContent")}</div>
                 ) : content?.available ? (
                   <>
@@ -193,4 +260,13 @@ function localizedUnavailableReason(reason: string | undefined, t: (key: Transla
   if (reason === "File is too large to preview") return t("workspaceFiles.tooLarge");
   if (reason === "Binary files cannot be previewed") return t("workspaceFiles.binary");
   return t("workspaceFiles.noContent");
+}
+
+function classifyDiffLine(line: string): "add" | "delete" | "meta" | "context" {
+  if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("@@") || line.startsWith("diff ") || line.startsWith("index ")) {
+    return "meta";
+  }
+  if (line.startsWith("+")) return "add";
+  if (line.startsWith("-")) return "delete";
+  return "context";
 }

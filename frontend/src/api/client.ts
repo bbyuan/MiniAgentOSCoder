@@ -1091,6 +1091,8 @@ export const daemonApi = {
       method: "PUT",
       body: JSON.stringify({ archived }),
     }),
+  deleteHistoryRun: (runId: string) =>
+    request<{ run_id: string; deleted: boolean }>(`/history/runs/${runId}`, { method: "DELETE" }),
   getEvaluationSummary: (projectId?: string) =>
     request<EvaluationSummary>(`/evaluation/summary${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`),
   streamRunEvents: (

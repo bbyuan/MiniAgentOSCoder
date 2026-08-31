@@ -3,16 +3,16 @@ import { Check, ChevronDown, FileDiff, ShieldAlert, Terminal, X } from "lucide-r
 import type { ApprovalRequest } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
-import { DiffReview } from "./DiffReview";
 
 interface ApprovalPanelProps {
   approval: ApprovalRequest | null;
   busy: boolean;
+  onInspectChanges?: () => void;
   onApprove: () => void;
   onDeny: (reason: string) => void;
 }
 
-export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPanelProps) {
+export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onDeny }: ApprovalPanelProps) {
   const [reason, setReason] = useState("");
   const { locale, t } = usePreferences();
 
@@ -68,22 +68,16 @@ export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPan
       <div className="approvalDecisionStrip">
         <span><FileDiff size={15} />{isPatch ? fileSummary : approval.target.tool}</span>
         <span>{effectLabel}</span>
+        {isPatch && onInspectChanges ? (
+          <button type="button" onClick={onInspectChanges}>
+            <FileDiff size={15} />
+            {t("approval.inspectChanges")}
+          </button>
+        ) : null}
       </div>
 
       {isPatch ? (
         <>
-          <details className="approvalDiffDetails">
-            <summary><span>{t("approval.patchTitle")}</span><em>{t("approval.patchHint")}</em><ChevronDown size={16} /></summary>
-            <DiffReview
-              title={t("approval.patchTitle")}
-              patch={approval.target.patch}
-              changedFiles={files}
-              insertions={approval.target.additions}
-              deletions={approval.target.deletions}
-              tone="pending"
-              compact
-            />
-          </details>
           <ReasonInput reason={reason} busy={busy} onChange={setReason} />
           <div className="approvalActions">{approvalActions}</div>
         </>

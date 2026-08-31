@@ -22,6 +22,7 @@ interface CompletionSummaryProps {
   artifacts?: RunArtifacts;
   completion?: CompletionAssessment | null;
   onInspectRun?: () => void;
+  onInspectChanges?: () => void;
 }
 
 export function CompletionSummary({
@@ -32,6 +33,7 @@ export function CompletionSummary({
   artifacts,
   completion,
   onInspectRun,
+  onInspectChanges,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
@@ -117,7 +119,7 @@ export function CompletionSummary({
           ) : null}
         </section>
       ) : null}
-      <CodeChangePreview artifacts={artifacts} />
+      <CodeChangePreview artifacts={artifacts} onInspectChanges={onInspectChanges} />
       {showSignals ? (
         <div className="completionSignals">
           <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>

@@ -13,6 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -177,6 +178,24 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
     }
   }
 
+  async function deleteRun() {
+    if (!detail) return;
+    if (!window.confirm(t("history.deleteConfirm"))) return;
+    setDetailLoading(true);
+    try {
+      const deletedRunId = detail.run.run_id;
+      await daemonApi.deleteHistoryRun(deletedRunId);
+      setDetail(undefined);
+      setComparison(undefined);
+      setSelected((current) => current.filter((runId) => runId !== deletedRunId));
+      await refresh(true);
+    } catch (caught) {
+      setError(localizeErrorMessage(locale, caught, t("history.deleteError")));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   async function resumeRun() {
     if (!detail) return;
     setDetailLoading(true);
@@ -302,6 +321,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
                 detail={detail}
                 busy={detailLoading}
                 onArchive={() => void toggleArchive()}
+                onDelete={() => void deleteRun()}
                 onResume={() => void resumeRun()}
                 onContinue={onContinue}
                 onBack={() => setDetail(undefined)}
@@ -320,6 +340,7 @@ function RunDetail({
   detail,
   busy,
   onArchive,
+  onDelete,
   onResume,
   onContinue,
   onBack,
@@ -327,6 +348,7 @@ function RunDetail({
   detail: HistoryRunDetail;
   busy: boolean;
   onArchive: () => void;
+  onDelete: () => void;
   onResume: () => void;
   onContinue: (detail: HistoryRunDetail, task: string) => Promise<void>;
   onBack: () => void;
@@ -357,9 +379,14 @@ function RunDetail({
       <header className="historyDetailHeader">
         <button className="iconButton historyBackButton" type="button" onClick={onBack} title={t("history.back")} aria-label={t("history.back")}><ArrowLeft size={17} /></button>
         <div><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><h3>{run.task}</h3><p>{basename(run.project_path)} · {translateMode(locale, run.mode)} · {formatDate(run.created_at, locale)}</p></div>
-        <button className="iconButton" type="button" onClick={onArchive} title={run.archived ? t("history.restore") : t("history.archive")} aria-label={run.archived ? t("history.restore") : t("history.archive")}>
-          {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
-        </button>
+        <div className="historyDetailActions">
+          <button className="iconButton" type="button" onClick={onArchive} title={run.archived ? t("history.restore") : t("history.archive")} aria-label={run.archived ? t("history.restore") : t("history.archive")}>
+            {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
+          </button>
+          <button className="iconButton danger" type="button" onClick={onDelete} title={t("history.delete")} aria-label={t("history.delete")}>
+            <Trash2 size={17} />
+          </button>
+        </div>
       </header>
       {continueEligible ? (
         <section className={`historyContinueBand ${continueExpanded ? "expanded" : "compact"}`}>

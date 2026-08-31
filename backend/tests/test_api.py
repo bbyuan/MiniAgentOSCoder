@@ -1373,6 +1373,27 @@ def test_resume_rejects_completed_run(tmp_path: Path) -> None:
     assert response.status_code == 409
 
 
+def test_history_run_can_be_deleted_after_terminal_state(tmp_path: Path) -> None:
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    created = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "temporary history", "mode": "Chat"},
+    ).json()
+    run = store.runs[created["run_id"]]
+
+    active_delete = client.delete(f"/history/runs/{run.run_id}")
+    run.status = RunPhase.CANCELLED
+    store.history.update_run(run)
+    deleted = client.delete(f"/history/runs/{run.run_id}")
+    missing = client.get(f"/history/runs/{run.run_id}")
+
+    assert active_delete.status_code == 409
+    assert deleted.status_code == 200
+    assert deleted.json()["deleted"] is True
+    assert missing.status_code == 404
+
+
 def test_resume_rejects_workspace_restore_without_snapshot(tmp_path: Path) -> None:
     client = make_client()
     project = client.post("/projects/open", json={"path": str(tmp_path)}).json()

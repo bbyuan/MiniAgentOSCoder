@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.api.store import store
 from app.runtime.checkpoint import CheckpointStore
+from app.runtime.history_store import TERMINAL_STATUSES
 
 
 router = APIRouter(prefix="/history", tags=["history"])
@@ -120,6 +121,16 @@ def archive_history_run(run_id: str, request: ArchiveRunRequest) -> dict[str, ob
     if not store.history.set_archived(run_id, request.archived):
         raise HTTPException(status_code=404, detail="Run not found")
     return {"run_id": run_id, "archived": request.archived}
+
+
+@router.delete("/runs/{run_id}")
+def delete_history_run(run_id: str) -> dict[str, object]:
+    active_run = store.runs.get(run_id)
+    if store.worker.is_active(run_id) or (active_run is not None and active_run.status.value not in TERMINAL_STATUSES):
+        raise HTTPException(status_code=409, detail="Active runs cannot be deleted")
+    if not store.history.delete_run(run_id):
+        raise HTTPException(status_code=404, detail="Run not found")
+    return {"run_id": run_id, "deleted": True}
 
 
 def _history_run(run_id: str) -> dict[str, Any]:

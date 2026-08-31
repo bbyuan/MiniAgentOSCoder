@@ -347,6 +347,11 @@ class HistoryStore:
             )
             return cursor.rowcount > 0
 
+    def delete_run(self, run_id: str) -> bool:
+        with self._transaction() as connection:
+            cursor = connection.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
+            return cursor.rowcount > 0
+
     def _configure(self) -> None:
         with self._lock:
             self._connection.execute("PRAGMA foreign_keys=ON")

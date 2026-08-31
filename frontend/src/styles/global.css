@@ -16396,6 +16396,24 @@ button.controlSignal.active {
   background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
 }
 
+.codeChangeInspectButton {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.codeChangeInspectButton:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+}
+
 .diffReview.compact > header {
   min-height: 56px;
   padding: 11px 13px;
@@ -16517,6 +16535,27 @@ button.controlSignal.active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.approvalDecisionStrip button {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+  font-size: 12px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.approvalDecisionStrip button:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 56%, var(--surface));
 }
 
 .approvalDiffDetails {
@@ -16657,6 +16696,10 @@ button.controlSignal.active {
   .approvalSection .approvalActions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .approvalDecisionStrip {
+    padding: 12px 18px;
   }
 
   .approvalSection .approvalActions button {
@@ -17226,6 +17269,14 @@ button.controlSignal.active {
   white-space: nowrap;
 }
 
+.workspaceFilesList button em.changed {
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+}
+
 .workspaceFilePreview {
   min-width: 0;
   min-height: 0;
@@ -17241,10 +17292,12 @@ button.controlSignal.active {
   padding: 0 18px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   border-bottom: 1px solid var(--hairline);
 }
 
-.workspaceFilePreview > header > div {
+.workspaceFileIdentity {
   min-width: 0;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
@@ -17282,6 +17335,34 @@ button.controlSignal.active {
   font-size: 12px;
 }
 
+.workspacePreviewTabs {
+  height: 34px;
+  padding: 3px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.workspacePreviewTabs button {
+  min-width: 72px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.workspacePreviewTabs button.active {
+  color: var(--accent);
+  background: var(--surface-raised);
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.08);
+}
+
 .workspaceFilePreview pre {
   min-width: 0;
   min-height: 0;
@@ -17312,6 +17393,78 @@ button.controlSignal.active {
 .workspaceFilePreview code b {
   padding: 0 14px;
   font-weight: 500;
+}
+
+.workspaceDiffPreview {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.workspaceDiffPreview > div {
+  min-height: 42px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.workspaceDiffPreview > div strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceDiffPreview > div span {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.workspaceDiffPreview pre {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 9px 0;
+  overflow: auto;
+  background: color-mix(in srgb, var(--text) 3.5%, var(--surface));
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workspaceDiffPreview code {
+  min-height: 21px;
+  padding: 1px 13px;
+  display: block;
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.workspaceDiffPreview .line-add {
+  color: color-mix(in srgb, var(--success) 82%, var(--text));
+  background: color-mix(in srgb, var(--success-soft) 48%, transparent);
+}
+
+.workspaceDiffPreview .line-delete {
+  color: color-mix(in srgb, var(--danger) 84%, var(--text));
+  background: color-mix(in srgb, var(--danger-soft) 54%, transparent);
+}
+
+.workspaceDiffPreview .line-meta {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
 }
 
 .workspaceFilesLoading,
@@ -17376,6 +17529,21 @@ button.controlSignal.active {
     max-height: 260px;
     border-right: 0;
     border-bottom: 1px solid var(--hairline);
+  }
+
+  .workspaceFilePreview > header {
+    min-height: 86px;
+    padding: 12px 14px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspacePreviewTabs {
+    width: 100%;
+  }
+
+  .workspacePreviewTabs button {
+    flex: 1;
   }
 }
 
@@ -20091,6 +20259,20 @@ button > svg {
 .historyDetailHeader p {
   margin-top: 10px;
   font-size: 13px;
+}
+
+.historyDetailActions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.iconButton.danger {
+  color: var(--danger);
+}
+
+.iconButton.danger:hover {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 68%, var(--surface));
 }
 
 .historyContinueBand {

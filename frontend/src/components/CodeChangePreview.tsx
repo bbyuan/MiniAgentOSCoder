@@ -1,3 +1,4 @@
+import { FileDiff } from "lucide-react";
 import type { RunArtifacts } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -6,9 +7,10 @@ import { DiffReview } from "./DiffReview";
 interface CodeChangePreviewProps {
   artifacts?: RunArtifacts;
   compact?: boolean;
+  onInspectChanges?: () => void;
 }
 
-export function CodeChangePreview({ artifacts, compact = false }: CodeChangePreviewProps) {
+export function CodeChangePreview({ artifacts, compact = false, onInspectChanges }: CodeChangePreviewProps) {
   const { locale, t } = usePreferences();
   const diff = artifacts?.diff_summary;
   const tests = artifacts?.test_summary;
@@ -31,6 +33,12 @@ export function CodeChangePreview({ artifacts, compact = false }: CodeChangePrev
       truncated={preview?.truncated}
       compact={compact}
       tone="applied"
+      actions={onInspectChanges ? (
+        <button className="codeChangeInspectButton" type="button" onClick={onInspectChanges}>
+          <FileDiff size={15} />
+          {t("codeDiff.openInFiles")}
+        </button>
+      ) : undefined}
     />
   );
 }
