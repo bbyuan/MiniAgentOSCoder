@@ -1295,6 +1295,8 @@ export function Workbench() {
             />
           ) : null}
 
+          {!terminal ? <ActivityFeed events={traceEvents} status={runStatus} /> : null}
+
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>
               <div className="turnAvatar"><UserRound size={16} /></div>
@@ -1421,8 +1423,6 @@ export function Workbench() {
               </div>
             </section>
           ) : null}
-
-          {!displayPlan.length && !terminal ? <ActivityFeed events={traceEvents} status={runStatus} /> : null}
 
           {error ? <ErrorBanner message={error} /> : null}
               </>

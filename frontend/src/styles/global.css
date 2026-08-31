@@ -22289,3 +22289,102 @@ button > svg {
   margin-top: 3px;
   color: var(--text-tertiary);
 }
+
+/* Agent process stream: concise, audit-friendly runtime trace. */
+.productContent .runSimpleLayout .activityPanel {
+  min-height: 0;
+  margin-top: 14px;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.productContent .runSimpleLayout .activityHeader {
+  min-height: 46px;
+  padding: 0 14px;
+  background: color-mix(in srgb, var(--surface-subtle) 56%, transparent);
+}
+
+.productContent .runSimpleLayout .activityToggle strong {
+  font-size: 13px;
+}
+
+.productContent .runSimpleLayout .activityToggle small {
+  font-size: 11px;
+}
+
+.productContent .runSimpleLayout .activityList {
+  max-height: 360px;
+  padding: 4px 14px 8px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.productContent .runSimpleLayout .activityItem {
+  min-height: 58px;
+  grid-template-columns: 30px minmax(0, 1fr) max-content;
+  align-items: start;
+  gap: 11px;
+  padding: 10px 0;
+}
+
+.productContent .runSimpleLayout .activityItem .eventIcon {
+  margin-top: 1px;
+}
+
+.productContent .runSimpleLayout .eventCopy strong {
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.productContent .runSimpleLayout .eventCopy span {
+  max-width: 100%;
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.activityChips {
+  min-width: 0;
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.activityChips em {
+  max-width: min(100%, 460px);
+  padding: 3px 7px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .activityPreview {
+  min-height: 52px;
+  padding: 9px 14px;
+}
+
+.productContent .runSimpleLayout .activityPreview strong {
+  font-size: 13px;
+}
+
+.productContent .runSimpleLayout .activityPreview span,
+.productContent .runSimpleLayout .activityPreview time,
+.productContent .runSimpleLayout .activityItem time {
+  font-size: 11px;
+}

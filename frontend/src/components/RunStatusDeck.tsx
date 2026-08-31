@@ -32,7 +32,6 @@ const statusLabels: Record<string, TranslationKey> = {
 export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunStatusDeckProps) {
   const { locale, t } = usePreferences();
   const currentStep = plan.find((item) => item.state === "active") ?? plan.find((item) => item.state === "failed");
-  const lastEvent = trace.length ? trace[trace.length - 1] : undefined;
   const completedSteps = plan.filter((item) => item.state === "done").length;
   const tone = ["failed", "cancelled"].includes(status)
     ? "danger"
@@ -65,7 +64,7 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
           <span>{currentStep ? stepHint(currentStep, locale, t) : t("runStatus.safeBoundary")}</span>
         </div>
         <span className="runStatusLatestEvent">
-          {lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}
+          {trace.length ? t("runStatus.processHint") : t("runStatus.noEvents")}
         </span>
       </div>
 
