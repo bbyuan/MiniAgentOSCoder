@@ -180,7 +180,6 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
 
   async function deleteRun() {
     if (!detail) return;
-    if (!window.confirm(t("history.deleteConfirm"))) return;
     setDetailLoading(true);
     try {
       const deletedRunId = detail.run.run_id;
@@ -357,6 +356,7 @@ function RunDetail({
   const [followUp, setFollowUp] = useState("");
   const { run } = detail;
   const [continueExpanded, setContinueExpanded] = useState(false);
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
   const changedFiles = changedFilesForDetail(detail);
   const continueEligible = ["completed", "failed", "cancelled", "interrupted"].includes(run.status);
   const resumeEligible = ["interrupted", "failed", "cancelled"].includes(run.status);
@@ -364,6 +364,7 @@ function RunDetail({
   useEffect(() => {
     setFollowUp("");
     setContinueExpanded(false);
+    setDeleteConfirming(false);
   }, [run.run_id]);
 
   async function submitFollowUp(event: FormEvent) {
@@ -383,9 +384,16 @@ function RunDetail({
           <button className="iconButton" type="button" onClick={onArchive} title={run.archived ? t("history.restore") : t("history.archive")} aria-label={run.archived ? t("history.restore") : t("history.archive")}>
             {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
           </button>
-          <button className="iconButton danger" type="button" onClick={onDelete} title={t("history.delete")} aria-label={t("history.delete")}>
-            <Trash2 size={17} />
-          </button>
+          {deleteConfirming ? (
+            <div className="historyDeleteConfirm">
+              <button type="button" onClick={() => setDeleteConfirming(false)}>{t("modelSetup.cancel")}</button>
+              <button type="button" disabled={busy} onClick={onDelete}>{t("history.deleteConfirmAction")}</button>
+            </div>
+          ) : (
+            <button className="iconButton danger" type="button" onClick={() => setDeleteConfirming(true)} title={t("history.delete")} aria-label={t("history.delete")}>
+              <Trash2 size={17} />
+            </button>
+          )}
         </div>
       </header>
       {continueEligible ? (
@@ -476,26 +484,55 @@ function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
   const insertions = parsedFiles.reduce((total, file) => total + file.additions, 0);
   const deletions = parsedFiles.reduce((total, file) => total + file.deletions, 0);
 
-  if (!patch.available) {
+  if (!files.length && !parsedFiles.length) {
     return (
       <DetailSection title={t("history.changedFiles")}>
-        {files.length ? <ul className="historyFileList">{files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : <p>{t("history.noChangedFiles")}</p>}
+        <p>{t("history.noChangedFiles")}</p>
       </DetailSection>
     );
   }
 
   return (
-    <DiffReview
-      title={t("codeDiff.changedFiles", { count: files.length || parsedFiles.length })}
-      subtitle={t("codeDiff.historyHint")}
-      patch={patch.content}
-      changedFiles={files}
-      insertions={insertions}
-      deletions={deletions}
-      truncated={patch.truncated}
-      tone="applied"
-      compact
-    />
+    <section className="historyChangeSummary">
+      <header>
+        <div>
+          <span className="eyebrow">{t("history.changedFiles")}</span>
+          <h4>{t("codeDiff.changedFiles", { count: files.length || parsedFiles.length })}</h4>
+          <p>{patch.available ? t("history.changeSummaryHint") : t("history.changeSummaryNoPatch")}</p>
+        </div>
+        {patch.available ? (
+          <div className="historyChangeStats">
+            <b className="positive">+{insertions}</b>
+            <b className="negative">-{deletions}</b>
+          </div>
+        ) : null}
+      </header>
+      <div className="historyChangedFileGrid">
+        {(parsedFiles.length ? parsedFiles : files.map((file) => ({ path: file, additions: 0, deletions: 0, hasPatch: false }))).slice(0, 8).map((file) => (
+          <article key={file.path}>
+            <code>{file.path}</code>
+            {file.hasPatch ? <span><b className="positive">+{file.additions}</b><b className="negative">-{file.deletions}</b></span> : null}
+          </article>
+        ))}
+        {(files.length || parsedFiles.length) > 8 ? <p>{t("history.moreChangedFiles", { count: (files.length || parsedFiles.length) - 8 })}</p> : null}
+      </div>
+      {patch.available ? (
+        <details className="historyDiffDisclosure">
+          <summary>{t("history.showPatch")}<ChevronDown size={15} /></summary>
+          <DiffReview
+            title={t("codeDiff.changedFiles", { count: files.length || parsedFiles.length })}
+            subtitle={t("codeDiff.historyHint")}
+            patch={patch.content}
+            changedFiles={files}
+            insertions={insertions}
+            deletions={deletions}
+            truncated={patch.truncated}
+            tone="applied"
+            compact
+          />
+        </details>
+      ) : null}
+    </section>
   );
 }
 

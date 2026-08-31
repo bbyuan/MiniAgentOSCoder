@@ -28,6 +28,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
   const [selectedPath, setSelectedPath] = useState("");
   const [content, setContent] = useState<WorkspaceFileContent>();
   const [previewMode, setPreviewMode] = useState<"source" | "diff">("source");
+  const [fileScope, setFileScope] = useState<"changes" | "all">("all");
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +36,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
   const files = useMemo(() => items.filter((item) => item.kind === "file"), [items]);
   const changed = useMemo(() => buildDiffFiles(changeSet?.patch ?? "", changeSet?.changedFiles ?? []), [changeSet]);
   const changedByPath = useMemo(() => new Map(changed.map((file) => [file.path, file])), [changed]);
-  const displayFiles = useMemo(() => {
+  const hasChanges = Boolean(changeSet && changed.length > 0);
+  const displayFiles = useMemo<WorkspaceFileItem[]>(() => {
     const byPath = new Map(files.map((file) => [file.path, file]));
     for (const file of changed) {
       if (byPath.has(file.path)) continue;
@@ -54,15 +56,20 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
       return leftChanged - rightChanged || left.path.localeCompare(right.path);
     });
   }, [files, changed, changedByPath]);
+  const visibleFiles = useMemo(() => {
+    if (!hasChanges || fileScope === "all") return displayFiles;
+    return displayFiles.filter((file) => changedByPath.has(file.path));
+  }, [changedByPath, displayFiles, fileScope, hasChanges]);
   const selectedItem = displayFiles.find((item) => item.path === selectedPath);
   const selectedDiff = changedByPath.get(selectedPath);
-  const hasChanges = Boolean(changeSet && changed.length > 0);
 
   useEffect(() => {
     if (!open || !project) return;
     setQuery("");
-    setSelectedPath(changeSet?.changedFiles[0] ?? "");
+    const firstChanged = firstChangedPath(changeSet?.patch ?? "", changeSet?.changedFiles ?? []);
+    setSelectedPath(changeSet?.changedFiles[0] ?? firstChanged ?? "");
     setPreviewMode(changeSet ? "diff" : "source");
+    setFileScope(changeSet ? "changes" : "all");
     setContent(undefined);
     void loadFiles("");
   }, [open, project?.project_id, changeSet?.title]);
@@ -110,8 +117,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
       setTruncated(response.truncated);
       const nextFiles = response.items.filter((item) => item.kind === "file");
       setSelectedPath((current) => {
-        if (nextFiles.some((item) => item.path === current)) return current;
-        const changedPath = changeSet?.changedFiles.find((path) => nextFiles.some((item) => item.path === path));
+        if (nextFiles.some((item) => item.path === current) || changedByPath.has(current)) return current;
+        const changedPath = firstChangedPath(changeSet?.patch ?? "", changeSet?.changedFiles ?? []);
         return changedPath ?? nextFiles[0]?.path ?? "";
       });
     } catch (caught) {
@@ -148,6 +155,25 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
           <span>{hasChanges ? t("workspaceFiles.changeCount", { count: changed.length, additions: changeSet?.insertions ?? 0, deletions: changeSet?.deletions ?? 0 }) : t("workspaceFiles.count", { count: files.length })}</span>
         </div>
 
+        {hasChanges ? (
+          <div className="workspaceChangeRail">
+            <div>
+              <strong>{t("workspaceFiles.changeRailTitle")}</strong>
+              <span>{t("workspaceFiles.changeRailHint")}</span>
+            </div>
+            <div className="workspaceScopeTabs" role="tablist" aria-label={t("workspaceFiles.scope")}>
+              <button type="button" className={fileScope === "changes" ? "active" : ""} onClick={() => setFileScope("changes")}>
+                <FileDiff size={15} />
+                {t("workspaceFiles.changedOnly")}
+              </button>
+              <button type="button" className={fileScope === "all" ? "active" : ""} onClick={() => setFileScope("all")}>
+                <FolderTree size={15} />
+                {t("workspaceFiles.allFiles")}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {error ? (
           <div className="workspaceFilesError"><AlertCircle size={16} />{error}</div>
         ) : null}
@@ -157,7 +183,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
             {loadingFiles && !items.length ? (
               <div className="workspaceFilesLoading"><LoaderCircle className="spin" size={16} />{t("workspaceFiles.loading")}</div>
             ) : null}
-            {displayFiles.map((file) => (
+            {visibleFiles.map((file) => (
               <button
                 type="button"
                 className={file.path === selectedPath ? "active" : ""}
@@ -176,7 +202,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
                 )}
               </button>
             ))}
-            {!loadingFiles && !displayFiles.length ? (
+            {!loadingFiles && !visibleFiles.length ? (
               <p className="workspaceFilesEmpty">{t("workspaceFiles.empty")}</p>
             ) : null}
           </nav>
@@ -260,6 +286,10 @@ function localizedUnavailableReason(reason: string | undefined, t: (key: Transla
   if (reason === "File is too large to preview") return t("workspaceFiles.tooLarge");
   if (reason === "Binary files cannot be previewed") return t("workspaceFiles.binary");
   return t("workspaceFiles.noContent");
+}
+
+function firstChangedPath(patch: string, changedFiles: string[]): string | undefined {
+  return changedFiles[0] ?? buildDiffFiles(patch, changedFiles)[0]?.path;
 }
 
 function classifyDiffLine(line: string): "add" | "delete" | "meta" | "context" {

@@ -29,7 +29,6 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
   const isPatch = approval.target.tool === "apply_patch";
   const files = approval.target.files ?? [];
   const localizedReason = approvalReasonSummary(approval, locale);
-  const effectLabel = approvalEffectLabel(approval.effect, locale);
   const fileSummary = t("approval.fileSummary", {
     count: files.length,
     additions: approval.target.additions,
@@ -67,7 +66,7 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
 
       <div className="approvalDecisionStrip">
         <span><FileDiff size={15} />{isPatch ? fileSummary : approval.target.tool}</span>
-        <span>{effectLabel}</span>
+        <span>{isPatch ? t("approval.reviewBeforeApply") : approvalEffectLabel(approval.effect, locale)}</span>
         {isPatch && onInspectChanges ? (
           <button type="button" onClick={onInspectChanges}>
             <FileDiff size={15} />
@@ -78,6 +77,17 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
 
       {isPatch ? (
         <>
+          {files.length ? (
+            <div className="approvalFileStrip" aria-label={t("approval.files")}>
+              {files.slice(0, 4).map((file) => (
+                <button type="button" onClick={onInspectChanges} key={file}>
+                  <FileDiff size={14} />
+                  <span>{file}</span>
+                </button>
+              ))}
+              {files.length > 4 ? <em>{t("approval.moreFiles", { count: files.length - 4 })}</em> : null}
+            </div>
+          ) : null}
           <ReasonInput reason={reason} busy={busy} onChange={setReason} />
           <div className="approvalActions">{approvalActions}</div>
         </>

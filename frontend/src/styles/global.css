@@ -17547,6 +17547,339 @@ button.controlSignal.active {
   }
 }
 
+/* File review convergence: project files, code diff, and approvals share one place. */
+.workspaceFilesDialog {
+  width: min(1480px, calc(100vw - 48px));
+}
+
+.workspaceFilesDialog:has(.workspaceChangeRail) {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
+
+.workspaceChangeRail {
+  min-width: 0;
+  padding: 12px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--hairline);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 46%, transparent), transparent 62%),
+    var(--surface-raised);
+}
+
+.workspaceChangeRail > div:first-child {
+  min-width: 0;
+}
+
+.workspaceChangeRail strong,
+.workspaceChangeRail span {
+  min-width: 0;
+  overflow: hidden;
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceChangeRail strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.workspaceChangeRail span {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.workspaceScopeTabs {
+  height: 36px;
+  padding: 3px;
+  display: inline-flex;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 80%, transparent);
+}
+
+.workspaceScopeTabs button {
+  min-width: 104px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.workspaceScopeTabs button.active {
+  color: var(--accent);
+  background: var(--surface-raised);
+  box-shadow: 0 1px 7px rgba(15, 23, 42, 0.08);
+}
+
+.workspaceFilesList button {
+  min-height: 62px;
+}
+
+.workspaceFilePreview > header {
+  min-height: 64px;
+}
+
+.workspaceDiffPreview pre,
+.workspaceFilePreview pre {
+  scrollbar-gutter: stable;
+}
+
+.approvalSection {
+  border-color: color-mix(in srgb, var(--warning) 22%, var(--border));
+  box-shadow: 0 16px 46px rgba(15, 23, 42, 0.07);
+}
+
+.approvalDecisionStrip {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-subtle) 46%, transparent);
+}
+
+.approvalDecisionStrip span:nth-child(2) {
+  justify-content: flex-end;
+  color: var(--text-tertiary);
+}
+
+.approvalFileStrip {
+  margin: 12px 18px 0;
+  display: grid;
+  gap: 7px;
+}
+
+.approvalFileStrip button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 11px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 24%, var(--surface));
+  text-align: left;
+}
+
+.approvalFileStrip button:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+}
+
+.approvalFileStrip button span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.approvalFileStrip em {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.historyDetail,
+.historyDetailContent {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.historyDeleteConfirm {
+  display: inline-flex;
+  gap: 7px;
+}
+
+.historyDeleteConfirm button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.historyDeleteConfirm button:last-child {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 62%, var(--surface));
+}
+
+.historyChangeSummary {
+  min-width: 0;
+  padding: 16px;
+  display: grid;
+  gap: 13px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.historyChangeSummary > header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.historyChangeSummary h4,
+.historyChangeSummary p {
+  margin: 0;
+}
+
+.historyChangeSummary h4 {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.historyChangeSummary p {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.historyChangeStats {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.historyChangedFileGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.historyChangedFileGrid article {
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.historyChangedFileGrid code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyChangedFileGrid span {
+  display: inline-flex;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.historyChangedFileGrid > p {
+  padding: 9px 10px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.historyDiffDisclosure {
+  min-width: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.historyDiffDisclosure > summary {
+  min-height: 42px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 760;
+  list-style: none;
+}
+
+.historyDiffDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.historyDiffDisclosure > summary svg {
+  transition: transform 150ms ease;
+}
+
+.historyDiffDisclosure[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.historyDiffDisclosure .diffReview {
+  margin: 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.historyDiffDisclosure .diffReview > header {
+  display: none;
+}
+
+.historyDiffDisclosure .diffReviewBody {
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+}
+
+@media (max-width: 820px) {
+  .workspaceChangeRail,
+  .historyChangeSummary > header {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceScopeTabs {
+    width: 100%;
+  }
+
+  .workspaceScopeTabs button {
+    flex: 1;
+  }
+
+  .historyDetailActions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 620px) {
   .workspaceFilesHeader,
   .workspaceFilesToolbar {
