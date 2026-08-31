@@ -20339,3 +20339,184 @@ button > svg {
     width: fit-content;
   }
 }
+
+/* Active run v2: timeline over card grid. */
+.productContent .runSimpleLayout .runStatusDeck.tone-active {
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 20px 58px rgba(15, 23, 42, 0.06);
+}
+
+.productContent .runSimpleLayout .runStatusDeck > header {
+  border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusCurrent {
+  padding: 20px 22px 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus {
+  max-width: 720px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus::before {
+  top: 4px;
+  bottom: 3px;
+  width: 2px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus strong {
+  margin-top: 4px;
+  font-size: 17px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus span {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.productContent .runSimpleLayout .runStatusLatestEvent {
+  max-width: 100%;
+  padding: 0 0 0 14px;
+  justify-self: start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.productContent .runSimpleLayout .runStatusTimeline {
+  padding: 0 22px 20px;
+}
+
+.productContent .runSimpleLayout .runStatusStepSummary {
+  margin-bottom: 8px;
+  padding-top: 4px;
+}
+
+.productContent .runSimpleLayout .runStepDetails,
+.productContent .runSimpleLayout .runStepDetails[open] {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStepDetails > summary {
+  min-height: 34px;
+  padding: 0;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 0;
+  color: var(--text-secondary);
+}
+
+.productContent .runSimpleLayout .runStepDetails > summary::after {
+  margin-left: 2px;
+}
+
+.productContent .runSimpleLayout .runStepDetails[open] > summary {
+  border-bottom: 0;
+}
+
+.productContent .runSimpleLayout .runStepDetails ol,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails ol {
+  position: relative;
+  padding: 6px 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.productContent .runSimpleLayout .runStepDetails ol::before,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails ol::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 15px;
+  width: 1px;
+  background: color-mix(in srgb, var(--border-strong) 65%, transparent);
+}
+
+.productContent .runSimpleLayout .runStepDetails li,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-active,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-failed,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li:not(.state-active):not(.state-failed) {
+  min-height: 54px;
+  position: relative;
+  padding: 8px 10px 8px 44px;
+  display: block;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .runStepDetails li > span,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li > span {
+  position: absolute;
+  left: 1px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.productContent .runSimpleLayout .runStepDetails li > div,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 10px;
+}
+
+.productContent .runSimpleLayout .runStepDetails li.state-active,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-active {
+  background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
+}
+
+.productContent .runSimpleLayout .runStepDetails li.state-active > span,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li.state-active > span {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-soft) 70%, transparent);
+}
+
+.productContent .runSimpleLayout .runStepDetails li strong,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li strong,
+.productContent .runSimpleLayout .runStatusTimeline .runStepDetails li:not(.state-active):not(.state-failed) strong {
+  font-size: 13px;
+}
+
+.productContent .runSimpleLayout .runStepDetails li small {
+  margin: 0;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .runStepDetails li.state-done small {
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.productContent .runSimpleLayout .runStepDetails li.state-active small {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.productContent .runSimpleLayout .runStepDetails li em {
+  grid-column: 1 / -1;
+  max-width: 760px;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+}
