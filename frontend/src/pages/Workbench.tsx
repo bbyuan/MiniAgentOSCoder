@@ -15,6 +15,7 @@ import {
   type ExtensionSettings,
   type GovernanceResponse,
   type HistoryProject,
+  type HistoryRunDetail,
   type HistoryRun,
   type MemoryInput,
   type MemoryResponse,
@@ -335,6 +336,113 @@ export function Workbench() {
       setHistoryOpen(false);
       setHistoryRunId(undefined);
       void loadProjectRuns(resumed.project.project_id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("history.resumeError"));
+      throw caught;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function continueHistoricalRun(detail: HistoryRunDetail, nextTask: string) {
+    const requestedTask = nextTask.trim();
+    if (!requestedTask) return;
+    setBusy(true);
+    setError(null);
+    setHistoryOpen(false);
+    streamCleanup.current?.();
+    streamCleanup.current = null;
+    try {
+      const opened = project?.path === detail.run.project_path
+        ? project
+        : await daemonApi.openProject(detail.run.project_path);
+      const baseMode = detail.run.mode as RunMode;
+      const parsedTask = parseTaskCommand(requestedTask, baseMode);
+      if (!parsedTask.task) {
+        setError(t("error.emptyTask"));
+        return;
+      }
+      const [providerStatus, configurationSnapshot] = await Promise.all([
+        daemonApi.getModelStatus(opened.project_id).catch(() => undefined),
+        daemonApi.getModelConfig(opened.project_id).catch(() => undefined),
+      ]);
+      if (!providerStatus?.configured) {
+        setProject(opened);
+        setWorkspacePath(opened.path);
+        setModelStatus(providerStatus);
+        setModelConfig(configurationSnapshot);
+        setModelSetupOpen(true);
+        throw new Error(t("error.modelSetup", { issues: providerStatus?.issues.join(", ") || t("error.providerUnavailable") }));
+      }
+
+      const run = await daemonApi.createRun({
+        project_id: opened.project_id,
+        task: parsedTask.task,
+        mode: parsedTask.mode,
+        parent_run_id: detail.run.run_id,
+      });
+      const [
+        contextResponse,
+        traceResponse,
+        artifactResponse,
+        recoveryResponse,
+        reportResponse,
+        evidenceResponse,
+        memoryResponse,
+        governanceResponse,
+        extensionResponse,
+        conversationResponse,
+      ] = await Promise.all([
+        daemonApi.getContext(run.run_id),
+        daemonApi.getTrace(run.run_id),
+        daemonApi.getArtifacts(run.run_id),
+        daemonApi.getCheckpoints(run.run_id),
+        daemonApi.getReport(run.run_id),
+        daemonApi.getEvidence(run.run_id),
+        daemonApi.getMemory(run.run_id),
+        daemonApi.getGovernance(run.run_id),
+        daemonApi.getExtensions(run.run_id),
+        daemonApi.getConversation(run.run_id),
+      ]);
+
+      setProject(opened);
+      setWorkspacePath(opened.path);
+      setTask(parsedTask.task);
+      setMode(parsedTask.mode);
+      setRunId(run.run_id);
+      setRunStatus(run.status);
+      setContract(run.contract);
+      setAdmission(run.admission);
+      setModelRoute(run.model_route);
+      setContextPack(contextResponse);
+      setArtifacts(artifactResponse);
+      setRecovery(recoveryResponse);
+      setReport(reportResponse);
+      setEvidence(evidenceResponse);
+      setMemory(memoryResponse);
+      setGovernance(governanceResponse);
+      setExtensions(extensionResponse);
+      setConversation(conversationResponse);
+      setTraceEvents(traceResponse.events);
+      setModelStatus(providerStatus);
+      setModelConfig(configurationSnapshot);
+      setFinalMessage("");
+      setTerminationReason("");
+      setLastObservation({});
+      setCompletion(undefined);
+      setApproval(null);
+      setRollbackBusy(undefined);
+      setRuntimeDetailsOpen(false);
+      setRuntimePanelTarget("overview");
+      setConnection("connected");
+
+      if (run.admission?.can_start === false) {
+        throw new Error(t("admission.launchBlocked"));
+      }
+      const started = await daemonApi.startRun(run.run_id);
+      setRunStatus(started.status);
+      void loadProjectRuns(opened.project_id);
+      subscribeToRun(run.run_id, traceResponse.events.length);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("history.resumeError"));
       throw caught;
@@ -1251,6 +1359,7 @@ export function Workbench() {
         initialRunId={historyRunId}
         initialProjectId={project?.project_id}
         onResume={resumeHistoricalRun}
+        onContinue={continueHistoricalRun}
         onClose={() => {
           setHistoryOpen(false);
           setHistoryRunId(undefined);

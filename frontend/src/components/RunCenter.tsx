@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
+  ArrowRight,
   ArrowLeft,
   BarChart3,
   Check,
@@ -33,6 +34,7 @@ interface RunCenterProps {
   initialRunId?: string;
   initialProjectId?: string;
   onResume: (runId: string) => Promise<void>;
+  onContinue: (detail: HistoryRunDetail, task: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -48,7 +50,7 @@ const metricKeys: Record<string, TranslationKey> = {
   repair_attempts: "history.metric.repairs",
 };
 
-export function RunCenter({ open, initialRunId, initialProjectId, onResume, onClose }: RunCenterProps) {
+export function RunCenter({ open, initialRunId, initialProjectId, onResume, onContinue, onClose }: RunCenterProps) {
   const { locale, t } = usePreferences();
   const [projects, setProjects] = useState<HistoryProject[]>([]);
   const [runs, setRuns] = useState<HistoryRun[]>([]);
@@ -298,6 +300,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCl
                 busy={detailLoading}
                 onArchive={() => void toggleArchive()}
                 onResume={() => void resumeRun()}
+                onContinue={onContinue}
                 onBack={() => setDetail(undefined)}
               />
             ) : !evaluationOpen ? (
@@ -315,17 +318,29 @@ function RunDetail({
   busy,
   onArchive,
   onResume,
+  onContinue,
   onBack,
 }: {
   detail: HistoryRunDetail;
   busy: boolean;
   onArchive: () => void;
   onResume: () => void;
+  onContinue: (detail: HistoryRunDetail, task: string) => Promise<void>;
   onBack: () => void;
 }) {
   const { locale, t } = usePreferences();
+  const [followUp, setFollowUp] = useState("");
   const { run } = detail;
+  const continueEligible = ["completed", "failed", "cancelled", "interrupted"].includes(run.status);
   const resumeEligible = ["interrupted", "failed", "cancelled"].includes(run.status);
+  async function submitFollowUp(event: FormEvent) {
+    event.preventDefault();
+    const nextTask = followUp.trim();
+    if (!nextTask) return;
+    await onContinue(detail, nextTask);
+    setFollowUp("");
+  }
+
   return (
     <div className="historyDetailContent">
       <header className="historyDetailHeader">
@@ -335,6 +350,26 @@ function RunDetail({
           {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
         </button>
       </header>
+      {continueEligible ? (
+        <section className="historyContinueBand">
+          <div>
+            <strong>{t("history.continueTitle")}</strong>
+            <span>{t("history.continueDescription")}</span>
+          </div>
+          <form onSubmit={(event) => void submitFollowUp(event)}>
+            <textarea
+              rows={3}
+              value={followUp}
+              placeholder={t("history.continuePlaceholder")}
+              onChange={(event) => setFollowUp(event.target.value)}
+            />
+            <button type="submit" disabled={busy || !followUp.trim()}>
+              <ArrowRight size={15} />
+              {t(busy ? "history.continuing" : "history.continueAction")}
+            </button>
+          </form>
+        </section>
+      ) : null}
       {resumeEligible ? (
         <section className={`historyResumeBand ${detail.resume.available ? "" : "unavailable"}`}>
           <div>

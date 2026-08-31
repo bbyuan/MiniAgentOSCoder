@@ -4523,6 +4523,81 @@ button.statusChip:hover {
   background: var(--surface-subtle);
 }
 
+.historyContinueBand {
+  padding: 16px 26px 18px;
+  display: grid;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 34%, var(--surface-raised)), var(--surface));
+}
+
+.historyContinueBand > div {
+  min-width: 0;
+}
+
+.historyContinueBand strong,
+.historyContinueBand span {
+  display: block;
+}
+
+.historyContinueBand strong {
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.historyContinueBand span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.historyContinueBand form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.historyContinueBand textarea {
+  min-height: 88px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-raised);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.historyContinueBand textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: 0;
+}
+
+.historyContinueBand button {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: white;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.historyContinueBand button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .historyMetricGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
