@@ -27,6 +27,7 @@ import { usePreferences } from "../preferences";
 interface ActivityFeedProps {
   events: TraceEvent[];
   status: string;
+  embedded?: boolean;
 }
 
 function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
@@ -259,9 +260,9 @@ function processEvent(
   return { title: t("activity.title.runtime"), detail: t("activity.detail.system"), chips };
 }
 
-export function ActivityFeed({ events, status }: ActivityFeedProps) {
+export function ActivityFeed({ events, status, embedded = false }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!embedded);
   const processEvents = events.filter(isProcessEvent);
   const visibleEvents = processEvents.slice(expanded ? -10 : -3);
   const state = activityState(status);
@@ -270,12 +271,14 @@ export function ActivityFeed({ events, status }: ActivityFeedProps) {
   const LatestIcon = latestPresentation?.icon ?? Activity;
   const latestProcess = latestEvent ? processEvent(latestEvent, locale, t) : null;
 
+  if (embedded && processEvents.length === 0) return null;
+
   return (
-    <section className="activityPanel" aria-live="polite">
+    <section className={`activityPanel${embedded ? " activityPanelInline" : ""}`} aria-live="polite">
       <div className="activityHeader">
         <button type="button" className="activityToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
-          <span><strong>{t("activity.title")}</strong><small>{t("activity.eventCount", { count: processEvents.length })}</small></span>
+          <span><strong>{embedded ? t("activity.recentTitle") : t("activity.title")}</strong><small>{t("activity.eventCount", { count: processEvents.length })}</small></span>
         </button>
         <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />

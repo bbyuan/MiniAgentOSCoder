@@ -8,6 +8,7 @@ import type { PlanStep, TraceEvent } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
+import { ActivityFeed } from "./ActivityFeed";
 
 interface RunStatusDeckProps {
   status: string;
@@ -91,6 +92,8 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
           </details>
         </div>
       ) : null}
+
+      <ActivityFeed events={trace} status={status} embedded />
     </section>
   );
 }

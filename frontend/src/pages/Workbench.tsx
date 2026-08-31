@@ -37,7 +37,6 @@ import {
   type SandboxProfile,
   type ToolOverride,
 } from "../api/client";
-import { ActivityFeed } from "../components/ActivityFeed";
 import { AgentPackDialog } from "../components/AgentPackDialog";
 import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
@@ -1294,8 +1293,6 @@ export function Workbench() {
               }}
             />
           ) : null}
-
-          {!terminal ? <ActivityFeed events={traceEvents} status={runStatus} /> : null}
 
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>

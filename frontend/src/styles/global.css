@@ -22388,3 +22388,43 @@ button > svg {
 .productContent .runSimpleLayout .activityItem time {
   font-size: 11px;
 }
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityHeader {
+  min-height: 42px;
+  padding: 0 22px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityToggle strong {
+  font-size: 12px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityToggle small {
+  font-size: 10px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityPreview {
+  min-height: 48px;
+  padding: 0 22px 14px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityList {
+  max-height: 280px;
+  padding: 0 22px 14px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityItem:first-child {
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
