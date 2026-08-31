@@ -402,6 +402,25 @@ export interface ExtensionSettings {
   enabled_hook_ids: string[];
 }
 
+export interface CreateSkillRequest {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+  modes?: RunMode[];
+  default_tools?: string[];
+  risk?: string;
+}
+
+export interface CreateMCPServerRequest {
+  id: string;
+  name: string;
+  command: string[];
+  env_allow?: string[];
+  timeout_seconds?: number;
+  risk?: string;
+}
+
 export interface ExtensionResponse {
   run_id: string;
   editable: boolean;
@@ -952,6 +971,16 @@ export const daemonApi = {
     request<ExtensionResponse>(`/runs/${runId}/extensions`, {
       method: "PUT",
       body: JSON.stringify(settings),
+    }),
+  createSkill: (runId: string, body: CreateSkillRequest) =>
+    request<ExtensionResponse>(`/runs/${runId}/extensions/skills`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createMCPServer: (runId: string, body: CreateMCPServerRequest) =>
+    request<ExtensionResponse>(`/runs/${runId}/extensions/mcp-servers`, {
+      method: "POST",
+      body: JSON.stringify(body),
     }),
   createMemory: (runId: string, input: MemoryInput) =>
     request<{ run_id: string; entry: MemoryEntry }>(`/runs/${runId}/memory`, {

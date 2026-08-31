@@ -9,6 +9,8 @@ import {
   type ApprovalRequest,
   type ContextPack,
   type CompletionAssessment,
+  type CreateMCPServerRequest,
+  type CreateSkillRequest,
   type ConversationResponse,
   type ContextCompactionResponse,
   type ExtensionResponse,
@@ -1007,6 +1009,36 @@ export function Workbench() {
     }
   }
 
+  async function createSkill(request: CreateSkillRequest) {
+    if (!runId) return;
+    setExtensionsBusy(true);
+    setError(null);
+    try {
+      const latestExtensions = await daemonApi.createSkill(runId, request);
+      setExtensions(latestExtensions);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      throw caught;
+    } finally {
+      setExtensionsBusy(false);
+    }
+  }
+
+  async function createMCPServer(request: CreateMCPServerRequest) {
+    if (!runId) return;
+    setExtensionsBusy(true);
+    setError(null);
+    try {
+      const latestExtensions = await daemonApi.createMCPServer(runId, request);
+      setExtensions(latestExtensions);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.extensionsWrite"));
+      throw caught;
+    } finally {
+      setExtensionsBusy(false);
+    }
+  }
+
   async function startFollowUp() {
     const nextTask = followUpTask.trim();
     const parentRunId = runId;
@@ -1189,6 +1221,8 @@ export function Workbench() {
                         extensionsBusy={extensionsBusy}
                         onSaveGovernance={saveGovernance}
                         onSaveExtensions={saveExtensions}
+                        onCreateSkill={createSkill}
+                        onCreateMCPServer={createMCPServer}
                       />
                     </div>
                   </details>
@@ -1348,6 +1382,8 @@ export function Workbench() {
           onDeleteMemory={deleteMemory}
           onSaveGovernance={saveGovernance}
           onSaveExtensions={saveExtensions}
+          onCreateSkill={createSkill}
+          onCreateMCPServer={createMCPServer}
         /> : null}
         </div>
       )}

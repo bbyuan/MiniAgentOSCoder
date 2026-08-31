@@ -41,6 +41,7 @@ def load_skill_cards(registry_path: str | Path, *, mode: str | None = None) -> l
                 name=str(item.get("name", skill_id)),
                 description=str(item.get("description", "")),
                 path=path,
+                root=str(root),
                 modes=modes,
                 default_tools=[str(tool) for tool in item.get("default_tools", [])],
                 risk=str(item.get("risk", "medium")),
@@ -60,13 +61,13 @@ def activate_skills(
     max_chars: int = 12000,
 ) -> list[ActiveSkill]:
     registry = Path(registry_path).resolve()
-    root = registry.parent.parent
     by_id = {card.id: card for card in cards}
     active: list[ActiveSkill] = []
     for skill_id in active_ids:
         card = by_id.get(skill_id)
         if card is None or not card.valid:
             raise ValueError(f"Skill is not available: {skill_id}")
+        root = Path(card.root).resolve() if card.root else registry.parent.parent
         resolved = (root / card.path).resolve()
         if not resolved.is_relative_to(root) or not resolved.is_file():
             raise ValueError(f"Skill path is invalid: {skill_id}")

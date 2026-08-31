@@ -23,26 +23,28 @@ def load_extension_catalog(
     root = Path(workspace).resolve()
     local_agent = root / ".agent"
     fallback = Path(fallback_agent_dir).resolve()
-    skills_registry = local_agent / "skills.yaml"
-    if not skills_registry.is_file():
-        skills_registry = fallback / "skills.yaml"
-
     diagnostics: list[str] = []
-    try:
-        skills = load_skill_cards(skills_registry, mode=mode)
-    except (OSError, KeyError, TypeError, ValueError) as exc:
-        skills = []
-        diagnostics.append(f"Skills registry: {exc}")
+    fallback_skills_registry = fallback / "skills.yaml"
+    local_skills_registry = local_agent / "skills.yaml"
+    skills_registry = local_skills_registry if local_skills_registry.is_file() else fallback_skills_registry
+    skills = _merge_by_id(
+        _load_skill_cards(fallback_skills_registry, mode, diagnostics),
+        _load_skill_cards(local_skills_registry, mode, diagnostics),
+    )
 
     mcp_path = local_agent / "mcp.yaml"
-    if not mcp_path.is_file():
-        mcp_path = fallback / "mcp.yaml"
+    fallback_mcp_path = fallback / "mcp.yaml"
     hooks_path = local_agent / "hooks.yaml"
-    if not hooks_path.is_file():
-        hooks_path = fallback / "hooks.yaml"
+    fallback_hooks_path = fallback / "hooks.yaml"
 
-    mcp_servers = _load_mcp_servers(mcp_path, diagnostics) if mcp_path.is_file() else []
-    hooks = _load_hooks(hooks_path, diagnostics) if hooks_path.is_file() else []
+    mcp_servers = _merge_by_id(
+        _load_mcp_servers(fallback_mcp_path, diagnostics) if fallback_mcp_path.is_file() else [],
+        _load_mcp_servers(mcp_path, diagnostics) if mcp_path.is_file() else [],
+    )
+    hooks = _merge_by_id(
+        _load_hooks(fallback_hooks_path, diagnostics) if fallback_hooks_path.is_file() else [],
+        _load_hooks(hooks_path, diagnostics) if hooks_path.is_file() else [],
+    )
     catalog = ExtensionCatalog(
         skills=skills,
         mcp_servers=mcp_servers,
@@ -53,6 +55,23 @@ def load_extension_catalog(
         active_skill_ids=[skill.id for skill in skills if skill.valid and skill.recommended],
     )
     return catalog, settings, skills_registry
+
+
+def _load_skill_cards(path: Path, mode: str, diagnostics: list[str]) -> list:
+    if not path.is_file():
+        return []
+    try:
+        return load_skill_cards(path, mode=mode)
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        diagnostics.append(f"Skills registry {path.name}: {exc}")
+        return []
+
+
+def _merge_by_id(defaults: list, local: list) -> list:
+    merged = {item.id: item for item in defaults}
+    for item in local:
+        merged[item.id] = item
+    return list(merged.values())
 
 
 def validate_extension_settings(catalog: ExtensionCatalog, settings: ExtensionSettings, mode: str) -> None:

@@ -3,6 +3,8 @@ import { PlugZap, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import type {
   ExtensionResponse,
   ExtensionSettings,
+  CreateMCPServerRequest,
+  CreateSkillRequest,
   GovernanceResponse,
   SandboxProfile,
   ToolOverride,
@@ -20,6 +22,8 @@ interface AdvancedSetupPanelProps {
   extensionsBusy: boolean;
   onSaveGovernance: (profile: SandboxProfile, overrides: Record<string, ToolOverride>) => Promise<void>;
   onSaveExtensions: (settings: ExtensionSettings) => Promise<void>;
+  onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
+  onCreateMCPServer: (request: CreateMCPServerRequest) => Promise<void>;
 }
 
 export function AdvancedSetupPanel({
@@ -29,6 +33,8 @@ export function AdvancedSetupPanel({
   extensionsBusy,
   onSaveGovernance,
   onSaveExtensions,
+  onCreateSkill,
+  onCreateMCPServer,
 }: AdvancedSetupPanelProps) {
   const { t } = usePreferences();
   const [activeTab, setActiveTab] = useState<SetupTab>("governance");
@@ -89,6 +95,8 @@ export function AdvancedSetupPanel({
               busy={extensionsBusy}
               setupMode
               onSave={onSaveExtensions}
+              onCreateSkill={onCreateSkill}
+              onCreateMCPServer={onCreateMCPServer}
             />
           )}
         </div>

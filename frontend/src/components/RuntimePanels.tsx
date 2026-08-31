@@ -3,6 +3,8 @@ import { Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPul
 import type {
   ContextCompactionResponse,
   ContextPack,
+  CreateMCPServerRequest,
+  CreateSkillRequest,
   ExtensionResponse,
   ExtensionSettings,
   GovernanceResponse,
@@ -74,6 +76,8 @@ interface RuntimePanelsProps {
   onDeleteMemory: (memoryId: string) => Promise<void>;
   onSaveGovernance: (profile: SandboxProfile, overrides: Record<string, ToolOverride>) => Promise<void>;
   onSaveExtensions: (settings: ExtensionSettings) => Promise<void>;
+  onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
+  onCreateMCPServer: (request: CreateMCPServerRequest) => Promise<void>;
 }
 
 export function RuntimePanels({
@@ -103,6 +107,8 @@ export function RuntimePanels({
   onDeleteMemory,
   onSaveGovernance,
   onSaveExtensions,
+  onCreateSkill,
+  onCreateMCPServer,
 }: RuntimePanelsProps) {
   const [activeView, setActiveView] = useState<ControlView>(initialTarget);
   const { locale, t } = usePreferences();
@@ -324,7 +330,7 @@ export function RuntimePanels({
 
         {activeView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
         {activeView === "memory" ? <MemoryPanel memory={memory} busy={memoryBusy} onCreate={onCreateMemory} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} /> : null}
-        {activeView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} /> : null}
+        {activeView === "extensions" ? <ExtensionPanel extensions={extensions} busy={extensionsBusy} onSave={onSaveExtensions} onCreateSkill={onCreateSkill} onCreateMCPServer={onCreateMCPServer} /> : null}
         {activeView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
         {activeView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
       </div>

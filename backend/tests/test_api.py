@@ -153,6 +153,49 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["model_route"]["can_start"] is True
 
 
+def test_create_project_skill_and_mcp_extension(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
+    client = make_client()
+    project = client.post("/projects/open", json={"path": str(tmp_path)}).json()
+    run = client.post(
+        "/runs",
+        json={"project_id": project["project_id"], "task": "fix bug", "mode": "Bugfix"},
+    ).json()
+
+    skill_response = client.post(
+        f"/runs/{run['run_id']}/extensions/skills",
+        json={
+            "id": "project_rule",
+            "name": "Project Rule",
+            "description": "Follow project conventions",
+            "content": "Always inspect relevant tests before editing and summarize the validation command.",
+        },
+    )
+    mcp_response = client.post(
+        f"/runs/{run['run_id']}/extensions/mcp-servers",
+        json={
+            "id": "local_tools",
+            "name": "Local Tools",
+            "command": ["python", "-m", "demo_mcp"],
+            "env_allow": ["DEMO_TOKEN"],
+        },
+    )
+
+    assert skill_response.status_code == 200
+    assert mcp_response.status_code == 200
+    payload = mcp_response.json()
+    skill_ids = {skill["id"] for skill in payload["catalog"]["skills"]}
+    server_ids = {server["id"] for server in payload["catalog"]["mcp_servers"]}
+    assert {"bugfix", "project_rule"}.issubset(skill_ids)
+    assert "local_tools" in server_ids
+    assert "project_rule" in payload["settings"]["active_skill_ids"]
+    assert "local_tools" in payload["settings"]["enabled_mcp_server_ids"]
+    assert (tmp_path / ".agent" / "skills" / "project_rule" / "SKILL.md").exists()
+    assert "project_rule" in (tmp_path / ".agent" / "skills.yaml").read_text(encoding="utf-8")
+    assert "local_tools" in (tmp_path / ".agent" / "mcp.yaml").read_text(encoding="utf-8")
+    assert "root" not in json.dumps(payload["catalog"]["skills"])
+
+
 def test_run_exposes_governed_model_route_plan(tmp_path: Path, monkeypatch) -> None:
     agent_dir = tmp_path / ".agent"
     agent_dir.mkdir()

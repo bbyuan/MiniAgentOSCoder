@@ -24,6 +24,7 @@ class SkillManifest(Serializable):
     name: str
     description: str
     path: str
+    root: str = ""
     modes: list[str] = field(default_factory=list)
     default_tools: list[str] = field(default_factory=list)
     risk: str = "medium"

@@ -6,6 +6,7 @@ import {
   Braces,
   CheckCircle2,
   CircleDashed,
+  Plus,
   PlugZap,
   Save,
   Server,
@@ -13,7 +14,7 @@ import {
   Sparkles,
   Workflow,
 } from "lucide-react";
-import type { ExtensionResponse, ExtensionSettings, TraceEvent } from "../api/client";
+import type { CreateMCPServerRequest, CreateSkillRequest, ExtensionResponse, ExtensionSettings, TraceEvent } from "../api/client";
 import { translateExtensionDiagnostic, translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -22,10 +23,25 @@ interface ExtensionPanelProps {
   busy: boolean;
   setupMode?: boolean;
   onSave: (settings: ExtensionSettings) => Promise<void>;
+  onCreateSkill?: (request: CreateSkillRequest) => Promise<void>;
+  onCreateMCPServer?: (request: CreateMCPServerRequest) => Promise<void>;
 }
 
-export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: ExtensionPanelProps) {
+export function ExtensionPanel({ extensions, busy, setupMode = false, onSave, onCreateSkill, onCreateMCPServer }: ExtensionPanelProps) {
   const { locale, t } = usePreferences();
+  const [creator, setCreator] = useState<"skill" | "mcp" | null>(null);
+  const [skillDraft, setSkillDraft] = useState({
+    id: "",
+    name: "",
+    description: "",
+    content: "",
+  });
+  const [mcpDraft, setMcpDraft] = useState({
+    id: "",
+    name: "",
+    command: "",
+    envAllow: "",
+  });
   const [settings, setSettings] = useState<ExtensionSettings>({
     active_skill_ids: [],
     enabled_mcp_server_ids: [],
@@ -80,6 +96,38 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
     }
   }
 
+  async function createSkill() {
+    if (!onCreateSkill) return;
+    await onCreateSkill({
+      id: skillDraft.id.trim(),
+      name: skillDraft.name.trim(),
+      description: skillDraft.description.trim(),
+      content: skillDraft.content.trim(),
+      default_tools: ["read_file", "search_code", "write_patch", "run_test"],
+      risk: "medium",
+    });
+    setSkillDraft({ id: "", name: "", description: "", content: "" });
+    setCreator(null);
+  }
+
+  async function createMCPServer() {
+    if (!onCreateMCPServer) return;
+    await onCreateMCPServer({
+      id: mcpDraft.id.trim(),
+      name: mcpDraft.name.trim(),
+      command: mcpDraft.command.trim().split(/\s+/).filter(Boolean),
+      env_allow: mcpDraft.envAllow.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean),
+      timeout_seconds: 15,
+      risk: "high",
+    });
+    setMcpDraft({ id: "", name: "", command: "", envAllow: "" });
+    setCreator(null);
+  }
+
+  const canCreateSkill = Boolean(skillDraft.id.trim() && skillDraft.name.trim() && skillDraft.content.trim().length >= 10);
+  const canCreateMCP = Boolean(mcpDraft.id.trim() && mcpDraft.name.trim() && mcpDraft.command.trim());
+  const canCreateProjectExtensions = Boolean(extensions?.editable && (onCreateSkill || onCreateMCPServer));
+
   return (
     <section className="inspectorSection extensionSection">
       <div className="sectionHeader extensionHeading">
@@ -89,6 +137,71 @@ export function ExtensionPanel({ extensions, busy, setupMode = false, onSave }: 
         </div>
         <PlugZap size={15} />
       </div>
+
+      {canCreateProjectExtensions ? (
+        <div className="extensionCreator">
+          <div className="extensionCreatorIntro">
+            <strong>{t("extensions.addTitle")}</strong>
+            <span>{t("extensions.addDescription")}</span>
+          </div>
+          <div className="extensionCreatorActions">
+            {onCreateSkill ? (
+              <button type="button" className={creator === "skill" ? "active" : ""} onClick={() => setCreator(creator === "skill" ? null : "skill")}>
+                <Plus size={14} />
+                {t("extensions.addSkill")}
+              </button>
+            ) : null}
+            {onCreateMCPServer ? (
+              <button type="button" className={creator === "mcp" ? "active" : ""} onClick={() => setCreator(creator === "mcp" ? null : "mcp")}>
+                <Plus size={14} />
+                {t("extensions.addMCP")}
+              </button>
+            ) : null}
+          </div>
+          {creator === "skill" ? (
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch(() => undefined); }}>
+              <label>
+                <span>{t("extensions.form.id")}</span>
+                <input value={skillDraft.id} placeholder="project-rule" onChange={(event) => setSkillDraft((current) => ({ ...current, id: event.target.value }))} />
+              </label>
+              <label>
+                <span>{t("extensions.form.name")}</span>
+                <input value={skillDraft.name} placeholder={t("extensions.skillNamePlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, name: event.target.value }))} />
+              </label>
+              <label className="wide">
+                <span>{t("extensions.form.description")}</span>
+                <input value={skillDraft.description} placeholder={t("extensions.skillDescriptionPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, description: event.target.value }))} />
+              </label>
+              <label className="wide">
+                <span>{t("extensions.form.skillContent")}</span>
+                <textarea rows={5} value={skillDraft.content} placeholder={t("extensions.skillContentPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, content: event.target.value }))} />
+              </label>
+              <button type="submit" disabled={busy || !canCreateSkill}>{t("extensions.createAndEnable")}</button>
+            </form>
+          ) : null}
+          {creator === "mcp" ? (
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch(() => undefined); }}>
+              <label>
+                <span>{t("extensions.form.id")}</span>
+                <input value={mcpDraft.id} placeholder="filesystem" onChange={(event) => setMcpDraft((current) => ({ ...current, id: event.target.value }))} />
+              </label>
+              <label>
+                <span>{t("extensions.form.name")}</span>
+                <input value={mcpDraft.name} placeholder={t("extensions.mcpNamePlaceholder")} onChange={(event) => setMcpDraft((current) => ({ ...current, name: event.target.value }))} />
+              </label>
+              <label className="wide">
+                <span>{t("extensions.form.command")}</span>
+                <input value={mcpDraft.command} placeholder="npx -y @modelcontextprotocol/server-filesystem ." onChange={(event) => setMcpDraft((current) => ({ ...current, command: event.target.value }))} />
+              </label>
+              <label className="wide">
+                <span>{t("extensions.form.envAllow")}</span>
+                <input value={mcpDraft.envAllow} placeholder="GITHUB_TOKEN, DATABASE_URL" onChange={(event) => setMcpDraft((current) => ({ ...current, envAllow: event.target.value }))} />
+              </label>
+              <button type="submit" disabled={busy || !canCreateMCP}>{t("extensions.createAndEnable")}</button>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
 
       {extensionSummary ? (
         <div className="extensionSummaryGrid">

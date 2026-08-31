@@ -16541,3 +16541,161 @@ button.controlSignal.active {
   border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
   background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
 }
+
+/* Extension setup should feel like adding capabilities, not editing hidden YAML. */
+.extensionCreator {
+  margin: 10px 0 12px;
+  padding: 13px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 26%, var(--surface-raised)), var(--surface-raised));
+}
+
+.extensionCreatorIntro {
+  min-width: 0;
+}
+
+.extensionCreatorIntro strong,
+.extensionCreatorIntro span {
+  display: block;
+}
+
+.extensionCreatorIntro strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.extensionCreatorIntro span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.extensionCreatorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.extensionCreatorActions button {
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 740;
+}
+
+.extensionCreatorActions button.active,
+.extensionCreatorActions button:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+}
+
+.extensionCreateForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.extensionCreateForm label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.extensionCreateForm label.wide,
+.extensionCreateForm button {
+  grid-column: 1 / -1;
+}
+
+.extensionCreateForm label span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.extensionCreateForm input,
+.extensionCreateForm textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12px;
+}
+
+.extensionCreateForm input {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.extensionCreateForm textarea {
+  min-height: 110px;
+  resize: vertical;
+  padding: 9px 10px;
+  line-height: 1.5;
+}
+
+.extensionCreateForm input:focus,
+.extensionCreateForm textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: 0;
+}
+
+.extensionCreateForm button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.extensionCreateForm button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.extensionGroupTitle strong {
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.extensionMain > strong {
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.extensionMain > small {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.extensionMeta code,
+.extensionMeta em,
+.extensionMeta b,
+.extensionRuntimeBadge {
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .extensionCreateForm {
+    grid-template-columns: 1fr;
+  }
+}
