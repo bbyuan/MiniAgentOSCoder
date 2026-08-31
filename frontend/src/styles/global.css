@@ -19829,17 +19829,6 @@ button > svg {
   white-space: normal;
 }
 
-.runStatusLatestEvent {
-  max-width: 260px;
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  line-height: 1.4;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .productContent .runSimpleLayout .runStatusStepSummary {
   grid-template-columns: max-content minmax(120px, 1fr);
 }
@@ -19864,11 +19853,6 @@ button > svg {
   .productContent .runSimpleLayout .runStatusCurrent {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-  }
-
-  .runStatusLatestEvent {
-    max-width: 100%;
-    text-align: left;
   }
 
   .productContent .runSimpleLayout .runStatusDeck > header {
@@ -21954,15 +21938,6 @@ button > svg {
   font-size: 12px;
 }
 
-.productContent .runSimpleLayout .runStatusLatestEvent {
-  max-width: 340px;
-  padding: 6px 10px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
-  font-size: 11px;
-}
-
 .productContent .runSimpleLayout .runStatusTimeline {
   padding: 0 18px 18px;
 }
@@ -22071,10 +22046,6 @@ button > svg {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .productContent .runSimpleLayout .runStatusLatestEvent {
-    max-width: 100%;
-    text-align: left;
-  }
 }
 
 .productContent .runSimpleLayout .runCanvas {
@@ -22143,16 +22114,6 @@ button > svg {
 .productContent .runSimpleLayout .runStatusCurrentFocus span {
   font-size: 13px;
   line-height: 1.55;
-}
-
-.productContent .runSimpleLayout .runStatusLatestEvent {
-  max-width: 100%;
-  padding: 0 0 0 14px;
-  justify-self: start;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  text-align: left;
 }
 
 .productContent .runSimpleLayout .runStatusTimeline {

@@ -64,9 +64,6 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
           <strong>{currentStep ? translateKnownText(locale, currentStep.title) : t("runStatus.noActiveStep")}</strong>
           <span>{currentStep ? stepHint(currentStep, locale, t) : t("runStatus.safeBoundary")}</span>
         </div>
-        <span className="runStatusLatestEvent">
-          {trace.length ? t("runStatus.processHint") : t("runStatus.noEvents")}
-        </span>
       </div>
 
       {plan.length ? (

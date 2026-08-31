@@ -61,8 +61,8 @@ function isProcessEvent(event: TraceEvent): boolean {
   const name = event.event;
   if (name === "tool.executed" || name === "tool.failed") return true;
   if (name === "approval.requested" || name === "approval.resolved" || name === "approval.cancelled") return true;
-  if (name === "action.rejected") return stringValue(event.payload.reason) !== "completion_guard";
-  if (name === "action.superseded") return true;
+  if (name === "action.rejected") return false;
+  if (name === "action.superseded") return false;
   if (name === "completion.passed" || name === "completion.rejected") return true;
   if (name === "model.failed" || name === "run.failed" || name === "run.budget_exceeded" || name === "run.cancelled") return true;
   if (name === "report.generated") return true;
@@ -176,6 +176,10 @@ function labelValue(label: string, value: string): string {
   return label.endsWith(":") ? `${label} ${value}` : `${label}${value}`;
 }
 
+function isBuiltInAction(name: string): boolean {
+  return ["read_file", "search_code", "list_files", "run_command", "apply_patch", "finish"].includes(name);
+}
+
 function activityChips(locale: Locale, event: TraceEvent, t: Translator): string[] {
   const params = actionParams(event);
   const metadata = metadataFrom(event);
@@ -190,7 +194,7 @@ function activityChips(locale: Locale, event: TraceEvent, t: Translator): string
   const additions = numberValue(metadata?.additions) ?? numberValue(target?.additions);
   const deletions = numberValue(metadata?.deletions) ?? numberValue(target?.deletions);
 
-  if (name) chips.push(labelValue(t("activity.toolLabel"), translateKnownText(locale, name)));
+  if (name && !isBuiltInAction(name)) chips.push(labelValue(t("activity.toolLabel"), translateKnownText(locale, name)));
   if (command) chips.push(labelValue(t("activity.commandLabel"), compactText(command, 72)));
   if (path) chips.push(labelValue(t("activity.fileLabel"), compactText(path, 64)));
   if (query) chips.push(labelValue(t("activity.queryLabel"), compactText(query, 64)));
@@ -411,7 +415,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
   const { locale, t } = usePreferences();
   const [expanded, setExpanded] = useState(true);
   const workItems = buildWorkItems(events, locale, t);
-  const visibleItems = workItems.slice(expanded ? -10 : -3);
+  const visibleItems = workItems.slice(expanded ? -8 : -3);
   const state = activityState(status);
   const latestItem = workItems[workItems.length - 1];
   const LatestIcon = latestItem?.icon ?? Activity;
@@ -425,10 +429,10 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
           <span><strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong><small>{t("activity.workLogDescription", { count: workItems.length })}</small></span>
         </button>
-        <div className={`liveIndicator ${state.tone}`}>
+        {!embedded ? <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
           {t(state.key)}
-        </div>
+        </div> : null}
       </div>
 
       {!expanded && latestItem ? (
