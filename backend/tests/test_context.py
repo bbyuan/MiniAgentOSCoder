@@ -30,6 +30,23 @@ def test_scan_workspace_detects_python_project(tmp_path: Path) -> None:
     assert "pytest" in profile.test_commands
 
 
+def test_scan_workspace_detects_unittest_project(tmp_path: Path) -> None:
+    (tmp_path / "calculator.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+    (tmp_path / "test_calculator.py").write_text(
+        "import unittest\n\n"
+        "from calculator import add\n\n"
+        "class CalculatorTest(unittest.TestCase):\n"
+        "    def test_add(self):\n"
+        "        self.assertEqual(add(1, 2), 3)\n",
+        encoding="utf-8",
+    )
+
+    profile = scan_workspace(tmp_path)
+
+    assert "python" in profile.languages
+    assert "python3 -m unittest discover -v" in profile.test_commands
+
+
 def test_write_project_profile(tmp_path: Path) -> None:
     profile = scan_workspace(tmp_path)
     path = write_project_profile(profile, tmp_path)

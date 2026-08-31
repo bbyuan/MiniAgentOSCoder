@@ -61,6 +61,10 @@ def scan_workspace(workspace_root: str | Path) -> ProjectProfile:
     if (root / "pyproject.toml").exists():
         package_managers.append("pip")
         test_commands.append("pytest")
+    if any(_looks_like_unittest_file(path) for path in files):
+        unittest_command = "python3 -m unittest discover -v"
+        if unittest_command not in test_commands:
+            test_commands.append(unittest_command)
     if (root / "package.json").exists():
         package_managers.append("npm")
         test_commands.append("npm test")
@@ -95,3 +99,10 @@ def _iter_files(root: Path) -> list[Path]:
         if path.is_file():
             files.append(path)
     return files
+
+
+def _looks_like_unittest_file(path: Path) -> bool:
+    if path.suffix != ".py":
+        return False
+    name = path.name
+    return name.startswith("test_") or name.endswith("_test.py")
