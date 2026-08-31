@@ -18733,26 +18733,40 @@ button > svg {
 
 .taskReadinessPills {
   min-width: 0;
-  max-width: min(100%, 520px);
+  max-width: min(100%, 420px);
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.taskReadinessPills em {
+.taskReadinessPills em,
+.taskReadinessPills b {
   min-height: 28px;
   padding: 0 9px;
   display: inline-flex;
   align-items: center;
+  max-width: 260px;
+  overflow: hidden;
   border: 1px solid var(--hairline);
   border-radius: 999px;
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   font-size: 11px;
-  font-style: normal;
   font-weight: 720;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.taskReadinessPills em {
+  font-style: normal;
+}
+
+.taskReadinessPills b {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-tertiary);
 }
 
 .taskReadinessPills em.ready {

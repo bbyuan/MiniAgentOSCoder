@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUp, Boxes, CheckCircle2, ChevronDown, GitBranch, KeyRound, MessageSquareText, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowUp, CheckCircle2, ChevronDown, FileText, GitBranch, KeyRound, MessageSquareText, SlidersHorizontal, Sparkles, TerminalSquare, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
@@ -55,23 +55,17 @@ export function TaskSetup({
     : "loading";
   const protocolCount = protocols?.summary.total ?? 0;
   const modelState = modelReady ? "ready" : model ? "blocked" : "checking";
-  const optionalSignalsMissing = !tests.length || !protocolCount || packState === "changed" || packState === "empty";
-  const readinessTone = !modelReady ? "blocked" : optionalSignalsMissing ? "review" : "ready";
+  const readinessTone = !modelReady ? "blocked" : packState === "changed" ? "review" : "ready";
   const readinessTitle = !modelReady
     ? t("task.setupSummaryBlocked")
-    : optionalSignalsMissing
+    : packState === "changed"
       ? t("task.setupSummaryReview")
       : t("task.setupSummaryReady");
   const readinessHint = !modelReady
     ? t("task.setupSummaryBlockedHint")
-    : optionalSignalsMissing
+    : packState === "changed"
       ? t("task.setupSummaryReviewHint")
       : t("task.setupSummaryReadyHint");
-  const baselineChip = packState === "changed"
-    ? t("task.setupChipBaselineChanged")
-    : packState === "loading"
-      ? t("task.setupChipBaselineChecking")
-      : t("task.setupChipBaselineReady");
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
@@ -178,10 +172,8 @@ export function TaskSetup({
             <small>{readinessHint}</small>
           </span>
           <span className="taskReadinessPills" aria-label={t("task.setupDetails")}>
-            <em className={modelReady ? "ready" : "blocked"}>{t(modelReady ? "task.setupChipModelReady" : "task.setupChipModelMissing")}</em>
-            <em className={tests.length ? "ready" : "optional"}>{t(tests.length ? "task.setupChipTestsReady" : "task.setupChipTestsOptional")}</em>
-            <em className={protocolCount ? "ready" : "optional"}>{t(protocolCount ? "task.setupChipProtocolReady" : "task.setupChipProtocolOptional")}</em>
-            <em className={packState === "changed" ? "optional" : "ready"}>{baselineChip}</em>
+            <em className={modelReady ? "ready" : "blocked"}>{modelReady ? model?.model || t("task.setupChipModelReady") : t("task.setupChipModelMissing")}</em>
+            <b>{t("task.setupExpand")}</b>
           </span>
           <ChevronDown size={15} />
         </summary>
@@ -195,34 +187,35 @@ export function TaskSetup({
             actionLabel={modelReady ? undefined : t("task.configureModel")}
             onAction={modelReady ? undefined : onConfigureModel}
           />
-          <ProjectCheckRow
-            icon={<TerminalSquare size={16} />}
-            tone={tests.length ? "ready" : "warn"}
-            title={t("task.readinessTests")}
-            value={tests.length ? t("task.testCommands", { count: tests.length }) : t("task.noTests")}
-            detail={tests[0] || t("task.noTestsHint")}
-          />
-          <ProjectCheckRow
-            icon={packState === "changed" ? <GitBranch size={16} /> : <Boxes size={16} />}
-            tone={packState === "changed" ? "warn" : packState === "empty" ? "info" : "ready"}
-            title={t("task.readinessAgentPack")}
-            value={t(packState === "changed" ? "task.agentPackChanged" : packState === "empty" ? "task.agentPackEmpty" : packState === "stable" ? "task.agentPackStable" : "task.agentPackChecking")}
-            detail={agentPackDrift?.changed_sections.length ? t("preflightDeck.agentPackChanges", { count: agentPackDrift.changed_sections.length }) : t("task.agentPackHint")}
-            actionLabel={t("preflightDeck.openAgentPack")}
-            onAction={onOpenAgentPack}
-          />
-          <ProjectCheckRow
-            icon={<ScrollText size={16} />}
-            tone={protocolCount ? "ready" : "info"}
-            title={t("task.readinessProtocols")}
-            value={protocolCount ? t("task.protocolCount", { count: protocolCount }) : t("task.protocolMissing")}
-            detail={protocolCount ? t("task.protocolDetectedHint") : t("task.protocolMissingShortHint")}
-            actionLabel={protocolCount ? undefined : t("task.useSpecMode")}
-            onAction={protocolCount ? undefined : () => {
-              onModeChange("Spec");
-              onTaskChange(t("task.protocolPrompt"));
-            }}
-          />
+          {tests.length ? (
+            <ProjectCheckRow
+              icon={<TerminalSquare size={16} />}
+              tone="ready"
+              title={t("task.readinessTests")}
+              value={t("task.testCommands", { count: tests.length })}
+              detail={tests[0]}
+            />
+          ) : null}
+          {protocolCount ? (
+            <ProjectCheckRow
+              icon={<FileText size={16} />}
+              tone="ready"
+              title={t("task.readinessProtocols")}
+              value={t("task.protocolCount", { count: protocolCount })}
+              detail={t("task.protocolDetectedHint")}
+            />
+          ) : null}
+          {packState === "changed" ? (
+            <ProjectCheckRow
+              icon={<GitBranch size={16} />}
+              tone="warn"
+              title={t("task.readinessWorkspace")}
+              value={t("task.workspaceChanged")}
+              detail={agentPackDrift?.changed_sections.length ? t("task.workspaceChangedDetail", { count: agentPackDrift.changed_sections.length }) : t("task.workspaceChangedHint")}
+              actionLabel={t("task.workspaceReview")}
+              onAction={onOpenAgentPack}
+            />
+          ) : null}
         </section>
       </details>
     </section>
