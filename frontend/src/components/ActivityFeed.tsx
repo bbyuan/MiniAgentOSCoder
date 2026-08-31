@@ -54,6 +54,8 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
 }
 
 function isProcessEvent(event: TraceEvent): boolean {
+  if (event.event === "action.parsed" && actionName(event) !== "finish") return false;
+  if (event.event === "model.requested" || event.event === "model.responded") return false;
   if (event.event === "run.step.started") return false;
   if (event.event === "run.created" || event.event === "run.transitioned" || event.event === "run.loop.started") return false;
   if (event.event === "capability.menu.built") return false;
@@ -75,6 +77,7 @@ interface ProcessEvent {
   title: string;
   detail: string;
   chips: string[];
+  output?: string;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -109,18 +112,23 @@ function resultFrom(event: TraceEvent): Record<string, unknown> | undefined {
   return asRecord(event.payload.result);
 }
 
+function approvalFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(event.payload.approval);
+}
+
+function metadataFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(resultFrom(event)?.metadata) ?? asRecord(approvalFrom(event)?.target);
+}
+
 function actionName(event: TraceEvent): string | undefined {
   const action = actionFrom(event);
   const result = resultFrom(event);
-  return stringValue(action?.type) ?? stringValue(result?.tool);
+  const target = asRecord(approvalFrom(event)?.target);
+  return stringValue(action?.type) ?? stringValue(result?.tool) ?? stringValue(target?.tool);
 }
 
 function actionParams(event: TraceEvent): Record<string, unknown> | undefined {
   return asRecord(actionFrom(event)?.params);
-}
-
-function translatedAction(locale: Locale, event: TraceEvent): string {
-  return translateKnownText(locale, actionName(event) ?? "");
 }
 
 function firstPresent(params: Record<string, unknown> | undefined, keys: string[]): string | undefined {
@@ -138,34 +146,73 @@ function labelValue(label: string, value: string): string {
 
 function activityChips(locale: Locale, event: TraceEvent, t: Translator): string[] {
   const params = actionParams(event);
+  const metadata = metadataFrom(event);
+  const approval = approvalFrom(event);
+  const target = asRecord(approval?.target);
   const chips: string[] = [];
   const name = actionName(event);
-  const command = firstPresent(params, ["command", "cmd"]);
+  const command = firstPresent(params, ["command", "cmd"]) ?? stringValue(metadata?.command) ?? stringValue(target?.command);
   const path = firstPresent(params, ["path", "file", "file_path", "target"]);
   const query = firstPresent(params, ["query", "pattern", "symbol"]);
+  const files = Array.isArray(metadata?.files) ? metadata.files.length : Array.isArray(target?.files) ? target.files.length : undefined;
+  const additions = numberValue(metadata?.additions) ?? numberValue(target?.additions);
+  const deletions = numberValue(metadata?.deletions) ?? numberValue(target?.deletions);
 
   if (name) chips.push(labelValue(t("activity.toolLabel"), translateKnownText(locale, name)));
   if (command) chips.push(labelValue(t("activity.commandLabel"), compactText(command, 72)));
   if (path) chips.push(labelValue(t("activity.fileLabel"), compactText(path, 64)));
   if (query) chips.push(labelValue(t("activity.queryLabel"), compactText(query, 64)));
+  if (files !== undefined) chips.push(t("activity.fileCount", { count: files }));
+  if (additions || deletions) chips.push(t("activity.diffStat", { additions: additions ?? 0, deletions: deletions ?? 0 }));
   return chips;
 }
 
-function actionDetail(locale: Locale, event: TraceEvent, t: Translator): string {
+function actionLabel(event: TraceEvent, t: Translator): string {
   const name = actionName(event);
+  const metadata = metadataFrom(event);
+  if (name === "read_file") return t("activity.work.readFile");
+  if (name === "search_code") return t("activity.work.searchCode");
+  if (name === "list_files") return t("activity.work.listFiles");
+  if (name === "run_command") return t("activity.work.runCommand");
+  if (name === "apply_patch" && metadata?.preflight === true) return t("activity.work.checkPatch");
+  if (name === "apply_patch") return t("activity.work.applyPatch");
+  if (name === "finish") return t("activity.work.finish");
+  return t("activity.work.generic");
+}
+
+function actionDetail(event: TraceEvent, t: Translator): string {
+  const name = actionName(event);
+  const metadata = metadataFrom(event);
   if (name === "read_file") return t("activity.actionDetail.readFile");
   if (name === "search_code") return t("activity.actionDetail.searchCode");
   if (name === "list_files") return t("activity.actionDetail.listFiles");
   if (name === "run_command") return t("activity.actionDetail.runCommand");
+  if (name === "apply_patch" && metadata?.preflight === true) return t("activity.actionDetail.checkPatch");
   if (name === "apply_patch") return t("activity.actionDetail.applyPatch");
   if (name === "finish") return t("activity.actionDetail.finish");
-  return locale === "zh" ? t("activity.detail.action") : t("activity.detail.action");
+  return t("activity.detail.action");
 }
 
 function localizedRationale(locale: Locale, rationale: string): string | undefined {
   const translated = translateKnownText(locale, rationale);
   if (locale === "zh" && translated === rationale && !containsCjk(rationale)) return undefined;
   return translated;
+}
+
+function rationaleDetail(locale: Locale, rationale: string | undefined, fallback: string, t: Translator): string {
+  if (!rationale) return fallback;
+  const localized = localizedRationale(locale, rationale);
+  if (!localized) return fallback;
+  return t("activity.reasonPrefix", { reason: compactText(localized, 150) });
+}
+
+function outputPreview(locale: Locale, event: TraceEvent): string | undefined {
+  const result = resultFrom(event);
+  const output = stringValue(result?.error) ?? stringValue(result?.output);
+  if (!output) return undefined;
+  const name = actionName(event);
+  if (name === "read_file") return undefined;
+  return compactText(translateKnownText(locale, output), 420);
 }
 
 function activityState(status: string): { key: "activity.live" | "activity.completed" | "activity.failed" | "activity.cancelled" | "activity.paused"; tone: string } {
@@ -203,7 +250,6 @@ function processEvent(
   const action = actionFrom(event);
   const result = resultFrom(event);
   const rationale = stringValue(action?.rationale);
-  const tool = translatedAction(locale, event);
   const chips = activityChips(locale, event, t);
   const params = actionParams(event);
   const step = numberValue(event.payload.step);
@@ -222,34 +268,37 @@ function processEvent(
   if (event.event === "model.failed") return { title: t("activity.title.failed"), detail: resultError ?? t("activity.detail.failed"), chips };
   if (event.event === "action.parsed") {
     return {
-      title: tool ? t("activity.title.action", { action: tool }) : t("activity.title.actionGeneric"),
-      detail: rationale ? compactText(localizedRationale(locale, rationale) ?? actionDetail(locale, event, t), 150) : actionDetail(locale, event, t),
+      title: actionLabel(event, t),
+      detail: rationaleDetail(locale, rationale, actionDetail(event, t), t),
       chips,
     };
   }
   if (event.event === "action.rejected") {
     return {
-      title: tool ? t("activity.title.actionRejected", { action: tool }) : t("activity.title.failed"),
+      title: t("activity.work.blocked"),
       detail: resultError ? translateKnownText(locale, resultError) : t("activity.detail.actionRejected"),
       chips,
+      output: outputPreview(locale, event),
     };
   }
   if (event.event === "tool.executed") {
     const command = firstPresent(params, ["command", "cmd"]);
     return {
-      title: tool ? t("activity.title.toolExecuted", { tool }) : t("activity.title.toolGeneric"),
-      detail: command ? t("activity.detail.commandExecuted") : t("activity.detail.tool"),
+      title: actionLabel(event, t),
+      detail: rationaleDetail(locale, rationale, command ? t("activity.detail.commandExecuted") : actionDetail(event, t), t),
       chips,
+      output: outputPreview(locale, event),
     };
   }
   if (event.event === "tool.failed") {
     return {
-      title: tool ? t("activity.title.toolFailed", { tool }) : t("activity.title.failed"),
+      title: t("activity.work.failed", { action: actionLabel(event, t) }),
       detail: resultError ? translateKnownText(locale, resultError) : t("activity.detail.failed"),
       chips,
+      output: outputPreview(locale, event),
     };
   }
-  if (event.event === "approval.requested") return { title: t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips };
+  if (event.event === "approval.requested") return { title: actionName(event) === "apply_patch" ? t("activity.title.patchApprovalRequested") : t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips };
   if (event.event.startsWith("user.guidance.")) return { title: t("activity.title.guidance"), detail: t("activity.detail.guidance"), chips };
   if (event.event.startsWith("context.")) return { title: t("activity.title.context"), detail: t("activity.detail.context"), chips };
   if (event.event.startsWith("patch.")) return { title: t("activity.title.patch"), detail: t("activity.detail.patch"), chips };
@@ -262,7 +311,7 @@ function processEvent(
 
 export function ActivityFeed({ events, status, embedded = false }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
-  const [expanded, setExpanded] = useState(!embedded);
+  const [expanded, setExpanded] = useState(true);
   const processEvents = events.filter(isProcessEvent);
   const visibleEvents = processEvents.slice(expanded ? -10 : -3);
   const state = activityState(status);
@@ -278,7 +327,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
       <div className="activityHeader">
         <button type="button" className="activityToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
-          <span><strong>{embedded ? t("activity.recentTitle") : t("activity.title")}</strong><small>{t("activity.eventCount", { count: processEvents.length })}</small></span>
+          <span><strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong><small>{t("activity.workLogDescription", { count: processEvents.length })}</small></span>
         </button>
         <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
@@ -318,6 +367,12 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
                     <div className="activityChips">
                       {item.chips.slice(0, 3).map((chip) => <em key={chip}>{chip}</em>)}
                     </div>
+                  ) : null}
+                  {item.output ? (
+                    <details className="activityOutput">
+                      <summary>{t("activity.outputSummary")}</summary>
+                      <pre>{item.output}</pre>
+                    </details>
                   ) : null}
                 </div>
                 <time dateTime={event.time}>{eventTime(event.time)}</time>

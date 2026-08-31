@@ -22428,3 +22428,52 @@ button > svg {
 .productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityItem:first-child {
   border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .activityItem {
+  min-height: 68px;
+  padding: 12px 0;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityPanelInline .eventCopy strong {
+  font-size: 13px;
+  font-weight: 690;
+}
+
+.activityOutput {
+  max-width: 100%;
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+}
+
+.activityOutput > summary {
+  min-height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.activityOutput > summary::-webkit-details-marker {
+  display: none;
+}
+
+.activityOutput > pre {
+  max-height: 160px;
+  margin: 0;
+  padding: 8px 10px 10px;
+  overflow: auto;
+  border-top: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
