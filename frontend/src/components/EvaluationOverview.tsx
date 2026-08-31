@@ -1,6 +1,6 @@
 import { Activity, CheckCircle2, Clock3, Database, Gauge, ShieldCheck, Sparkles } from "lucide-react";
 import type { EvaluationSummary } from "../api/client";
-import { translateKnownText } from "../i18n";
+import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 
 
@@ -52,7 +52,7 @@ export function EvaluationOverview({ summary }: { summary: EvaluationSummary }) 
         <div className="evaluationSectionHeading"><div><h4>{t("evaluation.runHealth")}</h4><p>{t("evaluation.runCount", { count: summary.runs.total })}</p></div><Clock3 size={16} /></div>
         <div className="evaluationStatusList">
           {Object.entries(summary.runs.status).map(([status, count]) => (
-            <div key={status}><span>{translateKnownText(locale, status)}</span><div><i style={{ width: `${Math.max(4, count / Math.max(1, summary.runs.terminal) * 100)}%` }} /></div><strong>{count}</strong></div>
+            <div key={status}><span>{translateStatus(locale, status)}</span><div><i style={{ width: `${Math.max(4, count / Math.max(1, summary.runs.terminal) * 100)}%` }} /></div><strong>{count}</strong></div>
           ))}
         </div>
         <div className="evaluationAverageGrid">
