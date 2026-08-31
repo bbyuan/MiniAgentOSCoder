@@ -1,5 +1,4 @@
-import { AlertTriangle, ArrowUp, CheckCircle2, ChevronDown, FileText, GitBranch, KeyRound, MessageSquareText, SlidersHorizontal, Sparkles, TerminalSquare, Wrench } from "lucide-react";
-import type { ReactNode } from "react";
+import { AlertTriangle, ArrowUp, CheckCircle2, MessageSquareText, SlidersHorizontal, Sparkles, Wrench } from "lucide-react";
 import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -31,41 +30,19 @@ const examples: Record<RunMode, "task.example.bugfix" | "task.example.feature" |
 };
 
 export function TaskSetup({
-  project,
   task,
   mode,
   busy,
   model,
-  agentPackDrift,
-  protocols,
   onTaskChange,
   onModeChange,
   onStart,
   onReviewSettings,
   onConfigureModel,
-  onOpenAgentPack,
 }: TaskSetupProps) {
   const { locale, t } = usePreferences();
   const modelReady = model?.configured === true;
-  const tests = project.profile.test_commands ?? [];
-  const packState = agentPackDrift
-    ? agentPackDrift.has_versions
-      ? agentPackDrift.drift ? "changed" : "stable"
-      : "empty"
-    : "loading";
-  const protocolCount = protocols?.summary.total ?? 0;
   const modelState = modelReady ? "ready" : model ? "blocked" : "checking";
-  const readinessTone = !modelReady ? "blocked" : packState === "changed" ? "review" : "ready";
-  const readinessTitle = !modelReady
-    ? t("task.setupSummaryBlocked")
-    : packState === "changed"
-      ? t("task.setupSummaryReview")
-      : t("task.setupSummaryReady");
-  const readinessHint = !modelReady
-    ? t("task.setupSummaryBlockedHint")
-    : packState === "changed"
-      ? t("task.setupSummaryReviewHint")
-      : t("task.setupSummaryReadyHint");
 
   return (
     <section className="taskSetup productTaskSetup" aria-labelledby="task-setup-title">
@@ -161,93 +138,6 @@ export function TaskSetup({
           </div>
         </div>
       </div>
-
-      <details className={`setupDetails compactSetupDetails taskReadinessDisclosure tone-${readinessTone}`} open={modelState === "blocked" ? true : undefined}>
-        <summary>
-          <span className="taskReadinessSummaryIcon">
-            {readinessTone === "blocked" ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
-          </span>
-          <span className="taskReadinessSummaryCopy">
-            <strong>{readinessTitle}</strong>
-            <small>{readinessHint}</small>
-          </span>
-          <span className="taskReadinessPills" aria-label={t("task.setupDetails")}>
-            <em className={modelReady ? "ready" : "blocked"}>{modelReady ? model?.model || t("task.setupChipModelReady") : t("task.setupChipModelMissing")}</em>
-            <b>{t("task.setupExpand")}</b>
-          </span>
-          <ChevronDown size={15} />
-        </summary>
-        <section className="compactProjectChecks" aria-label={t("task.readinessTitle")}>
-          <ProjectCheckRow
-            icon={modelReady ? <CheckCircle2 size={16} /> : <KeyRound size={16} />}
-            tone={modelReady ? "ready" : "blocked"}
-            title={t("task.readinessModel")}
-            value={modelReady ? t("task.checkReady") : t("preflight.needsSetup")}
-            detail={modelReady ? model?.model || t("preflight.ready") : t("task.readinessModelMissing")}
-            actionLabel={modelReady ? undefined : t("task.configureModel")}
-            onAction={modelReady ? undefined : onConfigureModel}
-          />
-          {tests.length ? (
-            <ProjectCheckRow
-              icon={<TerminalSquare size={16} />}
-              tone="ready"
-              title={t("task.readinessTests")}
-              value={t("task.testCommands", { count: tests.length })}
-              detail={tests[0]}
-            />
-          ) : null}
-          {protocolCount ? (
-            <ProjectCheckRow
-              icon={<FileText size={16} />}
-              tone="ready"
-              title={t("task.readinessProtocols")}
-              value={t("task.protocolCount", { count: protocolCount })}
-              detail={t("task.protocolDetectedHint")}
-            />
-          ) : null}
-          {packState === "changed" ? (
-            <ProjectCheckRow
-              icon={<GitBranch size={16} />}
-              tone="warn"
-              title={t("task.readinessWorkspace")}
-              value={t("task.workspaceChanged")}
-              detail={agentPackDrift?.changed_sections.length ? t("task.workspaceChangedDetail", { count: agentPackDrift.changed_sections.length }) : t("task.workspaceChangedHint")}
-              actionLabel={t("task.workspaceReview")}
-              onAction={onOpenAgentPack}
-            />
-          ) : null}
-        </section>
-      </details>
     </section>
-  );
-}
-
-function ProjectCheckRow({
-  icon,
-  tone,
-  title,
-  value,
-  detail,
-  actionLabel,
-  onAction,
-}: {
-  icon: ReactNode;
-  tone: "ready" | "warn" | "blocked" | "info";
-  title: string;
-  value: string;
-  detail: string;
-  actionLabel?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <article className={`projectCheckRow tone-${tone}`}>
-      <span>{icon}</span>
-      <div>
-        <small>{title}</small>
-        <strong title={value}>{value}</strong>
-        <em title={detail}>{detail}</em>
-      </div>
-      {actionLabel && onAction ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
-    </article>
   );
 }
