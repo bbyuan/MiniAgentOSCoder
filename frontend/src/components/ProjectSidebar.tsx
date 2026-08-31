@@ -1,6 +1,6 @@
 import { CheckCircle2, CircleAlert, Clock3, FolderGit2, FolderTree, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
 import type { HistoryRun, OpenProjectResponse } from "../api/client";
-import { translateStatus } from "../i18n";
+import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ProjectSidebarProps {
@@ -72,7 +72,7 @@ export function ProjectSidebar({
           >
             <span className={`sidebarRunIcon tone-${run.status}`}><RunIcon status={run.status} /></span>
             <span className="sidebarRunCopy">
-              <strong>{run.task}</strong>
+              <strong>{translateKnownText(locale, run.task)}</strong>
               <small>{translateStatus(locale, run.status)} · {formatDate(run.updated_at, locale)}</small>
             </span>
           </button>

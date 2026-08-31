@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Bot, KeyRound } from "lucide-react";
 import type { ModelProviderStatus, RunMode } from "../api/client";
-import { translateMode } from "../i18n";
+import { translateKnownText, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface PreflightSummaryProps {
@@ -55,7 +55,7 @@ export function PreflightSummary({
 
       <div className="runSettingsTask">
         <span>{translateMode(locale, mode)}</span>
-        <p>{task}</p>
+        <p>{translateKnownText(locale, task)}</p>
       </div>
 
       {children}

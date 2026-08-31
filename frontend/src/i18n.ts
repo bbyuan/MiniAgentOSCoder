@@ -2441,7 +2441,16 @@ const zh: Record<TranslationKey, string> = {
 };
 
 const knownText: Record<Locale, Record<string, string>> = {
-  en: {},
+  en: {
+    "找出测试失败的根本原因，完成针对性修复，并运行相关测试集。": "Find the root cause of the failing tests, make a focused fix, and run the relevant test suite.",
+    "按照项目现有模式实现所需功能、补充测试，并验证完整流程。": "Implement the requested capability following existing project patterns, add tests, and verify the full flow.",
+    "检查当前代码变更中的缺陷、回归、安全风险和缺失测试。": "Review the current code changes for defects, regressions, security risks, and missing tests.",
+    "阅读项目规范，实现下一项未完成需求，并验证其中的验收场景。": "Read the project specification, implement the next incomplete requirement, and verify its acceptance scenarios.",
+    "解释这个项目的结构，并指出主要执行路径。": "Explain how this project is organized and identify the main execution path.",
+    "修复bug": "Fix the bug",
+    "修复 Bug": "Fix the bug",
+    "修复 BUG": "Fix the bug",
+  },
   zh: {
     "Scan workspace": "扫描工作区",
     "Compile AgentContract": "生成执行契约",

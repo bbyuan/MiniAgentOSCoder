@@ -31,7 +31,7 @@ export function ConversationHistory({ conversation, currentRunId }: Conversation
                   {successful ? <CheckCircle2 size={15} /> : <CircleAlert size={15} />}
                 </span>
                 <span className="priorTurnTitle">
-                  <strong>{turn.task}</strong>
+                  <strong>{translateKnownText(locale, turn.task)}</strong>
                   <small>
                     {t("conversation.turn", { count: turn.turn_index + 1 })} · {translateMode(locale, turn.mode)} · {translateStatus(locale, turn.status)}
                   </small>
@@ -39,7 +39,7 @@ export function ConversationHistory({ conversation, currentRunId }: Conversation
                 <ChevronDown size={15} />
               </summary>
               <div className="priorTurnBody">
-                <div><UserRound size={13} /><p>{turn.task}</p></div>
+                <div><UserRound size={13} /><p>{translateKnownText(locale, turn.task)}</p></div>
                 <div className="priorTurnOutcome"><span>MiniAgentOS</span><p>{outcome}</p></div>
                 <footer>
                   <span>{translateKnownText(locale, turn.test_status)}</span>

@@ -58,7 +58,7 @@ import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
-import { localizeErrorMessage, translateMode, type TranslationKey } from "../i18n";
+import { localizeErrorMessage, translateKnownText, translateMode, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -211,6 +211,7 @@ export function Workbench() {
     ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
   const runTitle = locale === "zh" ? zhRunTitles[runStatus] ?? t(copy.title) : t(copy.title);
+  const displayTask = translateKnownText(locale, task);
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
   const visibleFollowUpTemplates = runStatus === "completed"
@@ -1288,7 +1289,7 @@ export function Workbench() {
             <div>
               <span className="eyebrow">{basename(project.path)} · {translateMode(locale, mode)} · {t("conversation.turn", { count: currentTurnIndex + 1 })}</span>
               <h1>{runTitle}</h1>
-              <p>{task}</p>
+              <p>{displayTask}</p>
             </div>
           </header>
 

@@ -306,7 +306,7 @@ export function RunCenter({ open, initialRunId, initialProjectId, onResume, onCo
                   <span>{selected.includes(run.run_id) ? <Check size={12} /> : null}</span>
                 </label>
                 <div className="historyRunCopy">
-                  <div className="historyRunTitle"><strong>{run.task}</strong>{run.archived ? <Archive size={13} /> : null}</div>
+                  <div className="historyRunTitle"><strong>{translateKnownText(locale, run.task)}</strong>{run.archived ? <Archive size={13} /> : null}</div>
                   <div className="historyRunMeta"><span>{projectNames.get(run.project_id) ?? basename(run.project_path)}</span><span>{translateMode(locale, run.mode)}</span><span>{formatDate(run.updated_at, locale)}</span></div>
                   <div className="historyRunSignals"><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><span>{t("history.tokensValue", { count: run.total_tokens.toLocaleString() })}</span><span>{run.tool_calls} {t("history.toolsShort")}</span></div>
                 </div>
@@ -379,7 +379,7 @@ function RunDetail({
     <div className="historyDetailContent">
       <header className="historyDetailHeader">
         <button className="iconButton historyBackButton" type="button" onClick={onBack} title={t("history.back")} aria-label={t("history.back")}><ArrowLeft size={17} /></button>
-        <div><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><h3>{run.task}</h3><p>{basename(run.project_path)} · {translateMode(locale, run.mode)} · {formatDate(run.created_at, locale)}</p></div>
+        <div><span className={`historyStatus tone-${run.status}`}>{translateStatus(locale, run.status)}</span><h3>{translateKnownText(locale, run.task)}</h3><p>{basename(run.project_path)} · {translateMode(locale, run.mode)} · {formatDate(run.created_at, locale)}</p></div>
         <div className="historyDetailActions">
           <button className="iconButton" type="button" onClick={onArchive} title={run.archived ? t("history.restore") : t("history.archive")} aria-label={run.archived ? t("history.restore") : t("history.archive")}>
             {run.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />}
@@ -546,7 +546,7 @@ function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison;
   return (
     <div className="historyDetailContent">
       <header className="comparisonHeader"><button className="iconButton historyBackButton" type="button" onClick={onBack} title={t("history.back")} aria-label={t("history.back")}><ArrowLeft size={17} /></button><div><span className="eyebrow">{t("history.comparison")}</span><h3>{t("history.comparisonTitle")}</h3></div></header>
-      <div className="comparisonRuns"><div><span>{t("history.baseline")}</span><strong>{left.task}</strong><code>{left.run_id.slice(-8)}</code></div><div><span>{t("history.candidate")}</span><strong>{right.task}</strong><code>{right.run_id.slice(-8)}</code></div></div>
+      <div className="comparisonRuns"><div><span>{t("history.baseline")}</span><strong>{translateKnownText(locale, left.task)}</strong><code>{left.run_id.slice(-8)}</code></div><div><span>{t("history.candidate")}</span><strong>{translateKnownText(locale, right.task)}</strong><code>{right.run_id.slice(-8)}</code></div></div>
       <div className="comparisonTable">
         <div className="comparisonRow comparisonLabels"><span>{t("history.metric")}</span><span>{t("history.baseline")}</span><span>{t("history.candidate")}</span><span>{t("history.delta")}</span></div>
         {comparison.metrics.map((metric) => <div className="comparisonRow" key={metric.key}><strong>{t(metricKeys[metric.key] ?? "history.metric")}</strong><span>{metric.left.toLocaleString()}</span><span>{metric.right.toLocaleString()}</span><span className={metric.delta === 0 ? "neutral" : metric.delta < 0 ? "lower" : "higher"}>{metric.delta > 0 ? "+" : ""}{metric.delta.toLocaleString()}</span></div>)}
