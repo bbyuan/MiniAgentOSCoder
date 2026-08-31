@@ -21371,11 +21371,11 @@ button > svg {
 
 .completionSummary .codeChangePreview,
 .completionSummary .diffReview {
-  order: 1;
+  order: 2;
 }
 
 .completionSummary .completionSignals {
-  order: 2;
+  order: 3;
   padding-top: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -21383,11 +21383,144 @@ button > svg {
 }
 
 .completionSummary .completionDetails {
-  order: 3;
+  order: 4;
 }
 
 .completionSummary .completionEvidenceDisclosure {
-  order: 4;
+  order: 5;
+}
+
+.finalChangeReview {
+  order: 1;
+  min-width: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 48%, transparent), transparent 70%),
+    var(--surface-raised);
+}
+
+.finalChangeReview.state-accepted {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--success-soft) 50%, transparent), transparent 70%),
+    var(--surface-raised);
+}
+
+.finalChangeReview.state-reverted {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--warning-soft) 56%, transparent), transparent 70%),
+    var(--surface-raised);
+}
+
+.finalChangeReview > header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.finalChangeReview > header > svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+}
+
+.finalChangeReview.state-accepted > header > svg {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 52%, var(--surface));
+}
+
+.finalChangeReview.state-reverted > header > svg {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 32%, var(--border));
+  background: color-mix(in srgb, var(--warning-soft) 58%, var(--surface));
+}
+
+.finalChangeReview strong,
+.finalChangeReview p {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finalChangeReview strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.finalChangeReview p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.finalChangeStats {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.finalChangeActions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.finalChangeActions button {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.finalChangeActions button.primary {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 32%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 58%, var(--surface));
+}
+
+.finalChangeActions button.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft) 58%, var(--surface));
+}
+
+.finalChangeActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.finalChangeReview > small {
+  grid-column: 1 / -1;
+  color: var(--text-tertiary);
+  font-size: 12px;
 }
 
 .completionDetails {
@@ -21395,6 +21528,19 @@ button > svg {
   overflow: hidden;
   border-color: color-mix(in srgb, var(--border) 72%, transparent);
   background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+}
+
+@media (max-width: 920px) {
+  .finalChangeReview {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .finalChangeStats,
+  .finalChangeActions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 .completionDetails summary {

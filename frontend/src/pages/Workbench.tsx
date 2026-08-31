@@ -143,6 +143,7 @@ export function Workbench() {
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
   const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
+  const [changeDecision, setChangeDecision] = useState<"pending" | "accepted" | "reverted">("pending");
   const streamCleanup = useRef<(() => void) | null>(null);
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -815,6 +816,7 @@ export function Workbench() {
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
     setWorkspaceChangeSet(undefined);
+    setChangeDecision("pending");
     setError(null);
     if (clearTask) setTask("");
   }
@@ -907,6 +909,13 @@ export function Workbench() {
     } finally {
       setRollbackBusy(undefined);
     }
+  }
+
+  async function rejectLatestChanges() {
+    const checkpointId = latestRestorableCheckpoint(recovery);
+    if (!checkpointId) return;
+    await rollbackToCheckpoint(checkpointId);
+    setChangeDecision("reverted");
   }
 
   async function compactContext(targetRatio: number, confirmed: boolean): Promise<ContextCompactionResponse> {
@@ -1329,6 +1338,11 @@ export function Workbench() {
               artifacts={artifacts}
               completion={completion}
               onInspectChanges={hasVisibleDiff(artifacts) ? openArtifactChanges : undefined}
+              changeDecision={changeDecision}
+              changeReviewBusy={Boolean(rollbackBusy)}
+              canRejectChanges={Boolean(latestRestorableCheckpoint(recovery))}
+              onAcceptChanges={hasVisibleDiff(artifacts) ? () => setChangeDecision("accepted") : undefined}
+              onRejectChanges={hasVisibleDiff(artifacts) ? () => void rejectLatestChanges() : undefined}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);
@@ -1580,6 +1594,12 @@ function basename(path: string): string {
 function hasVisibleDiff(artifacts: RunArtifacts | undefined): boolean {
   const diff = artifacts?.diff_summary;
   return Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
+}
+
+function latestRestorableCheckpoint(recovery: RecoveryResponse | undefined): string | undefined {
+  return recovery?.checkpoints
+    .filter((point) => point.can_rollback && point.snapshot_available)
+    .sort((left, right) => right.trace_offset - left.trace_offset)[0]?.checkpoint_id;
 }
 
 function isApprovalRequest(value: unknown): value is ApprovalRequest {

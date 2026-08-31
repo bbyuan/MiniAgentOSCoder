@@ -1,10 +1,13 @@
 import {
   Ban,
+  Check,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
+  FileDiff,
   FlaskConical,
   ListChecks,
+  RotateCcw,
   ShieldCheck,
 } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
@@ -23,6 +26,11 @@ interface CompletionSummaryProps {
   completion?: CompletionAssessment | null;
   onInspectRun?: () => void;
   onInspectChanges?: () => void;
+  changeDecision?: "pending" | "accepted" | "reverted";
+  changeReviewBusy?: boolean;
+  canRejectChanges?: boolean;
+  onAcceptChanges?: () => void;
+  onRejectChanges?: () => void;
 }
 
 export function CompletionSummary({
@@ -34,6 +42,11 @@ export function CompletionSummary({
   completion,
   onInspectRun,
   onInspectChanges,
+  changeDecision = "pending",
+  changeReviewBusy = false,
+  canRejectChanges = false,
+  onAcceptChanges,
+  onRejectChanges,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
@@ -71,6 +84,7 @@ export function CompletionSummary({
   const leadMessage = status === "failed"
     ? failureLeadMessage(terminationReason, displayedObservationError, t)
     : messagePreview;
+  const showFinalChangeReview = hasCodeDiff && Boolean(onInspectChanges || onAcceptChanges || onRejectChanges);
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -117,6 +131,53 @@ export function CompletionSummary({
               {t("diagnosis.inspect")}
             </button>
           ) : null}
+        </section>
+      ) : null}
+      {showFinalChangeReview ? (
+        <section className={`finalChangeReview state-${changeDecision}`}>
+          <header>
+            <FileDiff size={18} />
+            <div>
+              <strong>{t(changeDecision === "accepted" ? "completion.changeReview.acceptedTitle" : changeDecision === "reverted" ? "completion.changeReview.revertedTitle" : "completion.changeReview.title")}</strong>
+              <p>{t(changeDecision === "accepted" ? "completion.changeReview.acceptedHint" : changeDecision === "reverted" ? "completion.changeReview.revertedHint" : "completion.changeReview.hint")}</p>
+            </div>
+          </header>
+          <div className="finalChangeStats">
+            <span>{t("diff.files", { count: diff?.files ?? 0 })}</span>
+            <b className="positive">+{diff?.insertions ?? 0}</b>
+            <b className="negative">-{diff?.deletions ?? 0}</b>
+          </div>
+          <div className="finalChangeActions">
+            {onInspectChanges ? (
+              <button type="button" className="secondary" onClick={onInspectChanges}>
+                <FileDiff size={15} />
+                {t("completion.changeReview.inspect")}
+              </button>
+            ) : null}
+            {onRejectChanges ? (
+              <button
+                type="button"
+                className="secondary danger"
+                disabled={changeReviewBusy || !canRejectChanges || changeDecision === "accepted" || changeDecision === "reverted"}
+                onClick={onRejectChanges}
+              >
+                <RotateCcw size={15} className={changeReviewBusy ? "spin" : ""} />
+                {t("completion.changeReview.reject")}
+              </button>
+            ) : null}
+            {onAcceptChanges ? (
+              <button
+                type="button"
+                className="primary"
+                disabled={changeReviewBusy || changeDecision === "accepted" || changeDecision === "reverted"}
+                onClick={onAcceptChanges}
+              >
+                <Check size={15} />
+                {t("completion.changeReview.accept")}
+              </button>
+            ) : null}
+          </div>
+          {!canRejectChanges && changeDecision === "pending" ? <small>{t("completion.changeReview.noSnapshot")}</small> : null}
         </section>
       ) : null}
       <CodeChangePreview artifacts={artifacts} onInspectChanges={onInspectChanges} />
