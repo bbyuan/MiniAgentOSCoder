@@ -1207,7 +1207,6 @@ export function Workbench() {
                     context={contextPack}
                     governance={governance}
                     agentPackDrift={agentPackDrift}
-                    onConfigureModel={() => setModelSetupOpen(true)}
                     onOpenAgentPack={() => void openAgentPack()}
                   />
                   <details className="preflightAdvancedDetails">

@@ -19481,3 +19481,256 @@ button > svg {
     margin-inline: 18px;
   }
 }
+
+/* Start options polish: a concise launch confirmation, not a settings dashboard. */
+.productContent .preflightCanvas > *,
+.productContent .preflightCanvas .preflightControlDeck,
+.runSettingsPage {
+  width: min(100%, 1040px);
+}
+
+.runSettingsPage {
+  padding-bottom: 8px;
+}
+
+.runSettingsHeader {
+  min-height: 150px;
+  align-items: center;
+  padding: 2px 0 28px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.runSettingsHeader > div {
+  max-width: 720px;
+}
+
+.runSettingsHeader h1 {
+  margin: 12px 0 12px;
+  font-size: 44px;
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.runSettingsHeader p {
+  max-width: 720px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.runSettingsModel {
+  min-width: 210px;
+  min-height: 58px;
+  padding: 10px 14px;
+  grid-template-columns: 26px minmax(0, 1fr);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.runSettingsModel strong {
+  font-size: 14px;
+}
+
+.runSettingsTask {
+  margin: 0;
+  padding: 18px 0;
+  border-block: 0 1px solid var(--hairline);
+}
+
+.runSettingsTask > span {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.runSettingsTask p {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.preflightControlDeck {
+  margin: 18px 0 14px;
+  border-color: color-mix(in srgb, var(--border-strong) 54%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.preflightControlDeck.tone-ready {
+  border-color: color-mix(in srgb, var(--success) 34%, var(--border-strong));
+  box-shadow: inset 3px 0 0 var(--success), 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.preflightDeckHero {
+  min-height: auto;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.preflightDeckHero h2 {
+  margin: 7px 0 7px;
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 780;
+}
+
+.preflightDeckHero p {
+  max-width: 720px;
+  font-size: 14px;
+}
+
+.preflightQuickChecks {
+  padding: 20px 28px 28px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border-top: 0;
+}
+
+.preflightCheckRow,
+.preflightAgentPackStrip {
+  min-height: 112px;
+  margin: 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  box-shadow: none;
+}
+
+.preflightCheckRow:last-child {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+}
+
+.preflightCheckRow > span,
+.preflightAgentPackStrip > span {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+.preflightCheckRow small,
+.preflightAgentPackStrip small {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.preflightCheckRow strong,
+.preflightAgentPackStrip strong {
+  display: block;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.28;
+}
+
+.preflightCheckRow em,
+.preflightAgentPackStrip small {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.preflightCheckRow > i {
+  grid-column: 1 / -1;
+  height: 5px;
+  margin-top: 4px;
+}
+
+.preflightAgentPackStrip {
+  width: 100%;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.preflightAgentPackStrip:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-strong));
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+}
+
+.preflightAgentPackStrip em {
+  grid-column: 2;
+  justify-self: start;
+  align-self: end;
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-subtle) 80%, transparent);
+  font-size: 12px;
+}
+
+.preflightAgentPackStrip.state-changed em {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.preflightAdvancedDetails {
+  margin-top: 14px;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.preflightAdvancedDetails > summary {
+  min-height: 52px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.runSettingsFooter {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hairline);
+}
+
+.runSettingsFooter > div {
+  gap: 18px;
+}
+
+.runSettingsFooter > div > span {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.runSettingsFooter .secondaryTextAction,
+.runSettingsFooter .textPrimaryAction {
+  min-height: 48px;
+  border-radius: 8px;
+}
+
+.runSettingsFooter .textPrimaryAction {
+  min-width: 138px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+
+@media (max-width: 900px) {
+  .runSettingsHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runSettingsModel {
+    width: 100%;
+  }
+
+  .preflightQuickChecks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runSettingsFooter,
+  .runSettingsFooter > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runSettingsFooter .secondaryTextAction,
+  .runSettingsFooter .textPrimaryAction {
+    width: 100%;
+    justify-content: center;
+  }
+}
