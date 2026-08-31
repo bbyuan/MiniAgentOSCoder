@@ -333,9 +333,16 @@ function RunDetail({
   const { locale, t } = usePreferences();
   const [followUp, setFollowUp] = useState("");
   const { run } = detail;
+  const [continueExpanded, setContinueExpanded] = useState(false);
   const changedFiles = changedFilesForDetail(detail);
   const continueEligible = ["completed", "failed", "cancelled", "interrupted"].includes(run.status);
   const resumeEligible = ["interrupted", "failed", "cancelled"].includes(run.status);
+
+  useEffect(() => {
+    setFollowUp("");
+    setContinueExpanded(false);
+  }, [run.run_id]);
+
   async function submitFollowUp(event: FormEvent) {
     event.preventDefault();
     const nextTask = followUp.trim();
@@ -354,23 +361,35 @@ function RunDetail({
         </button>
       </header>
       {continueEligible ? (
-        <section className="historyContinueBand">
+        <section className={`historyContinueBand ${continueExpanded ? "expanded" : "compact"}`}>
           <div>
             <strong>{t("history.continueTitle")}</strong>
             <span>{t("history.continueDescription")}</span>
           </div>
-          <form onSubmit={(event) => void submitFollowUp(event)}>
-            <textarea
-              rows={3}
-              value={followUp}
-              placeholder={t("history.continuePlaceholder")}
-              onChange={(event) => setFollowUp(event.target.value)}
-            />
-            <button type="submit" disabled={busy || !followUp.trim()}>
+          {continueExpanded ? (
+            <form onSubmit={(event) => void submitFollowUp(event)}>
+              <textarea
+                rows={3}
+                value={followUp}
+                placeholder={t("history.continuePlaceholder")}
+                onChange={(event) => setFollowUp(event.target.value)}
+              />
+              <div className="historyContinueActions">
+                <button className="historyContinueCancel" type="button" disabled={busy} onClick={() => { setContinueExpanded(false); setFollowUp(""); }}>
+                  {t("modelSetup.cancel")}
+                </button>
+                <button type="submit" disabled={busy || !followUp.trim()}>
+                  <ArrowRight size={15} />
+                  {t(busy ? "history.continuing" : "history.continueAction")}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button className="historyContinueCta" type="button" onClick={() => setContinueExpanded(true)}>
               <ArrowRight size={15} />
-              {t(busy ? "history.continuing" : "history.continueAction")}
+              {t("history.continueCta")}
             </button>
-          </form>
+          )}
         </section>
       ) : null}
       {resumeEligible ? (

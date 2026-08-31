@@ -19072,6 +19072,17 @@ button > svg {
   background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
 }
 
+.historyContinueBand.compact {
+  padding-block: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.historyContinueBand.expanded {
+  display: grid;
+}
+
 .historyContinueBand strong {
   font-size: 16px;
 }
@@ -19082,7 +19093,7 @@ button > svg {
 }
 
 .historyContinueBand form {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .historyContinueBand textarea {
@@ -19097,6 +19108,24 @@ button > svg {
   min-height: 44px;
   padding: 0 18px;
   border-radius: 8px;
+}
+
+.historyContinueCta {
+  justify-self: end;
+  min-width: 150px;
+}
+
+.historyContinueActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.historyContinueBand .historyContinueCancel {
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  color: var(--text-secondary);
+  background: var(--surface);
+  box-shadow: none;
 }
 
 .historyResumeBand {
@@ -19319,6 +19348,20 @@ button > svg {
   .historyContinueBand,
   .historyResumeBand {
     padding-inline: 18px;
+  }
+
+  .historyContinueBand.compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historyContinueCta,
+  .historyContinueActions {
+    width: 100%;
+  }
+
+  .historyContinueCta,
+  .historyContinueActions button {
+    justify-content: center;
   }
 
   .historyPatchPreview,
