@@ -47,6 +47,7 @@ export function ExtensionPanel({
 }: ExtensionPanelProps) {
   const { locale, t } = usePreferences();
   const [creator, setCreator] = useState<Creator | null>(null);
+  const [actionError, setActionError] = useState<string>();
   const [skillDraft, setSkillDraft] = useState({ name: "", description: "", content: "" });
   const [mcpDraft, setMcpDraft] = useState({ name: "", command: "", envAllow: "" });
   const [hookDraft, setHookDraft] = useState({
@@ -87,16 +88,19 @@ export function ExtensionPanel({
         ? settings[key].filter((value) => value !== id)
         : [...settings[key], id],
     };
+    setActionError(undefined);
     setSettings(next);
     try {
       await onSave(next);
-    } catch {
+    } catch (caught) {
       setSettings(previous);
+      setActionError(errorMessage(caught, t("extensions.actionFailed")));
     }
   }
 
   async function createSkill() {
     if (!onCreateSkill) return;
+    setActionError(undefined);
     await onCreateSkill({
       id: extensionId(skillDraft.name, "project-rule"),
       name: skillDraft.name.trim(),
@@ -111,6 +115,7 @@ export function ExtensionPanel({
 
   async function createMCPServer() {
     if (!onCreateMCPServer) return;
+    setActionError(undefined);
     await onCreateMCPServer({
       id: extensionId(mcpDraft.name, "tool-service"),
       name: mcpDraft.name.trim(),
@@ -125,6 +130,7 @@ export function ExtensionPanel({
 
   async function createHook() {
     if (!onCreateHook) return;
+    setActionError(undefined);
     await onCreateHook({
       id: extensionId(hookDraft.name, "automatic-check"),
       name: hookDraft.name.trim(),
@@ -159,6 +165,8 @@ export function ExtensionPanel({
         {busy ? <em>{t("extensions.saving")}</em> : null}
       </div>
 
+      {actionError ? <div className="extensionActionError" role="alert"><AlertTriangle size={15} /><span>{actionError}</span></div> : null}
+
       {creatingAllowed ? (
         <div className="extensionCreator">
           <div className="extensionCreatorIntro">
@@ -172,7 +180,7 @@ export function ExtensionPanel({
           </div>
 
           {creator === "skill" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch(() => undefined); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
               <label className="wide">
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={skillDraft.name} placeholder={t("extensions.skillNamePlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -193,7 +201,7 @@ export function ExtensionPanel({
           ) : null}
 
           {creator === "mcp" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch(() => undefined); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
               <label className="wide">
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={mcpDraft.name} placeholder={t("extensions.mcpNamePlaceholder")} onChange={(event) => setMcpDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -215,7 +223,7 @@ export function ExtensionPanel({
           ) : null}
 
           {creator === "hook" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch(() => undefined); }}>
+            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch((caught) => setActionError(errorMessage(caught, t("extensions.actionFailed")))); }}>
               <label>
                 <span>{t("extensions.form.name")}</span>
                 <input autoFocus value={hookDraft.name} placeholder={t("extensions.hookNamePlaceholder")} onChange={(event) => setHookDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -360,4 +368,8 @@ function eventLabel(event: string, t: (key: "extensions.event.runBefore" | "exte
     "tool.after": "extensions.event.toolAfter",
   } as const;
   return t(labels[event as keyof typeof labels] ?? "extensions.event.runAfter");
+}
+
+function errorMessage(caught: unknown, fallback: string): string {
+  return caught instanceof Error && caught.message.trim() ? caught.message : fallback;
 }

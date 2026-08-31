@@ -1,6 +1,6 @@
-import { Boxes, CheckCircle2, CircleAlert, Clock3, FolderGit2, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
-import type { AgentPackDrift, HistoryRun, OpenProjectResponse } from "../api/client";
-import { translateStatus, type TranslationKey } from "../i18n";
+import { CheckCircle2, CircleAlert, Clock3, FolderGit2, History, LoaderCircle, Plus, RefreshCw } from "lucide-react";
+import type { HistoryRun, OpenProjectResponse } from "../api/client";
+import { translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ProjectSidebarProps {
@@ -10,21 +10,12 @@ interface ProjectSidebarProps {
   newTaskDisabled: boolean;
   navigationLocked: boolean;
   loading: boolean;
-  agentPackDrift?: AgentPackDrift;
   onNewTask: () => void;
   onChangeProject: () => void;
   onOpenRun: (runId: string) => void;
   onOpenHistory: () => void;
-  onOpenAgentPack: () => void;
   onRefresh: () => void;
 }
-
-const agentPackBadgeLabels: Record<string, TranslationKey> = {
-  stable: "sidebar.agentPack.stable",
-  changed: "sidebar.agentPack.changed",
-  empty: "sidebar.agentPack.empty",
-  loading: "sidebar.agentPack.loading",
-};
 
 function RunIcon({ status }: { status: string }) {
   if (status === "completed") return <CheckCircle2 size={14} />;
@@ -42,21 +33,13 @@ export function ProjectSidebar({
   newTaskDisabled,
   navigationLocked,
   loading,
-  agentPackDrift,
   onNewTask,
   onChangeProject,
   onOpenRun,
   onOpenHistory,
-  onOpenAgentPack,
   onRefresh,
 }: ProjectSidebarProps) {
   const { locale, t } = usePreferences();
-  const packState = agentPackDrift
-    ? agentPackDrift.has_versions
-      ? agentPackDrift.drift ? "changed" : "stable"
-      : "empty"
-    : "loading";
-
   return (
     <aside className="projectSidebar">
       <button className="sidebarProject" type="button" onClick={onChangeProject} disabled={navigationLocked} title={t(navigationLocked ? "sidebar.runningLocked" : "sidebar.changeProject")}>
@@ -98,11 +81,6 @@ export function ProjectSidebar({
         <button className="sidebarHistory" type="button" onClick={onOpenHistory}>
           <History size={15} />
           <span>{t("sidebar.allHistory")}</span>
-        </button>
-        <button className="sidebarAgentPack" type="button" onClick={onOpenAgentPack}>
-          <Boxes size={15} />
-          <span>{t("sidebar.agentPack")}</span>
-          {packState === "changed" ? <small className={`sidebarAgentPackBadge state-${packState}`}>{t(agentPackBadgeLabels[packState])}</small> : null}
         </button>
       </div>
     </aside>

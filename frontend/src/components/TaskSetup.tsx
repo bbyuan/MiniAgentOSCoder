@@ -128,14 +128,16 @@ export function TaskSetup({
           </div>
 
           <div className="taskPrimaryActions">
-            <button
-              type="button"
-              className="runSettingsAction"
-              disabled={busy || !task.trim() || !modelReady}
-              onClick={onReviewSettings}
-            >
-              <SlidersHorizontal size={16} />{t("task.reviewSettings")}
-            </button>
+            {task.trim() ? (
+              <button
+                type="button"
+                className="runSettingsAction"
+                disabled={busy || !modelReady}
+                onClick={onReviewSettings}
+              >
+                <SlidersHorizontal size={16} />{t("task.reviewSettings")}
+              </button>
+            ) : null}
             <button
               type="button"
               className="startTaskAction"

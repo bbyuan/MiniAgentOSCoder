@@ -7,6 +7,8 @@ import {
   BarChart3,
   Check,
   Clock3,
+  ChevronDown,
+  FileDiff,
   FileText,
   GitCompareArrows,
   RefreshCw,
@@ -396,12 +398,10 @@ function RunDetail({
         <p>{run.final_message || run.termination_reason || t("history.noResult")}</p>
         <div className="historyEvidenceLine"><span>{t("history.tests")}</span><strong>{translateKnownText(locale, run.test_status)}</strong><span>{t("history.traceEvents")}</span><strong>{detail.trace.event_count}</strong></div>
       </DetailSection>
+      <HistoryPatchPreview detail={detail} />
       <section className="historyDetailSection">
         <CompletionEvidence assessment={run.completion} />
       </section>
-      <DetailSection title={t("history.changedFiles")}>
-        {run.changed_files.length ? <ul className="historyFileList">{run.changed_files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : <p>{t("history.noChangedFiles")}</p>}
-      </DetailSection>
       <DetailSection title={t("history.report")}>
         {detail.report.available ? <pre className="historyReport">{localizeRunReport(detail.report.content, locale)}</pre> : <p>{t("history.reportUnavailable")}</p>}
         {detail.report.truncated ? <span className="historyNote">{t("history.reportTruncated")}</span> : null}
@@ -411,6 +411,55 @@ function RunDetail({
       </DetailSection>
     </div>
   );
+}
+
+function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
+  const { t } = usePreferences();
+  const { run, patch } = detail;
+  const lines = patch.content.split("\n");
+  const files = run.changed_files.length ? run.changed_files : historyChangedFiles(lines);
+  const insertions = lines.filter((line) => line.startsWith("+") && !line.startsWith("+++")).length;
+  const deletions = lines.filter((line) => line.startsWith("-") && !line.startsWith("---")).length;
+  const visibleLines = lines.slice(0, 180);
+
+  if (!patch.available) {
+    return (
+      <DetailSection title={t("history.changedFiles")}>
+        {files.length ? <ul className="historyFileList">{files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : <p>{t("history.noChangedFiles")}</p>}
+      </DetailSection>
+    );
+  }
+
+  return (
+    <details className="historyPatchPreview">
+      <summary>
+        <span><FileDiff size={16} /><strong>{t("codeDiff.changedFiles", { count: files.length })}</strong></span>
+        <span className="historyPatchStats"><b>+{insertions}</b><b>-{deletions}</b><ChevronDown size={15} /></span>
+      </summary>
+      {files.length ? <div className="historyPatchFiles">{files.map((file) => <code key={file}>{file}</code>)}</div> : null}
+      <pre>
+        {visibleLines.map((line, index) => <code className={`line-${historyDiffLine(line)}`} key={`${index}-${line}`}>{line || " "}</code>)}
+      </pre>
+      {patch.truncated || lines.length > visibleLines.length ? <small>{t("codeDiff.truncated")}</small> : null}
+    </details>
+  );
+}
+
+function historyDiffLine(line: string): "add" | "delete" | "meta" | "context" {
+  if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("@@") || line.startsWith("diff ")) return "meta";
+  if (line.startsWith("+")) return "add";
+  if (line.startsWith("-")) return "delete";
+  return "context";
+}
+
+function historyChangedFiles(lines: string[]): string[] {
+  const files = new Set<string>();
+  lines.forEach((line) => {
+    if (!line.startsWith("+++ ")) return;
+    const file = line.replace(/^\+\+\+\s+/, "").replace(/^b\//, "").trim();
+    if (file && file !== "/dev/null") files.add(file);
+  });
+  return [...files];
 }
 
 function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison; onBack: () => void }) {

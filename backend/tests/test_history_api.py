@@ -49,6 +49,10 @@ def test_history_lists_stable_projects_and_run_details(tmp_path: Path) -> None:
     run_id = str(created["run_id"])
     run_dir = tmp_path / "runs" / run_id
     (run_dir / "report.md").write_text("# Run report\n\nPersistent evidence.\n", encoding="utf-8")
+    (run_dir / "patch.diff").write_text(
+        "diff --git a/app.py b/app.py\n--- a/app.py\n+++ b/app.py\n@@ -1 +1 @@\n-old\n+new\n",
+        encoding="utf-8",
+    )
 
     projects = client.get("/history/projects")
     runs = client.get("/history/runs", params={"query": "persistent"})
@@ -61,6 +65,9 @@ def test_history_lists_stable_projects_and_run_details(tmp_path: Path) -> None:
     assert detail.status_code == 200
     assert detail.json()["report"]["available"] is True
     assert "Persistent evidence" in detail.json()["report"]["content"]
+    assert detail.json()["patch"]["available"] is True
+    assert "+new" in detail.json()["patch"]["content"]
+    assert detail.json()["artifacts"]["patch"]["truncated"] is False
     assert detail.json()["trace"]["event_count"] >= 2
     assert detail.json()["resume"]["available"] is False
 

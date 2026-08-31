@@ -810,10 +810,11 @@ export interface HistoryRunDetail {
   artifacts: {
     report: { available: boolean; path: string; truncated: boolean };
     trace: { available: boolean; path: string; event_count: number };
-    patch: { available: boolean; path: string };
+    patch: { available: boolean; path: string; truncated: boolean };
   };
   report: { available: boolean; content: string; truncated: boolean };
   trace: { available: boolean; event_count: number; recent_events: TraceEvent[] };
+  patch: { available: boolean; content: string; truncated: boolean };
   resume: {
     available: boolean;
     checkpoint_count: number;

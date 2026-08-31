@@ -3994,6 +3994,136 @@ button.statusChip:hover {
   }
 }
 
+.extensionActionError {
+  margin-top: 8px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 7px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger-soft) 52%, var(--surface));
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.extensionActionError svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.historyPatchPreview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.historyPatchPreview > summary {
+  min-height: 48px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.historyPatchPreview > summary::-webkit-details-marker {
+  display: none;
+}
+
+.historyPatchPreview > summary > span,
+.historyPatchStats {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.historyPatchPreview > summary strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyPatchStats b {
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.historyPatchStats b:first-child {
+  color: var(--success);
+}
+
+.historyPatchStats b:nth-child(2) {
+  color: var(--danger);
+}
+
+.historyPatchPreview[open] > summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.historyPatchFiles {
+  padding: 9px 12px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.historyPatchFiles code {
+  padding: 4px 7px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  font-size: 10px;
+}
+
+.historyPatchPreview pre {
+  max-height: 420px;
+  margin: 0;
+  padding: 11px 0;
+  overflow: auto;
+  background: color-mix(in srgb, var(--canvas) 72%, var(--surface));
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.historyPatchPreview pre code {
+  min-width: max-content;
+  padding: 0 12px;
+  display: block;
+  white-space: pre;
+}
+
+.historyPatchPreview pre .line-add {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 54%, transparent);
+}
+
+.historyPatchPreview pre .line-delete {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger-soft) 48%, transparent);
+}
+
+.historyPatchPreview pre .line-meta {
+  color: var(--accent);
+}
+
+.historyPatchPreview > small {
+  padding: 8px 12px;
+  display: block;
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--hairline);
+  font-size: 10px;
+}
+
 @media (max-width: 460px) {
   .brandMeta {
     max-width: 195px;
@@ -15472,8 +15602,7 @@ button.controlSignal.active {
   display: none;
 }
 
-.projectLauncher .launcherFlow,
-.productTaskSetup .runSettingsAction {
+.projectLauncher .launcherFlow {
   display: none;
 }
 
@@ -17786,13 +17915,12 @@ button.controlSignal.active {
   margin-top: auto;
   padding: 8px 10px 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   border-top: 1px solid var(--hairline);
 }
 
-.sidebarUtilities .sidebarHistory,
-.sidebarUtilities .sidebarAgentPack {
+.sidebarUtilities .sidebarHistory {
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -17801,29 +17929,11 @@ button.controlSignal.active {
   justify-content: center;
 }
 
-.sidebarUtilities .sidebarHistory span,
-.sidebarUtilities .sidebarAgentPack span {
+.sidebarUtilities .sidebarHistory span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.sidebarUtilities .sidebarAgentPack {
-  position: relative;
-}
-
-.sidebarUtilities .sidebarAgentPackBadge.state-changed {
-  width: 7px;
-  height: 7px;
-  padding: 0;
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  overflow: hidden;
-  color: transparent;
-  border-radius: 50%;
-  background: var(--warning);
 }
 
 @media (max-width: 1080px) {

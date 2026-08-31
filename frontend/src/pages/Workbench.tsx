@@ -1159,12 +1159,10 @@ export function Workbench() {
             newTaskDisabled={runIsActive}
             navigationLocked={runIsActive || runIsPrepared}
             loading={recentRunsBusy}
-            agentPackDrift={agentPackDrift}
             onNewTask={startNewTask}
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
             onOpenHistory={() => openHistory()}
-            onOpenAgentPack={() => void openAgentPack()}
             onRefresh={() => void loadProjectRuns()}
           />
           <div className="productContent">

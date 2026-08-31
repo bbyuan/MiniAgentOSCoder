@@ -14,6 +14,7 @@ from app.runtime.checkpoint import CheckpointStore
 
 router = APIRouter(prefix="/history", tags=["history"])
 _REPORT_LIMIT = 200_000
+_PATCH_LIMIT = 300_000
 _TRACE_TAIL = 12
 _COMPARISON_METRICS = (
     "steps",
@@ -66,6 +67,7 @@ def get_history_run(run_id: str) -> dict[str, object]:
     run = _history_run(run_id)
     report = _read_report(run)
     trace = _read_trace(run)
+    patch = _read_patch(run)
     artifacts = {
         "report": {
             "available": report["available"],
@@ -78,8 +80,9 @@ def get_history_run(run_id: str) -> dict[str, object]:
             "event_count": trace["event_count"],
         },
         "patch": {
-            "available": _artifact_path(run, "patch_path").is_file(),
+            "available": patch["available"],
             "path": run["patch_path"],
+            "truncated": patch["truncated"],
         },
     }
     return {
@@ -87,6 +90,7 @@ def get_history_run(run_id: str) -> dict[str, object]:
         "artifacts": artifacts,
         "report": report,
         "trace": trace,
+        "patch": patch,
         "resume": _resume_metadata(run),
     }
 
@@ -173,6 +177,22 @@ def _read_trace(run: dict[str, Any]) -> dict[str, object]:
         "available": True,
         "event_count": len(events),
         "recent_events": events[-_TRACE_TAIL:],
+    }
+
+
+def _read_patch(run: dict[str, Any]) -> dict[str, object]:
+    path = _artifact_path(run, "patch_path")
+    if not path.is_file():
+        return {"available": False, "content": "", "truncated": False}
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise HTTPException(status_code=409, detail=f"Unable to read run patch: {exc}") from exc
+    truncated = len(content) > _PATCH_LIMIT
+    return {
+        "available": True,
+        "content": content[:_PATCH_LIMIT],
+        "truncated": truncated,
     }
 
 
