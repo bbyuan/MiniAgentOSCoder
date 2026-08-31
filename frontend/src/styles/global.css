@@ -18713,3 +18713,144 @@ button > svg {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Refined task launcher: quiet center, compact composer, stronger visual rhythm. */
+.productContent > .taskStage {
+  padding: clamp(42px, 7vh, 78px) clamp(20px, 5vw, 64px) 48px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 76%, transparent), transparent 330px),
+    color-mix(in srgb, var(--canvas) 72%, var(--surface));
+}
+
+.productTaskSetup {
+  width: min(100%, 920px);
+}
+
+.productTaskIntro {
+  width: min(100%, 820px);
+  margin: 0 auto 16px;
+  text-align: center;
+}
+
+.productTaskIntro h1 {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(36px, 4vw, 52px);
+  line-height: 1.06;
+  font-weight: 780;
+}
+
+.productTaskIntro p {
+  max-width: 680px;
+  margin: 13px auto 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.taskQuickStarts {
+  width: min(100%, 760px);
+  margin: 0 auto 14px;
+  justify-content: center;
+  gap: 8px;
+}
+
+.taskQuickStarts button {
+  min-height: 34px;
+  padding: 0 13px;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.taskQuickStarts button:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.productTaskSetup .taskModelGate,
+.productTaskSetup .taskComposerProduct {
+  width: min(100%, 820px);
+}
+
+.productTaskSetup .taskComposerProduct {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 18px 48px rgba(15, 23, 42, 0.075);
+}
+
+.productTaskSetup .taskComposerProduct:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 20px 54px rgba(15, 23, 42, 0.09), 0 0 0 3px color-mix(in srgb, var(--accent-soft) 48%, transparent);
+}
+
+.productTaskSetup .taskComposerProduct textarea {
+  height: clamp(190px, 28vh, 260px);
+  min-height: 180px;
+  max-height: 360px;
+  padding: 23px 25px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.productTaskSetup .taskComposerToolbar {
+  min-height: 58px;
+  padding: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-top-color: color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.productTaskSetup .taskTypeSelect,
+.productTaskSetup .exampleFillAction,
+.productTaskSetup .runSettingsAction {
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: none;
+}
+
+.productTaskSetup .taskTypeSelect {
+  min-width: 148px;
+}
+
+.productTaskSetup .startTaskAction {
+  min-width: 126px;
+  border-color: color-mix(in srgb, var(--text) 88%, transparent);
+}
+
+.productTaskSetup .startTaskAction:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+}
+
+.productTaskSetup .startTaskAction:disabled {
+  color: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: color-mix(in srgb, var(--text) 48%, var(--surface));
+}
+
+.sidebarRuns > button {
+  background: transparent;
+}
+
+.sidebarRuns > button.active {
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+}
+
+@media (max-width: 760px) {
+  .productTaskIntro {
+    text-align: left;
+  }
+
+  .productTaskIntro h1 {
+    font-size: 32px;
+  }
+
+  .taskQuickStarts {
+    justify-content: flex-start;
+  }
+
+  .productTaskSetup .taskComposerToolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

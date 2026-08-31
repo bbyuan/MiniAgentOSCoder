@@ -1173,19 +1173,15 @@ export function Workbench() {
         <div className="guidedStage taskStage">
           {error ? <ErrorBanner message={error} /> : null}
           <TaskSetup
-            project={project}
             task={task}
             mode={mode}
             busy={busy}
             model={modelStatus}
-            agentPackDrift={agentPackDrift}
-            protocols={projectProtocols}
             onTaskChange={setTask}
             onModeChange={setMode}
             onStart={() => prepareRun(true)}
             onReviewSettings={() => prepareRun(false)}
             onConfigureModel={() => setModelSetupOpen(true)}
-            onOpenAgentPack={() => void openAgentPack()}
           />
         </div>
       ) : (

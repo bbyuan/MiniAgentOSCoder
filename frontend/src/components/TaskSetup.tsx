@@ -1,22 +1,18 @@
 import { AlertTriangle, ArrowUp, CheckCircle2, MessageSquareText, SlidersHorizontal, Sparkles, Wrench } from "lucide-react";
-import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
+import type { ModelProviderStatus, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface TaskSetupProps {
-  project: OpenProjectResponse;
   task: string;
   mode: RunMode;
   busy: boolean;
   model?: ModelProviderStatus;
-  agentPackDrift?: AgentPackDrift;
-  protocols?: ProjectProtocols;
   onTaskChange: (task: string) => void;
   onModeChange: (mode: RunMode) => void;
   onStart: () => void;
   onReviewSettings: () => void;
   onConfigureModel: () => void;
-  onOpenAgentPack: () => void;
 }
 
 const taskModes: RunMode[] = ["Bugfix", "Feature", "Review", "Spec", "Chat"];
