@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Clock3, FolderOpen, HardDrive, LoaderCircle, MessageSquareText, ShieldCheck } from "lucide-react";
+import { ArrowRight, Clock3, FolderOpen, HardDrive, LoaderCircle } from "lucide-react";
 import type { HistoryProject } from "../api/client";
 import { usePreferences } from "../preferences";
 
@@ -62,29 +62,6 @@ export function ProjectLauncher({
         <p>{t("launcher.description")}</p>
       </div>
 
-      <div className="launcherFlow" aria-label={t("launcher.flowTitle")}>
-        <div>
-          <FolderOpen size={15} />
-          <strong>{t("launcher.flow.open")}</strong>
-          <span>{t("launcher.flow.openHint")}</span>
-        </div>
-        <div>
-          <ShieldCheck size={15} />
-          <strong>{t("launcher.flow.prepare")}</strong>
-          <span>{t("launcher.flow.prepareHint")}</span>
-        </div>
-        <div>
-          <MessageSquareText size={15} />
-          <strong>{t("launcher.flow.guide")}</strong>
-          <span>{t("launcher.flow.guideHint")}</span>
-        </div>
-        <div>
-          <CheckCircle2 size={15} />
-          <strong>{t("launcher.flow.verify")}</strong>
-          <span>{t("launcher.flow.verifyHint")}</span>
-        </div>
-      </div>
-
       <div className="launcherOpenStack">
         {desktop ? pickerButton : pathEntry}
         {desktop ? pathEntry : pickerButton}
@@ -99,7 +76,7 @@ export function ProjectLauncher({
           <p className="recentEmpty">{t("launcher.noRecent")}</p>
         ) : (
           <div className="recentProjectList">
-            {recentProjects.slice(0, 5).map((project) => (
+            {recentProjects.slice(0, 4).map((project) => (
               <button
                 type="button"
                 key={project.project_id}

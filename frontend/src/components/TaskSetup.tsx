@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUp, Boxes, CheckCircle2, ChevronDown, GitBranch, KeyRound, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare } from "lucide-react";
+import { AlertTriangle, ArrowUp, Boxes, CheckCircle2, ChevronDown, GitBranch, KeyRound, MessageSquareText, ScrollText, SlidersHorizontal, Sparkles, TerminalSquare, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 import type { AgentPackDrift, ModelProviderStatus, OpenProjectResponse, ProjectProtocols, RunMode } from "../api/client";
 import { translateMode } from "../i18n";
@@ -63,13 +63,27 @@ export function TaskSetup({
         <p>{t("task.description")}</p>
       </header>
 
-      <StartReadinessBrief
-        modelState={modelState}
-        tests={tests.length}
-        protocols={protocolCount}
-        baseline={packState}
-        onConfigureModel={onConfigureModel}
-      />
+      {!task.trim() ? (
+        <div className="taskQuickStarts" aria-label={t("task.quickStart")}>
+          <button type="button" onClick={() => { onModeChange("Bugfix"); onTaskChange(t(examples.Bugfix)); }}>
+            <Wrench size={15} /><span>{t("task.quickFix")}</span>
+          </button>
+          <button type="button" onClick={() => { onModeChange("Review"); onTaskChange(t(examples.Review)); }}>
+            <CheckCircle2 size={15} /><span>{t("task.quickReview")}</span>
+          </button>
+          <button type="button" onClick={() => { onModeChange("Chat"); onTaskChange(t(examples.Chat)); }}>
+            <MessageSquareText size={15} /><span>{t("task.quickExplore")}</span>
+          </button>
+        </div>
+      ) : null}
+
+      {!modelReady ? (
+        <div className={`taskModelGate state-${modelState}`}>
+          <span>{modelState === "checking" ? <Sparkles size={16} /> : <AlertTriangle size={16} />}</span>
+          <div><strong>{t(modelState === "checking" ? "task.startChecking" : "task.startBlocked")}</strong><small>{t(modelState === "checking" ? "task.startCheckingHint" : "task.startBlockedHint")}</small></div>
+          {modelState === "blocked" ? <button type="button" onClick={onConfigureModel}>{t("task.configureModel")}</button> : null}
+        </div>
+      ) : null}
 
       <div className="taskComposerProduct">
         <label className="srOnly" htmlFor="task-description">{t("task.instruction")}</label>
@@ -181,68 +195,6 @@ export function TaskSetup({
         </section>
       </details>
     </section>
-  );
-}
-
-function StartReadinessBrief({
-  modelState,
-  tests,
-  protocols,
-  baseline,
-  onConfigureModel,
-}: {
-  modelState: "ready" | "blocked" | "checking";
-  tests: number;
-  protocols: number;
-  baseline: "stable" | "changed" | "empty" | "loading";
-  onConfigureModel: () => void;
-}) {
-  const { t } = usePreferences();
-  const ready = modelState === "ready";
-  const checking = modelState === "checking";
-  const Icon = ready ? CheckCircle2 : checking ? Sparkles : AlertTriangle;
-  const baselineKey = baseline === "stable"
-    ? "task.baseline.ready"
-    : baseline === "changed"
-      ? "task.baseline.changed"
-      : baseline === "empty"
-        ? "task.baseline.empty"
-        : "task.baseline.checking";
-
-  return (
-    <aside className={`taskStartBrief state-${modelState}`} aria-label={t("task.startBrief")}>
-      <div className="taskStartBriefLead">
-        <span><Icon size={17} /></span>
-        <div>
-          <strong>{t(ready ? "task.startReady" : checking ? "task.startChecking" : "task.startBlocked")}</strong>
-          <p>{t(ready ? "task.startReadyHint" : checking ? "task.startCheckingHint" : "task.startBlockedHint")}</p>
-        </div>
-      </div>
-      <div className="taskStartBriefChecks">
-        <span className={`state-${modelState}`}>
-          {ready ? <CheckCircle2 size={13} /> : <KeyRound size={13} />}
-          {t(ready ? "task.check.modelReady" : checking ? "task.check.modelChecking" : "task.check.modelRequired")}
-        </span>
-        <span className={tests ? "state-ready" : "state-optional"}>
-          <TerminalSquare size={13} />
-          {tests ? t("task.check.testsReady", { count: tests }) : t("task.check.testsOptional")}
-        </span>
-        <span className={protocols ? "state-ready" : "state-optional"}>
-          <ScrollText size={13} />
-          {protocols ? t("task.check.protocolsReady", { count: protocols }) : t("task.check.protocolsOptional")}
-        </span>
-        <span className={`state-${baseline === "stable" ? "ready" : baseline === "loading" ? "checking" : "optional"}`}>
-          <Boxes size={13} />
-          {t(baselineKey)}
-        </span>
-      </div>
-      {!ready && !checking ? (
-        <button type="button" onClick={onConfigureModel}>
-          <KeyRound size={15} />
-          {t("task.configureModel")}
-        </button>
-      ) : null}
-    </aside>
   );
 }
 

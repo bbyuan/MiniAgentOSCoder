@@ -77,7 +77,7 @@ export function ProjectSidebar({
       </div>
 
       <nav className="sidebarRuns" aria-label={t("sidebar.recentTasks")}>
-        {runs.length ? runs.slice(0, 8).map((run) => (
+        {runs.length ? runs.slice(0, 5).map((run) => (
           <button
             type="button"
             className={run.run_id === activeRunId ? "active" : ""}
@@ -94,15 +94,17 @@ export function ProjectSidebar({
         )) : <p>{t("sidebar.noTasks")}</p>}
       </nav>
 
-      <button className="sidebarHistory" type="button" onClick={onOpenHistory}>
-        <History size={15} />
-        <span>{t("sidebar.allHistory")}</span>
-      </button>
-      <button className="sidebarAgentPack" type="button" onClick={onOpenAgentPack}>
-        <Boxes size={15} />
-        <span>{t("sidebar.agentPack")}</span>
-        <small className={`sidebarAgentPackBadge state-${packState}`}>{t(agentPackBadgeLabels[packState])}</small>
-      </button>
+      <div className="sidebarUtilities">
+        <button className="sidebarHistory" type="button" onClick={onOpenHistory}>
+          <History size={15} />
+          <span>{t("sidebar.allHistory")}</span>
+        </button>
+        <button className="sidebarAgentPack" type="button" onClick={onOpenAgentPack}>
+          <Boxes size={15} />
+          <span>{t("sidebar.agentPack")}</span>
+          {packState === "changed" ? <small className={`sidebarAgentPackBadge state-${packState}`}>{t(agentPackBadgeLabels[packState])}</small> : null}
+        </button>
+      </div>
     </aside>
   );
 }
