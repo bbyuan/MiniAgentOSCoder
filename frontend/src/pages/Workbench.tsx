@@ -198,6 +198,9 @@ export function Workbench() {
     : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
 
   const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
+  const visibleFollowUpTemplates = runStatus === "completed"
+    ? followUpTemplates.filter((template) => template !== "session.template.fixFailure")
+    : followUpTemplates.filter((template) => template !== "session.template.addTests");
   const currentTurnIndex = conversation?.turns.find((turn) => turn.run_id === runId)?.turn_index ?? 0;
   const steeringMessages = useMemo(() => {
     const applied = new Set(traceEvents.flatMap((event) => {
@@ -1266,15 +1269,17 @@ export function Workbench() {
 
           <ConversationHistory conversation={conversation} currentRunId={runId} />
 
-          <RunStatusDeck
-            status={runStatus}
-            plan={displayPlan}
-            trace={traceEvents}
-            onOpenControlPlane={() => {
-              setRuntimePanelTarget("overview");
-              setRuntimeDetailsOpen(true);
-            }}
-          />
+          {!terminal ? (
+            <RunStatusDeck
+              status={runStatus}
+              plan={displayPlan}
+              trace={traceEvents}
+              onOpenControlPlane={() => {
+                setRuntimePanelTarget("overview");
+                setRuntimeDetailsOpen(true);
+              }}
+            />
+          ) : null}
 
           {!terminal && displayDiff.files > 0 ? <CodeChangePreview artifacts={artifacts} compact /> : null}
 
@@ -1346,7 +1351,7 @@ export function Workbench() {
                 </button>
               </div>
               <div className="followUpTemplates" aria-label={t("session.templates")}>
-                {followUpTemplates.map((template) => (
+                {visibleFollowUpTemplates.map((template) => (
                   <button
                     type="button"
                     disabled={busy}
@@ -1357,7 +1362,6 @@ export function Workbench() {
                   </button>
                 ))}
               </div>
-              <span>{t("session.followUpHint")}</span>
             </section>
           ) : null}
 

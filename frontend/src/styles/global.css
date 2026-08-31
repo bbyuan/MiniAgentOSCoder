@@ -18318,3 +18318,123 @@ button > svg {
     grid-column: 2;
   }
 }
+
+/* Core run surface: one current action, with details available on demand. */
+.productContent .runSimpleLayout .runStatusCurrent {
+  padding: 14px 16px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus strong {
+  margin-top: 4px;
+  overflow: visible;
+  font-size: 16px;
+  line-height: 1.35;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus span {
+  margin-top: 4px;
+  overflow: visible;
+  line-height: 1.45;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.runStatusLatestEvent {
+  max-width: 260px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .runStatusStepSummary {
+  grid-template-columns: max-content minmax(120px, 1fr);
+}
+
+.productContent .runSimpleLayout .runStepDetails li,
+.productContent .runSimpleLayout .runStepDetails li.state-active,
+.productContent .runSimpleLayout .runStepDetails li.state-failed,
+.productContent .runSimpleLayout .runStepDetails li:not(.state-active):not(.state-failed) {
+  width: 100%;
+  min-height: 48px;
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.productContent .runSimpleLayout .runStepDetails li strong,
+.productContent .runSimpleLayout .runStepDetails li:not(.state-active):not(.state-failed) strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .productContent .runSimpleLayout .runStatusCurrent {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .runStatusLatestEvent {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck > header {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck > header button {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    font-size: 0;
+  }
+}
+
+.productContent .runSimpleLayout .followUpComposer {
+  padding: 12px;
+}
+
+.productContent .runSimpleLayout .followUpComposer > label {
+  padding: 0 2px 8px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 32px;
+  padding: 6px 9px;
+  justify-content: center;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 520px) {
+  .productContent .runSimpleLayout .followUpTemplates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

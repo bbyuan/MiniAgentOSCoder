@@ -32,7 +32,6 @@ const statusLabels: Record<string, TranslationKey> = {
 export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunStatusDeckProps) {
   const { locale, t } = usePreferences();
   const currentStep = plan.find((item) => item.state === "active") ?? plan.find((item) => item.state === "failed");
-  const nextStep = plan.find((item) => item.state === "waiting" || item.state === "pending");
   const lastEvent = trace.length ? trace[trace.length - 1] : undefined;
   const completedSteps = plan.filter((item) => item.state === "done").length;
   const tone = ["failed", "cancelled"].includes(status)
@@ -65,11 +64,9 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
           <strong>{currentStep ? translateKnownText(locale, currentStep.title) : t("runStatus.noActiveStep")}</strong>
           <span>{currentStep?.detail ? translateKnownText(locale, currentStep.detail) : t("runStatus.safeBoundary")}</span>
         </div>
-        <div className="runStatusNext">
-          <small>{t("runStatus.nextStep")}</small>
-          <strong>{nextStep ? translateKnownText(locale, nextStep.title) : t("runStatus.waitingForRuntime")}</strong>
-          <span>{lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}</span>
-        </div>
+        <span className="runStatusLatestEvent">
+          {lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}
+        </span>
       </div>
 
       {plan.length ? (
