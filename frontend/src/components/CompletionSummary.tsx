@@ -72,7 +72,8 @@ export function CompletionSummary({
   });
   const nextActions = buildNextActions(status, tests?.status);
   const showEvidence = status === "completed" || completion?.verdict === "passed";
-  const showSignals = status === "completed" || Boolean(diff?.files) || Boolean(tests);
+  const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
+  const showSignals = Boolean(tests) || (status === "completed" && !hasCodeDiff);
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -115,13 +116,13 @@ export function CompletionSummary({
           ) : null}
         </section>
       ) : null}
+      <CodeChangePreview artifacts={artifacts} />
       {showSignals ? (
         <div className="completionSignals">
-          <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div>
+          {!hasCodeDiff ? <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div> : null}
           <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
         </div>
       ) : null}
-      <CodeChangePreview artifacts={artifacts} />
       {hasMoreMessage ? (
         <details className="completionDetails">
           <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>

@@ -16398,3 +16398,71 @@ button.controlSignal.active {
     grid-template-columns: 1fr;
   }
 }
+
+/* Make code changes the primary completion result, not hidden diagnostics. */
+.codeChangePreview {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 20%, var(--surface-raised)), var(--surface-raised));
+}
+
+.codeChangePreview > header {
+  min-height: 56px;
+  padding: 0 16px;
+}
+
+.codeChangePreview > header strong {
+  font-size: 16px;
+  font-weight: 780;
+}
+
+.codeChangePreview > header > div svg {
+  color: var(--success);
+}
+
+.codeChangePreview > header span {
+  padding: 5px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+}
+
+.codeChangeResultBar {
+  padding: 10px 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.codeChangeResultBar span {
+  min-height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--success) 22%, var(--border));
+  border-radius: 8px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 42%, var(--surface-raised));
+  font-size: 12px;
+  font-weight: 740;
+}
+
+.codeDiffBlock {
+  margin-top: 12px;
+}
+
+.codeDiffBlock > summary {
+  min-height: 42px;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.codeDiffBlock > summary span {
+  font-weight: 780;
+}
+
+.codeChangePreview.compact {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}

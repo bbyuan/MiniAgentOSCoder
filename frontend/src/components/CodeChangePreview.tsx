@@ -1,5 +1,6 @@
-import { ChevronDown, FileDiff } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileDiff, FlaskConical } from "lucide-react";
 import type { RunArtifacts } from "../api/client";
+import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface CodeChangePreviewProps {
@@ -8,8 +9,9 @@ interface CodeChangePreviewProps {
 }
 
 export function CodeChangePreview({ artifacts, compact = false }: CodeChangePreviewProps) {
-  const { t } = usePreferences();
+  const { locale, t } = usePreferences();
   const diff = artifacts?.diff_summary;
+  const tests = artifacts?.test_summary;
   const preview = artifacts?.diff_preview;
   const content = preview?.content ?? "";
   const lines = content.split("\n").slice(0, compact ? 80 : 140);
@@ -24,14 +26,26 @@ export function CodeChangePreview({ artifacts, compact = false }: CodeChangePrev
       <header>
         <div>
           <FileDiff size={16} />
-          <strong>{t("codeDiff.title")}</strong>
+          <strong>{t("codeDiff.changedFiles", { count: diff.files })}</strong>
         </div>
         <span>
-          {t("diff.files", { count: diff.files })}
           <b className="positive">+{diff.insertions}</b>
           <b className="negative">-{diff.deletions}</b>
         </span>
       </header>
+
+      <div className="codeChangeResultBar">
+        <span>
+          <CheckCircle2 size={14} />
+          {t("codeDiff.resultTitle")}
+        </span>
+        {tests ? (
+          <span>
+            <FlaskConical size={14} />
+            {translateKnownText(locale, tests.status)}
+          </span>
+        ) : null}
+      </div>
 
       {files.length ? (
         <div className="codeChangeFiles">
@@ -40,7 +54,7 @@ export function CodeChangePreview({ artifacts, compact = false }: CodeChangePrev
       ) : null}
 
       {preview?.available && lines.length ? (
-        <details className="codeDiffBlock" open={!compact}>
+        <details className="codeDiffBlock">
           <summary>
             <span>{t("codeDiff.preview")}</span>
             <ChevronDown size={14} />
