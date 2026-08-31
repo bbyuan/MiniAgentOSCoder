@@ -62,7 +62,7 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
         <div className="runStatusCurrentFocus">
           <small>{t("runStatus.currentStep")}</small>
           <strong>{currentStep ? translateKnownText(locale, currentStep.title) : t("runStatus.noActiveStep")}</strong>
-          <span>{currentStep?.detail ? translateKnownText(locale, currentStep.detail) : t("runStatus.safeBoundary")}</span>
+          <span>{currentStep ? stepHint(currentStep, locale, t) : t("runStatus.safeBoundary")}</span>
         </div>
         <span className="runStatusLatestEvent">
           {lastEvent ? t("runStatus.lastEvent", { event: translateKnownText(locale, lastEvent.event) }) : t("runStatus.noEvents")}
@@ -84,7 +84,7 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
                   <div>
                     <strong>{translateKnownText(locale, item.title)}</strong>
                     <small>{t(stepStateLabel(item.state))}</small>
-                    {item.detail ? <em>{translateKnownText(locale, item.detail)}</em> : null}
+                    <em>{stepHint(item, locale, t)}</em>
                   </div>
                 </li>
               ))}
@@ -94,6 +94,25 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
       ) : null}
     </section>
   );
+}
+
+function stepHint(step: PlanStep, locale: "zh" | "en", t: (key: TranslationKey, values?: Record<string, string | number>) => string): string {
+  const key = stepHintKey(step.title);
+  if (key) return t(key);
+  if (step.detail) return translateKnownText(locale, step.detail);
+  return t("runStatus.stepHint.generic");
+}
+
+function stepHintKey(title: string): TranslationKey | undefined {
+  const normalized = title.trim().toLowerCase();
+  if (normalized.includes("scan workspace")) return "runStatus.stepHint.scan";
+  if (normalized.includes("compile agentcontract")) return "runStatus.stepHint.contract";
+  if (normalized.includes("build context")) return "runStatus.stepHint.context";
+  if (normalized.includes("inspect relevant code")) return "runStatus.stepHint.inspect";
+  if (normalized.includes("propose patch") || normalized.includes("generate patch")) return "runStatus.stepHint.patch";
+  if (normalized.includes("run validation")) return "runStatus.stepHint.validation";
+  if (normalized.includes("write report")) return "runStatus.stepHint.report";
+  return undefined;
 }
 
 function StepIcon({ state }: { state: string }) {
