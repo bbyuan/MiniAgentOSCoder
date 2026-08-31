@@ -52,6 +52,15 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
   return { icon: Activity, tone: "runtime" };
 }
 
+function isProcessEvent(event: TraceEvent): boolean {
+  if (event.event === "run.step.started") return false;
+  if (event.event === "run.created" || event.event === "run.transitioned" || event.event === "run.loop.started") return false;
+  if (event.event === "capability.menu.built") return false;
+  if (event.event === "observation.recorded") return false;
+  if (event.event.startsWith("model.cache.")) return false;
+  return true;
+}
+
 function eventTime(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
@@ -253,9 +262,10 @@ function processEvent(
 export function ActivityFeed({ events, status }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
   const [expanded, setExpanded] = useState(true);
-  const visibleEvents = events.slice(expanded ? -12 : -4);
+  const processEvents = events.filter(isProcessEvent);
+  const visibleEvents = processEvents.slice(expanded ? -10 : -3);
   const state = activityState(status);
-  const latestEvent = events[events.length - 1];
+  const latestEvent = processEvents[processEvents.length - 1];
   const latestPresentation = latestEvent ? eventPresentation(latestEvent.event) : null;
   const LatestIcon = latestPresentation?.icon ?? Activity;
   const latestProcess = latestEvent ? processEvent(latestEvent, locale, t) : null;
@@ -265,7 +275,7 @@ export function ActivityFeed({ events, status }: ActivityFeedProps) {
       <div className="activityHeader">
         <button type="button" className="activityToggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
-          <span><strong>{t("activity.title")}</strong><small>{t("activity.eventCount", { count: events.length })}</small></span>
+          <span><strong>{t("activity.title")}</strong><small>{t("activity.eventCount", { count: processEvents.length })}</small></span>
         </button>
         <div className={`liveIndicator ${state.tone}`}>
           <span aria-hidden="true" />
