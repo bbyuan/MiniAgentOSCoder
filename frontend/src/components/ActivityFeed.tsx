@@ -54,14 +54,21 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
 }
 
 function isProcessEvent(event: TraceEvent): boolean {
-  if (event.event === "action.parsed" && actionName(event) !== "finish") return false;
-  if (event.event === "model.requested" || event.event === "model.responded") return false;
-  if (event.event === "run.step.started") return false;
-  if (event.event === "run.created" || event.event === "run.transitioned" || event.event === "run.loop.started") return false;
-  if (event.event === "capability.menu.built") return false;
-  if (event.event === "observation.recorded") return false;
-  if (event.event.startsWith("model.cache.")) return false;
-  return true;
+  const name = event.event;
+  if (name === "tool.executed" || name === "tool.failed") return true;
+  if (name === "approval.requested" || name === "approval.resolved" || name === "approval.cancelled") return true;
+  if (name === "action.rejected" || name === "action.superseded") return true;
+  if (name === "completion.passed" || name === "completion.rejected") return true;
+  if (name === "model.failed" || name === "run.failed" || name === "run.budget_exceeded" || name === "run.cancelled") return true;
+  if (name === "report.generated") return true;
+  if (name.startsWith("user.guidance.")) return true;
+  if (name === "policy.evaluated") {
+    const evaluation = asRecord(event.payload.evaluation);
+    const outcome = stringValue(evaluation?.outcome);
+    return outcome === "denied" || outcome === "approval_denied";
+  }
+  if (name === "action.parsed") return actionName(event) === "finish";
+  return false;
 }
 
 function eventTime(value: string): string {
@@ -114,6 +121,14 @@ function resultFrom(event: TraceEvent): Record<string, unknown> | undefined {
 
 function approvalFrom(event: TraceEvent): Record<string, unknown> | undefined {
   return asRecord(event.payload.approval);
+}
+
+function assessmentFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(event.payload.assessment);
+}
+
+function evaluationFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(event.payload.evaluation);
 }
 
 function metadataFrom(event: TraceEvent): Record<string, unknown> | undefined {
@@ -215,6 +230,21 @@ function outputPreview(locale: Locale, event: TraceEvent): string | undefined {
   return compactText(translateKnownText(locale, output), 420);
 }
 
+function assessmentSummary(locale: Locale, event: TraceEvent, fallback: string): string {
+  const assessment = assessmentFrom(event);
+  const summary = stringValue(assessment?.summary);
+  return summary ? compactText(translateKnownText(locale, summary), 180) : fallback;
+}
+
+function policySummary(locale: Locale, event: TraceEvent, fallback: string): string {
+  const evaluation = evaluationFrom(event);
+  const decisions = Array.isArray(evaluation?.decisions) ? evaluation.decisions : [];
+  const records = decisions.map(asRecord).filter(Boolean);
+  const lastDecision = records[records.length - 1];
+  const reason = stringValue(lastDecision?.reason);
+  return reason ? compactText(translateKnownText(locale, reason), 180) : fallback;
+}
+
 function activityState(status: string): { key: "activity.live" | "activity.completed" | "activity.failed" | "activity.cancelled" | "activity.paused"; tone: string } {
   if (["running", "applying_patch", "testing", "repairing", "cancellation_requested"].includes(status)) {
     return { key: "activity.live", tone: "active" };
@@ -240,8 +270,15 @@ function processEvent(
   }
   const reason = event.payload.termination_reason;
   if (typeof reason === "string" && reason.trim()) {
+    const title = event.event === "run.cancelled"
+      ? t("activity.title.cancelled")
+      : event.event === "run.budget_exceeded"
+        ? t("activity.title.budgetExceeded")
+        : event.event === "run.failed"
+          ? t("activity.title.failed")
+          : t("activity.title.runtime");
     return {
-      title: t("activity.title.runtime"),
+      title,
       detail: translateKnownText(locale, reason),
       chips: activityChips(locale, event, t),
     };
@@ -299,6 +336,16 @@ function processEvent(
     };
   }
   if (event.event === "approval.requested") return { title: actionName(event) === "apply_patch" ? t("activity.title.patchApprovalRequested") : t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips };
+  if (event.event === "approval.resolved") {
+    const decision = stringValue(event.payload.decision);
+    const title = decision === "approve_once" ? t("activity.title.approvalApproved") : t("activity.title.approvalDenied");
+    const reasonText = stringValue(event.payload.reason);
+    return { title, detail: reasonText ? translateKnownText(locale, reasonText) : t(decision === "approve_once" ? "activity.detail.approvalApproved" : "activity.detail.approvalDenied"), chips };
+  }
+  if (event.event === "approval.cancelled") return { title: t("activity.title.approvalCancelled"), detail: t("activity.detail.approvalCancelled"), chips };
+  if (event.event === "completion.passed") return { title: t("activity.title.completionPassed"), detail: assessmentSummary(locale, event, t("activity.detail.completionPassed")), chips };
+  if (event.event === "completion.rejected") return { title: t("activity.title.completionRejected"), detail: assessmentSummary(locale, event, t("activity.detail.completionRejected")), chips };
+  if (event.event === "policy.evaluated") return { title: t("activity.title.policyBlocked"), detail: policySummary(locale, event, t("activity.detail.policyBlocked")), chips };
   if (event.event.startsWith("user.guidance.")) return { title: t("activity.title.guidance"), detail: t("activity.detail.guidance"), chips };
   if (event.event.startsWith("context.")) return { title: t("activity.title.context"), detail: t("activity.detail.context"), chips };
   if (event.event.startsWith("patch.")) return { title: t("activity.title.patch"), detail: t("activity.detail.patch"), chips };
