@@ -15247,6 +15247,7 @@ button.controlSignal.active {
 
 .productContent .runSimpleLayout .runStatusDeck,
 .productContent .runSimpleLayout .codeChangePreview,
+.productContent .runSimpleLayout .diffReview,
 .productContent .runSimpleLayout .runSteeringComposer,
 .productContent .runSimpleLayout .completionSummary,
 .productContent .runSimpleLayout .followUpComposer,
@@ -16080,7 +16081,379 @@ button.controlSignal.active {
   font-size: 12px;
 }
 
-.completionSummary .codeChangePreview {
+.diffReview {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 64%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045), 0 18px 52px rgba(15, 23, 42, 0.065);
+}
+
+.diffReview.tone-applied {
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border-strong));
+}
+
+.diffReview.tone-pending {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-strong));
+}
+
+.diffReview > header {
+  min-width: 0;
+  min-height: 62px;
+  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--hairline);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface) 78%, transparent));
+}
+
+.diffReview > header > div:first-child {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+}
+
+.diffReview > header > div:first-child > svg {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface-raised));
+}
+
+.diffReview.tone-applied > header > div:first-child > svg {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 42%, var(--surface-raised));
+}
+
+.diffReview > header strong,
+.diffReview > header p {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffReview > header strong {
+  display: block;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 780;
+}
+
+.diffReview > header p {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.diffReviewStats {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.diffReviewStats > span:not(.diffReviewStatus),
+.diffReviewStats > b {
+  min-height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-raised) 80%, transparent);
+}
+
+.diffReviewStatus {
+  min-height: 28px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 999px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 42%, var(--surface-raised));
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.diffReview.tone-pending .diffReviewStatus {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface-raised));
+}
+
+.diffReviewBody {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 280px) minmax(0, 1fr);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.diffReviewFileList {
+  min-width: 0;
+  max-height: 430px;
+  overflow: auto;
+  padding: 10px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  border-right: 1px solid var(--hairline);
+}
+
+.diffReviewFileList button {
+  min-width: 0;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.diffReviewFileList button:hover {
+  border-color: color-mix(in srgb, var(--border) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.diffReviewFileList button.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface-raised));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.diffReviewFileList button span {
+  min-width: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffReviewFileList button em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.diffReviewViewer {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.diffReviewViewerHeader {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 62%, transparent);
+}
+
+.diffReviewViewerHeader strong {
+  min-width: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffReviewViewerHeader span {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.diffReviewViewer pre {
+  max-height: 420px;
+  min-width: 0;
+  margin: 0;
+  padding: 9px 0;
+  overflow: auto;
+  background: color-mix(in srgb, var(--text) 3.5%, var(--surface));
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+.diffReviewViewer code {
+  min-height: 21px;
+  padding: 1px 13px;
+  display: block;
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.diffReviewViewer .line-add {
+  color: color-mix(in srgb, var(--success) 82%, var(--text));
+  background: color-mix(in srgb, var(--success-soft) 48%, transparent);
+}
+
+.diffReviewViewer .line-delete {
+  color: color-mix(in srgb, var(--danger) 84%, var(--text));
+  background: color-mix(in srgb, var(--danger-soft) 54%, transparent);
+}
+
+.diffReviewViewer .line-meta {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
+}
+
+.diffReviewViewer > p,
+.diffReviewEmpty {
+  margin: 0;
+  padding: 18px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diffReviewTruncated {
+  padding: 9px 14px;
+  display: block;
+  border-top: 1px solid var(--hairline);
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.diffReviewActions {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+}
+
+.diffReview.compact > header {
+  min-height: 56px;
+  padding: 11px 13px;
+}
+
+.diffReview.compact .diffReviewBody {
+  grid-template-columns: minmax(150px, 230px) minmax(0, 1fr);
+}
+
+.diffReview.compact .diffReviewViewer pre {
+  max-height: 320px;
+  font-size: 11px;
+}
+
+.diffReview.compact .diffReviewFileList button {
+  min-height: 42px;
+}
+
+.approvalSection .diffReview {
+  margin-top: 12px;
+  box-shadow: none;
+}
+
+.approvalSection .diffReviewBody,
+.approvalSection .diffReview.compact .diffReviewBody {
+  grid-template-columns: 1fr;
+}
+
+.approvalSection .diffReviewFileList {
+  max-height: 176px;
+  grid-template-columns: 1fr;
+  border-right: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+@media (max-width: 980px) {
+  .diffReview > header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .diffReviewStats {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .diffReviewBody,
+  .diffReview.compact .diffReviewBody {
+    grid-template-columns: 1fr;
+  }
+
+  .diffReviewFileList {
+    max-height: none;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+}
+
+@media (max-width: 560px) {
+  .diffReview > header > div:first-child {
+    grid-template-columns: 1fr;
+  }
+
+  .diffReview > header p {
+    white-space: normal;
+  }
+
+  .diffReviewFileList {
+    grid-template-columns: 1fr;
+  }
+
+  .diffReviewActions {
+    justify-content: stretch;
+  }
+
+  .diffReviewActions > button {
+    flex: 1 1 100%;
+  }
+}
+
+.completionSummary .codeChangePreview,
+.completionSummary .diffReview {
   box-shadow: none;
 }
 
@@ -19148,6 +19521,12 @@ button > svg {
   font-size: 11px;
 }
 
+.historyDetailContent > .diffReview {
+  margin: 22px 34px 0;
+  max-width: calc(100% - 68px);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.055);
+}
+
 .historyMetricGrid {
   margin: 18px 34px 0;
   display: grid;
@@ -19798,7 +20177,8 @@ button > svg {
   -webkit-line-clamp: 3;
 }
 
-.completionSummary .codeChangePreview {
+.completionSummary .codeChangePreview,
+.completionSummary .diffReview {
   order: 1;
 }
 
@@ -20049,6 +20429,7 @@ button > svg {
 .historyDetailSection,
 .historyTechnicalMetrics,
 .historyPatchPreview,
+.historyDetailContent > .diffReview,
 .historyMetricGrid {
   max-width: calc(100% - 68px);
 }
@@ -20057,6 +20438,7 @@ button > svg {
   .historyDetailSection,
   .historyTechnicalMetrics,
   .historyPatchPreview,
+  .historyDetailContent > .diffReview,
   .historyMetricGrid {
     max-width: calc(100% - 36px);
   }

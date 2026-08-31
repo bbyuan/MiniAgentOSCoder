@@ -8,7 +8,6 @@ import {
   Check,
   Clock3,
   ChevronDown,
-  FileDiff,
   FileText,
   GitCompareArrows,
   RefreshCw,
@@ -30,6 +29,7 @@ import { localizeRunReport } from "../reportLocalization";
 import { CompletionEvidence } from "./CompletionEvidence";
 import { EvaluationOverview } from "./EvaluationOverview";
 import { MarkdownDocument } from "./MarkdownDocument";
+import { DiffReview, buildDiffFiles } from "./DiffReview";
 
 
 interface RunCenterProps {
@@ -444,11 +444,10 @@ function RunDetail({
 function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
   const { t } = usePreferences();
   const { patch } = detail;
-  const lines = patch.content.split("\n");
   const files = changedFilesForDetail(detail);
-  const insertions = lines.filter((line) => line.startsWith("+") && !line.startsWith("+++")).length;
-  const deletions = lines.filter((line) => line.startsWith("-") && !line.startsWith("---")).length;
-  const visibleLines = lines.slice(0, 180);
+  const parsedFiles = buildDiffFiles(patch.content, files);
+  const insertions = parsedFiles.reduce((total, file) => total + file.additions, 0);
+  const deletions = parsedFiles.reduce((total, file) => total + file.deletions, 0);
 
   if (!patch.available) {
     return (
@@ -459,39 +458,22 @@ function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
   }
 
   return (
-    <details className="historyPatchPreview">
-      <summary>
-        <span><FileDiff size={16} /><strong>{t("codeDiff.changedFiles", { count: files.length })}</strong></span>
-        <span className="historyPatchStats"><b>+{insertions}</b><b>-{deletions}</b><ChevronDown size={15} /></span>
-      </summary>
-      {files.length ? <div className="historyPatchFiles">{files.map((file) => <code key={file}>{file}</code>)}</div> : null}
-      <pre>
-        {visibleLines.map((line, index) => <code className={`line-${historyDiffLine(line)}`} key={`${index}-${line}`}>{line || " "}</code>)}
-      </pre>
-      {patch.truncated || lines.length > visibleLines.length ? <small>{t("codeDiff.truncated")}</small> : null}
-    </details>
+    <DiffReview
+      title={t("codeDiff.changedFiles", { count: files.length || parsedFiles.length })}
+      subtitle={t("codeDiff.historyHint")}
+      patch={patch.content}
+      changedFiles={files}
+      insertions={insertions}
+      deletions={deletions}
+      truncated={patch.truncated}
+      tone="applied"
+      compact
+    />
   );
 }
 
-function historyDiffLine(line: string): "add" | "delete" | "meta" | "context" {
-  if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("@@") || line.startsWith("diff ")) return "meta";
-  if (line.startsWith("+")) return "add";
-  if (line.startsWith("-")) return "delete";
-  return "context";
-}
-
-function historyChangedFiles(lines: string[]): string[] {
-  const files = new Set<string>();
-  lines.forEach((line) => {
-    if (!line.startsWith("+++ ")) return;
-    const file = line.replace(/^\+\+\+\s+/, "").replace(/^b\//, "").trim();
-    if (file && file !== "/dev/null") files.add(file);
-  });
-  return [...files];
-}
-
 function changedFilesForDetail(detail: HistoryRunDetail): string[] {
-  return detail.run.changed_files.length ? detail.run.changed_files : historyChangedFiles(detail.patch.content.split("\n"));
+  return detail.run.changed_files.length ? detail.run.changed_files : buildDiffFiles(detail.patch.content).map((file) => file.path);
 }
 
 function ComparisonView({ comparison, onBack }: { comparison: HistoryComparison; onBack: () => void }) {

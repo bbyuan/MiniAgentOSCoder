@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Check, FileDiff, ShieldAlert, Terminal, X } from "lucide-react";
+import { Check, ShieldAlert, Terminal, X } from "lucide-react";
 import type { ApprovalRequest } from "../api/client";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
+import { DiffReview } from "./DiffReview";
 
 interface ApprovalPanelProps {
   approval: ApprovalRequest | null;
@@ -27,6 +28,23 @@ export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPan
   }
   const isPatch = approval.target.tool === "apply_patch";
   const files = approval.target.files ?? [];
+  const approvalActions = (
+    <>
+      <button
+        type="button"
+        className="denyAction"
+        disabled={busy}
+        onClick={() => onDeny(reason.trim() || t("approval.defaultDenyReason"))}
+      >
+        <X size={14} />
+        <span>{t(isPatch ? "approval.rejectPatch" : "approval.deny")}</span>
+      </button>
+      <button type="button" className="approveAction" disabled={busy} onClick={onApprove}>
+        <Check size={14} />
+        <span>{t(isPatch ? "approval.acceptPatch" : "approval.approve")}</span>
+      </button>
+    </>
+  );
 
   return (
     <section className="inspectorSection approvalSection" aria-live="polite">
@@ -60,45 +78,46 @@ export function ApprovalPanel({ approval, busy, onApprove, onDeny }: ApprovalPan
 
       {isPatch ? (
         <>
-          <div className="approvalFiles">
-            {files.map((file) => <code key={file}>{file}</code>)}
-          </div>
-          <div className="patchLabel"><FileDiff size={14} /><span>{t("approval.patch")}</span></div>
-          <pre className="patchPreview" tabIndex={0}>{approval.target.patch}</pre>
+          <DiffReview
+            title={t("approval.patchTitle")}
+            subtitle={t("approval.patchHint")}
+            patch={approval.target.patch}
+            changedFiles={files}
+            insertions={approval.target.additions}
+            deletions={approval.target.deletions}
+            statusLabel={translateKnownText(locale, approval.risk)}
+            tone="pending"
+            compact
+          />
+          <label className="denyReason">
+            <span>{t("approval.reasonOptional")}</span>
+            <textarea
+              rows={2}
+              value={reason}
+              disabled={busy}
+              placeholder={t("approval.reasonPlaceholder")}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </label>
+          <div className="approvalActions">{approvalActions}</div>
         </>
       ) : (
         <>
           <div className="patchLabel"><Terminal size={14} /><span>{t("approval.command")}</span></div>
           <pre className="patchPreview commandPreview" tabIndex={0}>{approval.target.command || approval.target.tool}</pre>
+          <label className="denyReason">
+            <span>{t("approval.reason")}</span>
+            <textarea
+              rows={2}
+              value={reason}
+              disabled={busy}
+              placeholder={t("approval.reasonPlaceholder")}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </label>
+          <div className="approvalActions">{approvalActions}</div>
         </>
       )}
-
-      <label className="denyReason">
-        <span>{t("approval.reason")}</span>
-        <textarea
-          rows={2}
-          value={reason}
-          disabled={busy}
-          placeholder={t("approval.reasonPlaceholder")}
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </label>
-
-      <div className="approvalActions">
-        <button
-          type="button"
-          className="denyAction"
-          disabled={busy || !reason.trim()}
-          onClick={() => onDeny(reason.trim())}
-        >
-          <X size={14} />
-          <span>{t("approval.deny")}</span>
-        </button>
-        <button type="button" className="approveAction" disabled={busy} onClick={onApprove}>
-          <Check size={14} />
-          <span>{t("approval.approve")}</span>
-        </button>
-      </div>
     </section>
   );
 }
