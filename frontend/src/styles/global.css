@@ -22613,3 +22613,780 @@ button > svg {
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
+
+/* Frontend quality pass: calm, tool-like hierarchy across the main surfaces. */
+:root {
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8fa;
+  --surface-raised: rgba(255, 255, 255, 0.96);
+  --text: #15171b;
+  --text-secondary: #626a75;
+  --text-tertiary: #9198a3;
+  --border: #e6e9ee;
+  --border-strong: #d9dee7;
+  --hairline: color-mix(in srgb, var(--border) 76%, transparent);
+  --accent: #2f6df6;
+  --accent-hover: #235bd7;
+  --accent-soft: #edf4ff;
+  --success: #177a51;
+  --success-soft: #edf8f3;
+  --warning: #a85c12;
+  --warning-soft: #fff6e8;
+  --danger: #b83d39;
+  --danger-soft: #fff2f1;
+  --panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 18px 52px rgba(15, 23, 42, 0.06);
+  --floating-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 24px 72px rgba(15, 23, 42, 0.1);
+  --control-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+:root[data-theme="dark"] {
+  --canvas: #101114;
+  --surface: #181a1f;
+  --surface-subtle: #1f2228;
+  --surface-raised: rgba(30, 33, 39, 0.96);
+  --text: #f4f6f8;
+  --text-secondary: #a8afb8;
+  --text-tertiary: #7c8490;
+  --border: #2c3139;
+  --border-strong: #3a414c;
+  --hairline: color-mix(in srgb, var(--border) 72%, transparent);
+  --accent: #82adff;
+  --accent-hover: #a3c4ff;
+  --accent-soft: rgba(67, 127, 235, 0.18);
+  --success: #6ccb98;
+  --success-soft: rgba(39, 151, 94, 0.17);
+  --warning: #f0ad68;
+  --warning-soft: rgba(202, 126, 45, 0.17);
+  --danger: #ef8881;
+  --danger-soft: rgba(214, 74, 67, 0.16);
+  --panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.22), 0 20px 62px rgba(0, 0, 0, 0.2);
+  --floating-shadow: 0 1px 2px rgba(0, 0, 0, 0.26), 0 28px 84px rgba(0, 0, 0, 0.28);
+  --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  color: var(--text);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 54%, transparent) 0, transparent 340px),
+    var(--canvas);
+}
+
+button,
+select,
+textarea,
+input {
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+button:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 3px;
+}
+
+* {
+  scrollbar-color: color-mix(in srgb, var(--text-tertiary) 38%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-tertiary) 34%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-tertiary) 54%, transparent);
+  background-clip: padding-box;
+}
+
+.appShell {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 42%, transparent) 0, transparent 360px),
+    var(--canvas);
+}
+
+:root[data-theme="dark"] .appShell {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 32%, transparent) 0, transparent 360px),
+    var(--canvas);
+}
+
+.topbar {
+  height: 72px;
+  border-bottom-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(128%);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.035);
+}
+
+.topbarInner {
+  width: min(100%, 1760px);
+  padding-inline: clamp(18px, 2.8vw, 36px);
+}
+
+.brand {
+  gap: 12px;
+}
+
+.brandMark {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #14171d, #2a303a);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+}
+
+:root[data-theme="dark"] .brandMark {
+  color: #15171b;
+  background: linear-gradient(145deg, #f8fafc, #d5dbe4);
+}
+
+.brandName {
+  font-size: 16px;
+  font-weight: 780;
+}
+
+.brandMeta {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.topbarControls {
+  gap: 9px;
+}
+
+.statusChip,
+.iconButton,
+.segmentedControl {
+  min-height: 40px;
+  border-color: var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: var(--control-shadow);
+}
+
+.iconButton {
+  width: 40px;
+  height: 40px;
+}
+
+.statusChip {
+  height: 40px;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+.segmentedControl {
+  height: 40px;
+  padding: 3px;
+  grid-template-columns: repeat(2, 42px);
+}
+
+.segmentedControl button {
+  border-radius: 6px;
+}
+
+.segmentedControl button.active {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.iconButton:hover,
+.statusChip:hover,
+.segmentedControl button:hover {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border-strong));
+  background: var(--surface);
+}
+
+.productFrame {
+  width: min(calc(100% - 24px), 1760px);
+  min-height: calc(100vh - 72px);
+  margin: 0 auto 18px;
+  grid-template-columns: 252px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: color-mix(in srgb, var(--surface-raised) 82%, var(--canvas));
+  box-shadow: var(--panel-shadow);
+}
+
+.productContent {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 72%, transparent) 0, transparent 360px),
+    color-mix(in srgb, var(--canvas) 62%, var(--surface));
+}
+
+.projectSidebar {
+  top: 72px;
+  height: calc(100vh - 72px);
+  min-height: calc(100vh - 72px);
+  padding: 18px 14px 14px;
+  border-right-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 82%, var(--canvas));
+}
+
+.sidebarProject {
+  min-height: 58px;
+  padding: 9px;
+  border-radius: 8px;
+}
+
+.sidebarProject > span:first-child {
+  width: 34px;
+  height: 34px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--surface));
+}
+
+.sidebarProject strong {
+  font-size: 13px;
+}
+
+.sidebarProject small {
+  font-size: 10px;
+}
+
+.sidebarNewTask {
+  height: 44px;
+  margin-block: 14px 26px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 94%, var(--accent)), var(--text));
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.15);
+}
+
+:root[data-theme="dark"] .sidebarNewTask {
+  color: #121417;
+  background: linear-gradient(180deg, #f7f9fb, #d7dde7);
+}
+
+.sidebarNewTask:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+}
+
+.sidebarSectionHeader {
+  margin-top: 0;
+  padding-inline: 8px;
+  text-transform: none;
+}
+
+.sidebarRuns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebarRuns > button {
+  min-height: 56px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.sidebarRuns > button:hover,
+.sidebarRuns > button.active {
+  border-color: var(--hairline);
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--control-shadow);
+}
+
+.sidebarRunIcon {
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  background: var(--surface-subtle);
+}
+
+.sidebarRunCopy strong {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.sidebarRunCopy small {
+  font-size: 10px;
+}
+
+.sidebarUtilities {
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.sidebarHistory,
+.sidebarAgentPack {
+  min-height: 40px;
+  border-color: var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.productContent > .taskStage {
+  padding-top: clamp(64px, 8vh, 98px);
+  padding-bottom: 64px;
+}
+
+.productTaskSetup {
+  width: min(100%, 940px);
+}
+
+.productTaskIntro {
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.productTaskIntro h1 {
+  max-width: 780px;
+  margin: 0 auto;
+  font-size: clamp(38px, 4.6vw, 58px);
+  font-weight: 800;
+  line-height: 1.04;
+}
+
+.productTaskIntro p {
+  max-width: 660px;
+  margin: 15px auto 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.taskQuickStarts {
+  justify-content: center;
+  gap: 9px;
+}
+
+.taskQuickStarts button {
+  min-height: 38px;
+  padding-inline: 14px;
+  border-color: var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: var(--control-shadow);
+}
+
+.taskQuickStarts button:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border-strong));
+  background: var(--surface);
+  transform: translateY(-1px);
+}
+
+.taskModelGate,
+.productTaskSetup .taskModelGate {
+  width: min(100%, 900px);
+  margin: 0 auto 14px;
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warning-soft) 42%, var(--surface));
+}
+
+.taskComposerProduct,
+.productTaskSetup .taskComposerProduct {
+  width: min(100%, 900px);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 76%, transparent);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--floating-shadow);
+}
+
+.taskComposerProduct:focus-within,
+.productTaskSetup .taskComposerProduct:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border-strong));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent-soft) 78%, transparent),
+    var(--floating-shadow);
+}
+
+.taskComposerProduct textarea,
+.productTaskSetup .taskComposerProduct textarea {
+  min-height: clamp(220px, 28vh, 310px);
+  padding: 28px 30px;
+  font-size: 17px;
+  line-height: 1.62;
+}
+
+.taskComposerToolbar,
+.productTaskSetup .taskComposerToolbar {
+  min-height: 66px;
+  padding: 12px 14px;
+  border-top-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+}
+
+.taskTypeSelect,
+.exampleFillAction,
+.runSettingsAction,
+.startTaskAction,
+.productTaskSetup .taskTypeSelect,
+.productTaskSetup .exampleFillAction,
+.productTaskSetup .runSettingsAction,
+.productTaskSetup .startTaskAction {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.taskTypeSelect,
+.exampleFillAction,
+.runSettingsAction {
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.exampleFillAction:hover:not(:disabled),
+.runSettingsAction:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-strong));
+  background: var(--surface);
+}
+
+.startTaskAction,
+.productTaskSetup .startTaskAction {
+  min-width: 138px;
+  border: 0;
+  color: #ffffff;
+  background: linear-gradient(180deg, color-mix(in srgb, #1f2937 88%, var(--accent)), #15171b);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+}
+
+.startTaskAction:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 17px 42px rgba(15, 23, 42, 0.2);
+}
+
+.startTaskAction:disabled,
+.productTaskSetup .startTaskAction:disabled {
+  color: color-mix(in srgb, var(--text-secondary) 74%, transparent);
+  background: color-mix(in srgb, var(--text-tertiary) 26%, var(--surface-subtle));
+  box-shadow: none;
+}
+
+.setupDetails > summary,
+.compactSetupDetails > summary {
+  border-color: var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+}
+
+.productContent .runSimpleLayout .runCanvas {
+  width: min(100%, 980px);
+  padding-top: clamp(34px, 5vh, 62px);
+  gap: 16px;
+}
+
+.productContent .runSimpleLayout .conversationTurn,
+.productContent .runSimpleLayout .runStatusDeck,
+.productContent .runSimpleLayout .codeChangePreview,
+.productContent .runSimpleLayout .diffReview,
+.productContent .runSimpleLayout .runSteeringComposer,
+.productContent .runSimpleLayout .completionSummary,
+.productContent .runSimpleLayout .followUpComposer,
+.productContent .runSimpleLayout .activityPanel,
+.productContent .runSimpleLayout .agentProcess {
+  width: min(100%, 900px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.runSessionHero,
+.productContent .runSimpleLayout .runSessionHero {
+  width: min(100%, 900px);
+  margin-bottom: 10px;
+}
+
+.runSessionHero .eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.runSessionHero h1 {
+  max-width: 840px;
+  font-size: clamp(30px, 4.1vw, 46px);
+  font-weight: 810;
+  line-height: 1.08;
+}
+
+.runSessionHero p {
+  max-width: 760px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.runStatusDeck,
+.productContent .runSimpleLayout .runStatusDeck,
+.completionSummary,
+.diffReview,
+.codeChangePreview,
+.preflightControlDeck,
+.admissionSummary,
+.modelRouteSummary,
+.advancedSetup,
+.runSteeringComposer,
+.followUpComposer,
+.agentProcess {
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  background: var(--surface-raised);
+  box-shadow: var(--panel-shadow);
+}
+
+.productContent .runSimpleLayout .runStatusDeck {
+  border-left: 3px solid var(--accent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck.tone-success {
+  border-left-color: var(--success);
+}
+
+.productContent .runSimpleLayout .runStatusDeck.tone-warning {
+  border-left-color: var(--warning);
+}
+
+.productContent .runSimpleLayout .runStatusDeck.tone-danger {
+  border-left-color: var(--danger);
+}
+
+.runStatusDeck > header,
+.productContent .runSimpleLayout .runStatusDeck > header,
+.agentProcessHeader {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusCurrent {
+  padding: 18px 20px 14px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus {
+  max-width: 780px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus::before {
+  width: 3px;
+  background: color-mix(in srgb, var(--accent) 88%, var(--success));
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.runStatusStepSummary i,
+.productContent .runSimpleLayout .runStatusStepSummary i {
+  height: 6px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.runStatusStepSummary b,
+.productContent .runSimpleLayout .runStatusStepSummary b {
+  background: linear-gradient(90deg, var(--success), color-mix(in srgb, var(--accent) 42%, var(--success)));
+}
+
+.runStepDetails,
+.productContent .runSimpleLayout .runStepDetails {
+  border-radius: 8px;
+}
+
+.runStepDetails li,
+.productContent .runSimpleLayout .runStepDetails li,
+.agentProcessItem {
+  border-radius: 8px;
+}
+
+.agentProcessInline {
+  border-top-color: var(--hairline);
+  box-shadow: none;
+}
+
+.agentProcessHeader {
+  min-height: 44px;
+  padding-inline: 20px;
+}
+
+.agentProcessToggle strong {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.agentProcessToggle small {
+  font-size: 11px;
+}
+
+.agentProcessList {
+  max-height: 318px;
+  padding-inline: 20px;
+}
+
+.agentProcessList::before {
+  left: 34px;
+  background: color-mix(in srgb, var(--border-strong) 44%, transparent);
+}
+
+.agentProcessItem {
+  padding-block: 9px;
+}
+
+.agentProcessItem > .eventIcon {
+  background: var(--surface);
+}
+
+.agentProcessLead strong {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.agentProcessBody > p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.activityChips em,
+.diffReviewStats > span:not(.diffReviewStatus),
+.diffReviewStats > b,
+.composerChangePill button,
+.workspaceFilesToolbar input,
+.workspaceFilesToolbar label,
+.workspaceFilesHeaderActions button {
+  border-radius: 8px;
+}
+
+.runSteeringComposer,
+.productContent .runSimpleLayout .runSteeringComposer {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
+  box-shadow: var(--floating-shadow);
+}
+
+.runSteeringComposer .steeringInputFrame,
+.productContent .runSimpleLayout .runSteeringComposer .steeringInputFrame {
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.workspaceFilesDialog,
+.historyDialog,
+.modelSetupDialog,
+.agentPackDialog,
+.agentControlPlane {
+  border-radius: 8px;
+  border-color: var(--hairline);
+  box-shadow: var(--floating-shadow);
+}
+
+@media (max-width: 1080px) {
+  .productFrame {
+    width: 100%;
+    grid-template-columns: 1fr;
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .projectSidebar {
+    top: 72px;
+    min-height: auto;
+    height: auto;
+    max-height: 184px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    height: auto;
+    min-height: 68px;
+  }
+
+  .topbarInner {
+    min-height: 68px;
+    padding-inline: 14px;
+  }
+
+  .brandMark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .statusChip {
+    max-width: 142px;
+  }
+
+  .productContent > .taskStage {
+    padding: 30px 16px 44px;
+  }
+
+  .productTaskIntro {
+    text-align: left;
+  }
+
+  .productTaskIntro h1 {
+    font-size: 34px;
+  }
+
+  .taskQuickStarts {
+    justify-content: flex-start;
+  }
+
+  .taskComposerProduct textarea,
+  .productTaskSetup .taskComposerProduct textarea {
+    min-height: 220px;
+    padding: 22px 20px;
+    font-size: 16px;
+  }
+
+  .taskComposerToolbar,
+  .productTaskSetup .taskComposerToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taskComposerOptions,
+  .taskPrimaryActions,
+  .productTaskSetup .taskComposerOptions,
+  .productTaskSetup .taskPrimaryActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taskTypeSelect,
+  .exampleFillAction,
+  .runSettingsAction,
+  .startTaskAction {
+    width: 100%;
+  }
+
+  .productContent .runCanvas {
+    padding-inline: 16px;
+  }
+
+  .runSessionHero h1 {
+    font-size: 30px;
+  }
+}
