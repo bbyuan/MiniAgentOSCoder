@@ -2,6 +2,7 @@ import { Download, FileCheck2, FileText } from "lucide-react";
 import type { RunReportResponse } from "../api/client";
 import { usePreferences } from "../preferences";
 import { localizeRunReport } from "../reportLocalization";
+import { MarkdownDocument } from "./MarkdownDocument";
 
 interface RunReportPanelProps {
   report?: RunReportResponse;
@@ -64,7 +65,7 @@ export function RunReportPanel({ report }: RunReportPanelProps) {
               <Download size={14} />
             </button>
           </div>
-          <pre className="reportDocument">{displayedContent}</pre>
+          <MarkdownDocument className="reportDocument" content={displayedContent} />
         </>
       )}
     </section>

@@ -29,6 +29,7 @@ import { usePreferences } from "../preferences";
 import { localizeRunReport } from "../reportLocalization";
 import { CompletionEvidence } from "./CompletionEvidence";
 import { EvaluationOverview } from "./EvaluationOverview";
+import { MarkdownDocument } from "./MarkdownDocument";
 
 
 interface RunCenterProps {
@@ -430,7 +431,7 @@ function RunDetail({
         </div>
       </details>
       <DetailSection title={t("history.report")}>
-        {detail.report.available ? <pre className="historyReport">{localizeRunReport(detail.report.content, locale)}</pre> : <p>{t("history.reportUnavailable")}</p>}
+        {detail.report.available ? <MarkdownDocument className="historyReport" content={localizeRunReport(detail.report.content, locale)} /> : <p>{t("history.reportUnavailable")}</p>}
         {detail.report.truncated ? <span className="historyNote">{t("history.reportTruncated")}</span> : null}
       </DetailSection>
       <DetailSection title={t("history.recentTrace")}>

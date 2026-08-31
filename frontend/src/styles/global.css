@@ -19280,6 +19280,113 @@ button > svg {
   font-size: 11px;
 }
 
+.markdownDocument {
+  max-height: 360px;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.68;
+  white-space: normal;
+}
+
+.reportDocument.markdownDocument,
+.historyReport.markdownDocument {
+  font-family: inherit;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.markdownDocument h2,
+.markdownDocument h3,
+.markdownDocument h4,
+.markdownDocument p,
+.markdownDocument ul,
+.markdownDocument pre {
+  margin: 0;
+}
+
+.markdownDocument h2 {
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 780;
+}
+
+.markdownDocument h3 {
+  margin-top: 22px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 760;
+}
+
+.markdownDocument h4 {
+  margin-top: 16px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 740;
+}
+
+.markdownDocument p {
+  margin-top: 12px;
+}
+
+.markdownDocument ul {
+  margin-top: 12px;
+  padding-left: 0;
+  display: grid;
+  gap: 7px;
+  list-style: none;
+}
+
+.markdownDocument li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.markdownDocument li::before {
+  content: "";
+  position: absolute;
+  top: 0.72em;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 72%, var(--text-tertiary));
+}
+
+.markdownDocument code {
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 5px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+
+.markdownDocument pre {
+  margin-top: 12px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--canvas) 78%, var(--surface));
+}
+
+.markdownDocument pre code {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
 .comparisonHeader {
   padding: 30px 34px 24px;
   background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
