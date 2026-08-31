@@ -61,7 +61,8 @@ function isProcessEvent(event: TraceEvent): boolean {
   const name = event.event;
   if (name === "tool.executed" || name === "tool.failed") return true;
   if (name === "approval.requested" || name === "approval.resolved" || name === "approval.cancelled") return true;
-  if (name === "action.rejected" || name === "action.superseded") return true;
+  if (name === "action.rejected") return stringValue(event.payload.reason) !== "completion_guard";
+  if (name === "action.superseded") return true;
   if (name === "completion.passed" || name === "completion.rejected") return true;
   if (name === "model.failed" || name === "run.failed" || name === "run.budget_exceeded" || name === "run.cancelled") return true;
   if (name === "report.generated") return true;
@@ -117,6 +118,10 @@ function compactText(value: string, max = 128): string {
   return `${normalized.slice(0, max - 1)}…`;
 }
 
+function isInternalFieldError(value: string | undefined): boolean {
+  return Boolean(value && /^'[^']+'$/.test(value.trim()));
+}
+
 function containsCjk(value: string): boolean {
   return /[\u3400-\u9fff]/.test(value);
 }
@@ -149,7 +154,9 @@ function actionName(event: TraceEvent): string | undefined {
   const action = actionFrom(event);
   const result = resultFrom(event);
   const target = asRecord(approvalFrom(event)?.target);
-  return stringValue(action?.type) ?? stringValue(result?.tool) ?? stringValue(target?.tool);
+  const name = stringValue(action?.type) ?? stringValue(result?.tool) ?? stringValue(target?.tool);
+  if (!name || name === "action" || name === "unknown") return undefined;
+  return name;
 }
 
 function actionParams(event: TraceEvent): Record<string, unknown> | undefined {
@@ -251,7 +258,7 @@ function rationaleDetail(locale: Locale, rationale: string | undefined, fallback
 function outputPreview(locale: Locale, event: TraceEvent): string | undefined {
   const result = resultFrom(event);
   const output = stringValue(result?.error) ?? stringValue(result?.output);
-  if (!output) return undefined;
+  if (!output || isInternalFieldError(output)) return undefined;
   const name = actionName(event);
   if (name === "read_file") return undefined;
   return compactText(translateKnownText(locale, output), 420);
@@ -287,6 +294,19 @@ function processEvent(
   locale: Locale,
   t: Translator,
 ): ProcessEvent {
+  if (event.event === "action.rejected") {
+    const resultError = stringValue(resultFrom(event)?.error) ?? stringValue(event.payload.error);
+    const detail = resultError && !isInternalFieldError(resultError)
+      ? translateKnownText(locale, resultError)
+      : t("activity.detail.invalidAction");
+    return {
+      title: t("activity.title.invalidAction"),
+      detail,
+      chips: activityChips(locale, event, t),
+      output: outputPreview(locale, event),
+    };
+  }
+
   const error = event.payload.error;
   if (typeof error === "string" && error.trim()) {
     return {
@@ -335,14 +355,6 @@ function processEvent(
       title: actionLabel(event, t),
       detail: rationaleDetail(locale, rationale, actionDetail(event, t), t),
       chips,
-    };
-  }
-  if (event.event === "action.rejected") {
-    return {
-      title: t("activity.work.blocked"),
-      detail: resultError ? translateKnownText(locale, resultError) : t("activity.detail.actionRejected"),
-      chips,
-      output: outputPreview(locale, event),
     };
   }
   if (event.event === "tool.executed") {
