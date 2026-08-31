@@ -27,13 +27,7 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
     );
   }
   const isPatch = approval.target.tool === "apply_patch";
-  const files = approval.target.files ?? [];
   const localizedReason = approvalReasonSummary(approval, locale);
-  const fileSummary = t("approval.fileSummary", {
-    count: files.length,
-    additions: approval.target.additions,
-    deletions: approval.target.deletions,
-  });
   const approvalActions = (
     <>
       <button
@@ -65,8 +59,8 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
       </div>
 
       <div className="approvalDecisionStrip">
-        <span><FileDiff size={15} />{isPatch ? fileSummary : approval.target.tool}</span>
-        <span>{isPatch ? t("approval.reviewBeforeApply") : approvalEffectLabel(approval.effect, locale)}</span>
+        <span><FileDiff size={15} />{isPatch ? t("approval.patchNeedsReview") : approval.target.tool}</span>
+        <span>{isPatch ? t("approval.reviewInProjectFiles") : approvalEffectLabel(approval.effect, locale)}</span>
         {isPatch && onInspectChanges ? (
           <button type="button" onClick={onInspectChanges}>
             <FileDiff size={15} />
@@ -77,17 +71,6 @@ export function ApprovalPanel({ approval, busy, onInspectChanges, onApprove, onD
 
       {isPatch ? (
         <>
-          {files.length ? (
-            <div className="approvalFileStrip" aria-label={t("approval.files")}>
-              {files.slice(0, 4).map((file) => (
-                <button type="button" onClick={onInspectChanges} key={file}>
-                  <FileDiff size={14} />
-                  <span>{file}</span>
-                </button>
-              ))}
-              {files.length > 4 ? <em>{t("approval.moreFiles", { count: files.length - 4 })}</em> : null}
-            </div>
-          ) : null}
           <ReasonInput reason={reason} busy={busy} onChange={setReason} />
           <div className="approvalActions">{approvalActions}</div>
         </>
@@ -120,7 +103,6 @@ function ReasonInput({ reason, busy, onChange }: { reason: string; busy: boolean
 }
 
 function approvalReasonSummary(approval: ApprovalRequest, locale: "zh" | "en"): string {
-  const files = approval.target.files ?? [];
   if (locale !== "zh") return approval.reason || "Review this guarded action before continuing.";
   if (approval.target.tool !== "apply_patch") {
     return "这一步会执行本地命令。请确认命令和目标符合预期后再继续。";
@@ -128,8 +110,7 @@ function approvalReasonSummary(approval: ApprovalRequest, locale: "zh" | "en"): 
   if (/Tests reveal four root causes/i.test(approval.reason)) {
     return "测试定位到 4 个问题：金额取整、优惠码大小写、折扣后计税、均分余数分配。本次将只修改相关代码。";
   }
-  const fileText = files.length > 0 ? `本次准备修改 ${files.length} 个文件` : "本次准备应用一组代码修改";
-  return `${fileText}，新增 ${approval.target.additions} 行、删除 ${approval.target.deletions} 行。请查看差异后决定是否应用。`;
+  return "这一步准备修改代码。请到项目文件里查看具体差异，再决定是否应用。";
 }
 
 function approvalEffectLabel(effect: string, locale: "zh" | "en"): string {

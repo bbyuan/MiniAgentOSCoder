@@ -25,6 +25,9 @@ const en = {
   "run.applyingTitle": "Applying approved patch",
   "run.testingTitle": "Validating the change",
   "run.repairingTitle": "Agent is revising the approach",
+  "run.changeShortcutLabel": "Workspace changes",
+  "run.changeShortcut": "{count} changed file(s) need review.",
+  "run.changeShortcutAction": "Review changed files",
   "run.idleDescription": "Open a workspace and describe the outcome you want.",
   "run.readyDescription": "The contract and context are ready for execution.",
   "run.runningDescription": "Planning and guarded actions appear here as they happen.",
@@ -475,6 +478,8 @@ const en = {
   "approval.changes": "+{additions} / -{deletions}",
   "approval.fileSummary": "{count} file · +{additions} / -{deletions}",
   "approval.inspectChanges": "Review changed files",
+  "approval.patchNeedsReview": "Code change needs review",
+  "approval.reviewInProjectFiles": "Open project files to inspect the diff",
   "approval.reviewBeforeApply": "Review the diff before applying",
   "approval.moreFiles": "+{count} more",
   "approval.patch": "Proposed patch",
@@ -1238,6 +1243,9 @@ const zh: Record<TranslationKey, string> = {
   "run.applyingTitle": "正在应用已批准补丁",
   "run.testingTitle": "正在验证代码变更",
   "run.repairingTitle": "智能体正在调整方案",
+  "run.changeShortcutLabel": "工作区变更",
+  "run.changeShortcut": "已有 {count} 个文件发生变更，需要查看后决定。",
+  "run.changeShortcutAction": "查看变更文件",
   "run.idleDescription": "打开工作区，并描述你希望实现的结果。",
   "run.readyDescription": "运行契约与上下文已经准备完成。",
   "run.runningDescription": "规划和受控动作将在这里实时呈现。",
@@ -1688,6 +1696,8 @@ const zh: Record<TranslationKey, string> = {
   "approval.changes": "+{additions} / -{deletions}",
   "approval.fileSummary": "{count} 个文件 · +{additions} / -{deletions}",
   "approval.inspectChanges": "查看变更文件",
+  "approval.patchNeedsReview": "代码修改待确认",
+  "approval.reviewInProjectFiles": "到项目文件里查看具体差异",
   "approval.reviewBeforeApply": "先查看差异，再决定是否应用",
   "approval.moreFiles": "还有 {count} 个",
   "approval.patch": "建议补丁",
@@ -2753,6 +2763,9 @@ export function translateStatus(locale: Locale, value: string): string {
 }
 
 export function translateMode(locale: Locale, value: string): string {
-  const key = `mode.${value}` as TranslationKey;
-  return key in en ? translate(locale, key) : value;
+  const directKey = `mode.${value}` as TranslationKey;
+  if (directKey in en) return translate(locale, directKey);
+  const normalized = value.toLowerCase();
+  const matchedKey = Object.keys(en).find((key) => key.toLowerCase() === `mode.${normalized}`) as TranslationKey | undefined;
+  return matchedKey ? translate(locale, matchedKey) : value;
 }

@@ -15265,6 +15265,48 @@ button.controlSignal.active {
   -webkit-box-orient: vertical;
 }
 
+.runChangeShortcut {
+  width: min(100%, 860px);
+  min-width: 0;
+  margin: 0 auto 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.runChangeShortcut span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runChangeShortcut button {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.runChangeShortcut button:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+}
+
 .productContent .runSimpleLayout .conversationHistory {
   width: min(100%, 860px);
   margin: 0 auto 12px;
@@ -17651,49 +17693,6 @@ button.controlSignal.active {
 .approvalDecisionStrip span:nth-child(2) {
   justify-content: flex-end;
   color: var(--text-tertiary);
-}
-
-.approvalFileStrip {
-  margin: 12px 18px 0;
-  display: grid;
-  gap: 7px;
-}
-
-.approvalFileStrip button {
-  min-width: 0;
-  min-height: 38px;
-  padding: 0 11px;
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
-  border-radius: 8px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 24%, var(--surface));
-  text-align: left;
-}
-
-.approvalFileStrip button:hover {
-  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
-}
-
-.approvalFileStrip button span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  font-weight: 680;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.approvalFileStrip em {
-  color: var(--text-tertiary);
-  font-size: 12px;
-  font-style: normal;
 }
 
 .historyDetail,

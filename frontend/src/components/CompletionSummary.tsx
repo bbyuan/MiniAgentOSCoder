@@ -14,7 +14,6 @@ import type { CompletionAssessment, RunArtifacts } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
-import { CodeChangePreview } from "./CodeChangePreview";
 import { CompletionEvidence } from "./CompletionEvidence";
 
 interface CompletionSummaryProps {
@@ -180,7 +179,6 @@ export function CompletionSummary({
           {!canRejectChanges && changeDecision === "pending" ? <small>{t("completion.changeReview.noSnapshot")}</small> : null}
         </section>
       ) : null}
-      <CodeChangePreview artifacts={artifacts} onInspectChanges={onInspectChanges} />
       {showSignals ? (
         <div className="completionSignals">
           <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>

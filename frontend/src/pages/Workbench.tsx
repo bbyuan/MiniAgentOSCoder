@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FolderOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
+import { AlertCircle, ArrowUp, CheckCircle2, ChevronDown, FileDiff, FolderOpen, RefreshCw, Server, UserRound, WifiOff } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -43,7 +43,6 @@ import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { ApprovalPanel } from "../components/ApprovalPanel";
-import { CodeChangePreview } from "../components/CodeChangePreview";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
@@ -1295,7 +1294,14 @@ export function Workbench() {
             />
           ) : null}
 
-          {!terminal && displayDiff.files > 0 ? <CodeChangePreview artifacts={artifacts} compact onInspectChanges={openArtifactChanges} /> : null}
+          {!terminal && displayDiff.files > 0 ? (
+            <section className="runChangeShortcut" aria-label={t("run.changeShortcut", { count: displayDiff.files })}>
+              <button type="button" onClick={openArtifactChanges}>
+                <FileDiff size={15} />
+                {t("run.changeShortcutAction")}
+              </button>
+            </section>
+          ) : null}
 
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>
