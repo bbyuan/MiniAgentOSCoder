@@ -474,6 +474,11 @@ export interface RunArtifacts {
     insertions: number;
     deletions: number;
   };
+  diff_preview?: {
+    available: boolean;
+    content: string;
+    truncated: boolean;
+  };
   test_summary: {
     status: string;
     command: string;

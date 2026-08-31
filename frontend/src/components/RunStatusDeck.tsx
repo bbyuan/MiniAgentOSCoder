@@ -82,7 +82,11 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
             {plan.map((item) => (
               <li className={`state-${item.state}`} key={item.id ?? item.title}>
                 <span><StepIcon state={item.state} /></span>
-                <strong>{translateKnownText(locale, item.title)}</strong>
+                <div>
+                  <strong>{translateKnownText(locale, item.title)}</strong>
+                  <small>{t(stepStateLabel(item.state))}</small>
+                  {item.detail ? <em>{translateKnownText(locale, item.detail)}</em> : null}
+                </div>
               </li>
             ))}
           </ol>
@@ -97,4 +101,13 @@ function StepIcon({ state }: { state: string }) {
   if (state === "active") return <LoaderCircle className="spin" size={13} />;
   if (state === "failed") return <CircleAlert size={13} />;
   return <span aria-hidden="true" />;
+}
+
+function stepStateLabel(state: string): TranslationKey {
+  if (state === "done") return "progress.done";
+  if (state === "active") return "progress.active";
+  if (state === "failed") return "progress.failed";
+  if (state === "cancelled") return "progress.cancelled";
+  if (state === "skipped") return "progress.skipped";
+  return "progress.waiting";
 }

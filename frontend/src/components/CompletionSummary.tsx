@@ -16,6 +16,7 @@ import type { CompletionAssessment, RunArtifacts } from "../api/client";
 import type { TranslationKey } from "../i18n";
 import { translateKnownText, translateStatus } from "../i18n";
 import { usePreferences } from "../preferences";
+import { CodeChangePreview } from "./CodeChangePreview";
 import { CompletionEvidence } from "./CompletionEvidence";
 
 interface CompletionSummaryProps {
@@ -116,6 +117,7 @@ export function CompletionSummary({
         <div><FileDiff size={16} /><span>{t("diff.title")}</span><strong>{diff ? t("diff.files", { count: diff.files }) : t("history.notAvailable")}</strong></div>
         <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
       </div>
+      <CodeChangePreview artifacts={artifacts} />
       {hasMoreMessage ? (
         <details className="completionDetails">
           <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>

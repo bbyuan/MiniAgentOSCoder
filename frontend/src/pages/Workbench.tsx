@@ -39,6 +39,7 @@ import { AdmissionSummary } from "../components/AdmissionSummary";
 import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/AgentOSControlPlane";
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { ApprovalPanel } from "../components/ApprovalPanel";
+import { CodeChangePreview } from "../components/CodeChangePreview";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
@@ -1117,6 +1118,8 @@ export function Workbench() {
               setRuntimeDetailsOpen(true);
             }}
           />
+
+          {!terminal && displayDiff.files > 0 ? <CodeChangePreview artifacts={artifacts} compact /> : null}
 
           {steeringMessages.map((guidance, index) => (
             <section className="conversationTurn userTurn steeringTurn" key={`${guidance.message}-${index}`}>

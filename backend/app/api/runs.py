@@ -322,7 +322,9 @@ def get_run_artifacts(run_id: str) -> dict[str, object]:
     artifacts = store.artifacts.get(run_id)
     if artifacts is None:
         raise HTTPException(status_code=404, detail="Run artifacts not found")
-    return artifacts.to_dict()
+    payload = artifacts.to_dict()
+    payload["diff_preview"] = _read_patch_preview(run_id)
+    return payload
 
 
 @router.get("/{run_id}/report")
@@ -353,6 +355,23 @@ def get_run_report(run_id: str) -> dict[str, object]:
         "patch_available": writer.patch_path.is_file(),
         "patch_count": run.applied_patches,
         "files": run.changed_files,
+    }
+
+
+def _read_patch_preview(run_id: str, max_lines: int = 180) -> dict[str, object]:
+    project = _project_for_run(run_id)
+    if project is None:
+        return {"available": False, "content": "", "truncated": False}
+    writer = RunArtifactWriter(project.path, run_id)
+    if not writer.patch_path.is_file():
+        return {"available": False, "content": "", "truncated": False}
+    content = redact_secrets(writer.patch_path.read_text(encoding="utf-8", errors="replace"))
+    lines = content.splitlines()
+    truncated = len(lines) > max_lines
+    return {
+        "available": True,
+        "content": "\n".join(lines[:max_lines]),
+        "truncated": truncated,
     }
 
 
