@@ -17764,6 +17764,47 @@ button.controlSignal.active {
   color: var(--danger);
 }
 
+.extensionCapabilityList.primary {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+}
+
+.extensionCapabilityList.primary .extensionGroupTitle {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 42%, var(--surface)), var(--surface));
+}
+
+.extensionRow.unavailable {
+  background: color-mix(in srgb, var(--warning) 5%, var(--surface));
+}
+
+.extensionMain > em {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extensionRowStatus.warning {
+  color: var(--warning);
+}
+
+.extensionTechnical[open] > div {
+  display: grid;
+  gap: 12px;
+}
+
+.extensionTechnical[open] .extensionCreator,
+.extensionTechnical[open] .extensionCapabilityList,
+.extensionTechnical[open] .extensionDiagnostics,
+.extensionTechnical[open] .extensionEvidence {
+  margin: 0;
+}
+
 .advancedSetupHeader {
   min-height: 78px;
   padding: 17px 20px;

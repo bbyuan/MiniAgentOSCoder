@@ -79,7 +79,7 @@ def get_extensions(run_id: str) -> dict[str, object]:
     return {
         "run_id": run_id,
         "editable": run.status == RunPhase.PLANNING and not store.worker.is_active(run_id),
-        "catalog": _public_catalog(catalog),
+        "catalog": _public_catalog(catalog, run.mode),
         "settings": settings.to_dict(),
         "summary": {
             "enabled_total": len(settings.active_skill_ids)
@@ -253,13 +253,15 @@ def _project_for_run(run_id: str):
     return store.projects.get(project_id) if project_id is not None else None
 
 
-def _public_catalog(catalog) -> dict[str, object]:
+def _public_catalog(catalog, mode: str) -> dict[str, object]:
     payload = catalog.to_dict()
     skills = payload.get("skills", [])
     if isinstance(skills, list):
         for entry in skills:
             if isinstance(entry, dict):
                 entry.pop("root", None)
+                modes = entry.get("modes", [])
+                entry["compatible"] = not modes or mode in modes
     for section in ("mcp_servers", "hooks"):
         entries = payload.get(section, [])
         if not isinstance(entries, list):

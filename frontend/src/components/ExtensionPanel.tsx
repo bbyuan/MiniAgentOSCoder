@@ -21,7 +21,7 @@ import type {
   ExtensionSettings,
   TraceEvent,
 } from "../api/client";
-import { localizeErrorMessage, translateExtensionDiagnostic, translateKnownText } from "../i18n";
+import { localizeErrorMessage, translateExtensionDiagnostic, translateKnownText, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ExtensionPanelProps {
@@ -77,6 +77,9 @@ export function ExtensionPanel({
   }, [extensions]);
   const recentEvidence = useMemo(() => [...(extensions?.evidence ?? [])].reverse().slice(0, 8), [extensions]);
   const summary = extensions?.summary;
+  const skills = extensions?.catalog.skills ?? [];
+  const advancedAvailable = (extensions?.catalog.mcp_servers.length ?? 0) + (extensions?.catalog.hooks.length ?? 0);
+  const advancedEnabled = (settings.enabled_mcp_server_ids.length ?? 0) + (settings.enabled_hook_ids.length ?? 0);
   const editable = Boolean(extensions?.editable);
   const creatingAllowed = editable && Boolean(onCreateSkill || onCreateMCPServer || onCreateHook);
 
@@ -158,8 +161,8 @@ export function ExtensionPanel({
         <div>
           <strong>{t(summary?.diagnostic_count ? "extensions.overviewAttention" : "extensions.overviewReady")}</strong>
           <small>{t("extensions.overviewDescription", {
-            enabled: summary?.enabled_total ?? 0,
-            available: summary?.available_total ?? 0,
+            enabled: settings.active_skill_ids.length,
+            available: skills.length,
           })}</small>
         </div>
         {busy ? <em>{t("extensions.saving")}</em> : null}
@@ -167,123 +170,143 @@ export function ExtensionPanel({
 
       {actionError ? <div className="extensionActionError" role="alert"><AlertTriangle size={15} /><span>{actionError}</span></div> : null}
 
-      {creatingAllowed ? (
-        <div className="extensionCreator">
-          <div className="extensionCreatorIntro">
-            <strong>{t("extensions.addTitle")}</strong>
-            <span>{t("extensions.addDescription")}</span>
-          </div>
-          <div className="extensionCreatorActions">
-            {onCreateSkill ? <CreatorButton active={creator === "skill"} icon={<Sparkles size={15} />} label={t("extensions.addSkill")} onClick={() => setCreator(creator === "skill" ? null : "skill")} /> : null}
-            {onCreateMCPServer ? <CreatorButton active={creator === "mcp"} icon={<Server size={15} />} label={t("extensions.addMCP")} onClick={() => setCreator(creator === "mcp" ? null : "mcp")} /> : null}
-            {onCreateHook ? <CreatorButton active={creator === "hook"} icon={<ListChecks size={15} />} label={t("extensions.addHook")} onClick={() => setCreator(creator === "hook" ? null : "hook")} /> : null}
-          </div>
-
-          {creator === "skill" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
-              <label className="wide">
-                <span>{t("extensions.form.name")}</span>
-                <input autoFocus value={skillDraft.name} placeholder={t("extensions.skillNamePlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, name: event.target.value }))} />
-              </label>
-              <label className="wide">
-                <span>{t("extensions.form.skillContent")}</span>
-                <textarea rows={5} value={skillDraft.content} placeholder={t("extensions.skillContentPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, content: event.target.value }))} />
-              </label>
-              <details className="extensionFormAdvanced wide">
-                <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
-                <label>
-                  <span>{t("extensions.form.description")}</span>
-                  <input value={skillDraft.description} placeholder={t("extensions.skillDescriptionPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, description: event.target.value }))} />
-                </label>
-              </details>
-              <button type="submit" disabled={busy || !skillDraft.name.trim() || skillDraft.content.trim().length < 10}>{t("extensions.createAndEnable")}</button>
-            </form>
-          ) : null}
-
-          {creator === "mcp" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
-              <label className="wide">
-                <span>{t("extensions.form.name")}</span>
-                <input autoFocus value={mcpDraft.name} placeholder={t("extensions.mcpNamePlaceholder")} onChange={(event) => setMcpDraft((current) => ({ ...current, name: event.target.value }))} />
-              </label>
-              <label className="wide">
-                <span>{t("extensions.form.command")}</span>
-                <input value={mcpDraft.command} placeholder="npx -y @modelcontextprotocol/server-filesystem ." onChange={(event) => setMcpDraft((current) => ({ ...current, command: event.target.value }))} />
-                <small>{t("extensions.commandHint")}</small>
-              </label>
-              <details className="extensionFormAdvanced wide">
-                <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
-                <label>
-                  <span>{t("extensions.form.envAllow")}</span>
-                  <input value={mcpDraft.envAllow} placeholder="GITHUB_TOKEN, DATABASE_URL" onChange={(event) => setMcpDraft((current) => ({ ...current, envAllow: event.target.value }))} />
-                </label>
-              </details>
-              <button type="submit" disabled={busy || !mcpDraft.name.trim() || !mcpDraft.command.trim()}>{t("extensions.createAndEnable")}</button>
-            </form>
-          ) : null}
-
-          {creator === "hook" ? (
-            <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
-              <label>
-                <span>{t("extensions.form.name")}</span>
-                <input autoFocus value={hookDraft.name} placeholder={t("extensions.hookNamePlaceholder")} onChange={(event) => setHookDraft((current) => ({ ...current, name: event.target.value }))} />
-              </label>
-              <label>
-                <span>{t("extensions.form.when")}</span>
-                <select value={hookDraft.event} onChange={(event) => setHookDraft((current) => ({ ...current, event: event.target.value as CreateHookRequest["event"] }))}>
-                  <option value="run.before">{t("extensions.event.runBefore")}</option>
-                  <option value="run.after">{t("extensions.event.runAfter")}</option>
-                  <option value="tool.before">{t("extensions.event.toolBefore")}</option>
-                  <option value="tool.after">{t("extensions.event.toolAfter")}</option>
-                </select>
-              </label>
-              <label className="wide">
-                <span>{t("extensions.form.command")}</span>
-                <input value={hookDraft.command} placeholder="npm test" onChange={(event) => setHookDraft((current) => ({ ...current, command: event.target.value }))} />
-              </label>
-              <details className="extensionFormAdvanced wide">
-                <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
-                <label>
-                  <span>{t("extensions.form.failurePolicy")}</span>
-                  <select value={hookDraft.failurePolicy} onChange={(event) => setHookDraft((current) => ({ ...current, failurePolicy: event.target.value as CreateHookRequest["failure_policy"] }))}>
-                    <option value="warn">{t("extensions.failure.warn")}</option>
-                    <option value="block">{t("extensions.failure.block")}</option>
-                  </select>
-                </label>
-              </details>
-              <button type="submit" disabled={busy || !hookDraft.name.trim() || !hookDraft.command.trim()}>{t("extensions.createAndEnable")}</button>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="extensionCapabilityList">
-        <ExtensionGroup icon={<Sparkles size={16} />} title={t("extensions.skills")} count={extensions?.catalog.skills.length ?? 0} empty={t("extensions.skillsEmpty")}>
-          {(extensions?.catalog.skills ?? []).map((skill) => {
+      <div className="extensionCapabilityList primary">
+        <ExtensionGroup icon={<Sparkles size={16} />} title={t("extensions.skills")} count={skills.length} empty={t("extensions.skillsEmpty")}>
+          {skills.map((skill) => {
             const enabled = settings.active_skill_ids.includes(skill.id);
-            return <CapabilityRow key={skill.id} name={skill.name} description={translateKnownText(locale, skill.description) || t("extensions.skillFallback")} enabled={enabled} disabled={!editable || busy || !skill.valid} event={evidenceByTarget.get(skill.id)} onToggle={() => void toggle("active_skill_ids", skill.id)} />;
-          })}
-        </ExtensionGroup>
-
-        <ExtensionGroup icon={<Server size={16} />} title={t("extensions.mcp")} count={extensions?.catalog.mcp_servers.length ?? 0} empty={t("extensions.mcpEmpty")}>
-          {(extensions?.catalog.mcp_servers ?? []).map((server) => {
-            const enabled = settings.enabled_mcp_server_ids.includes(server.id);
-            const discovery = extensions?.discovered_tools.find((item) => item.server_id === server.id);
-            return <CapabilityRow key={server.id} name={server.name} description={discovery ? t("extensions.toolsDiscovered", { count: discovery.tool_count }) : t("extensions.mcpFallback")} enabled={enabled} disabled={!editable || busy || !server.valid} event={evidenceByTarget.get(server.id)} onToggle={() => void toggle("enabled_mcp_server_ids", server.id)} />;
-          })}
-        </ExtensionGroup>
-
-        <ExtensionGroup icon={<Workflow size={16} />} title={t("extensions.hooks")} count={extensions?.catalog.hooks.length ?? 0} empty={t("extensions.hooksEmpty")}>
-          {(extensions?.catalog.hooks ?? []).map((hook) => {
-            const enabled = settings.enabled_hook_ids.includes(hook.id);
-            return <CapabilityRow key={hook.id} name={hook.name} description={eventLabel(hook.event, t)} enabled={enabled} disabled={!editable || busy || !hook.valid} event={evidenceByTarget.get(hook.id)} onToggle={() => void toggle("enabled_hook_ids", hook.id)} />;
+            const compatible = skill.compatible ?? true;
+            const disabled = !editable || busy || !skill.valid || (!compatible && !enabled);
+            const modeDetail = skill.modes.length > 0
+              ? t("extensions.skillModes", { modes: skill.modes.map((mode) => translateMode(locale, mode)).join(locale === "zh" ? "、" : ", ") })
+              : t("extensions.allModes");
+            return (
+              <CapabilityRow
+                key={skill.id}
+                name={skill.name}
+                description={translateKnownText(locale, skill.description) || t("extensions.skillFallback")}
+                detail={compatible ? modeDetail : t("extensions.incompatibleHint", { modes: modeDetail })}
+                enabled={enabled}
+                disabled={disabled}
+                valid={skill.valid}
+                compatible={compatible}
+                event={evidenceByTarget.get(skill.id)}
+                onToggle={() => void toggle("active_skill_ids", skill.id)}
+              />
+            );
           })}
         </ExtensionGroup>
       </div>
 
       <details className="extensionTechnical">
-        <summary><Braces size={15} /><span>{t("extensions.technicalDetails")}</span><ChevronDown size={14} /></summary>
+        <summary><Braces size={15} /><span>{t("extensions.advancedTitle", { enabled: advancedEnabled, available: advancedAvailable })}</span><ChevronDown size={14} /></summary>
         <div>
+          {creatingAllowed ? (
+            <div className="extensionCreator">
+              <div className="extensionCreatorIntro">
+                <strong>{t("extensions.addTitle")}</strong>
+                <span>{t("extensions.addDescription")}</span>
+              </div>
+              <div className="extensionCreatorActions">
+                {onCreateSkill ? <CreatorButton active={creator === "skill"} icon={<Sparkles size={15} />} label={t("extensions.addSkill")} onClick={() => setCreator(creator === "skill" ? null : "skill")} /> : null}
+                {onCreateMCPServer ? <CreatorButton active={creator === "mcp"} icon={<Server size={15} />} label={t("extensions.addMCP")} onClick={() => setCreator(creator === "mcp" ? null : "mcp")} /> : null}
+                {onCreateHook ? <CreatorButton active={creator === "hook"} icon={<ListChecks size={15} />} label={t("extensions.addHook")} onClick={() => setCreator(creator === "hook" ? null : "hook")} /> : null}
+              </div>
+
+              {creator === "skill" ? (
+                <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createSkill().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
+                  <label className="wide">
+                    <span>{t("extensions.form.name")}</span>
+                    <input autoFocus value={skillDraft.name} placeholder={t("extensions.skillNamePlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, name: event.target.value }))} />
+                  </label>
+                  <label className="wide">
+                    <span>{t("extensions.form.skillContent")}</span>
+                    <textarea rows={5} value={skillDraft.content} placeholder={t("extensions.skillContentPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, content: event.target.value }))} />
+                  </label>
+                  <details className="extensionFormAdvanced wide">
+                    <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
+                    <label>
+                      <span>{t("extensions.form.description")}</span>
+                      <input value={skillDraft.description} placeholder={t("extensions.skillDescriptionPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, description: event.target.value }))} />
+                    </label>
+                  </details>
+                  <button type="submit" disabled={busy || !skillDraft.name.trim() || skillDraft.content.trim().length < 10}>{t("extensions.createAndEnable")}</button>
+                </form>
+              ) : null}
+
+              {creator === "mcp" ? (
+                <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createMCPServer().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
+                  <label className="wide">
+                    <span>{t("extensions.form.name")}</span>
+                    <input autoFocus value={mcpDraft.name} placeholder={t("extensions.mcpNamePlaceholder")} onChange={(event) => setMcpDraft((current) => ({ ...current, name: event.target.value }))} />
+                  </label>
+                  <label className="wide">
+                    <span>{t("extensions.form.command")}</span>
+                    <input value={mcpDraft.command} placeholder="npx -y @modelcontextprotocol/server-filesystem ." onChange={(event) => setMcpDraft((current) => ({ ...current, command: event.target.value }))} />
+                    <small>{t("extensions.commandHint")}</small>
+                  </label>
+                  <details className="extensionFormAdvanced wide">
+                    <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
+                    <label>
+                      <span>{t("extensions.form.envAllow")}</span>
+                      <input value={mcpDraft.envAllow} placeholder="GITHUB_TOKEN, DATABASE_URL" onChange={(event) => setMcpDraft((current) => ({ ...current, envAllow: event.target.value }))} />
+                    </label>
+                  </details>
+                  <button type="submit" disabled={busy || !mcpDraft.name.trim() || !mcpDraft.command.trim()}>{t("extensions.createAndEnable")}</button>
+                </form>
+              ) : null}
+
+              {creator === "hook" ? (
+                <form className="extensionCreateForm" onSubmit={(event) => { event.preventDefault(); void createHook().catch((caught) => setActionError(errorMessage(locale, caught, t("extensions.actionFailed")))); }}>
+                  <label>
+                    <span>{t("extensions.form.name")}</span>
+                    <input autoFocus value={hookDraft.name} placeholder={t("extensions.hookNamePlaceholder")} onChange={(event) => setHookDraft((current) => ({ ...current, name: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span>{t("extensions.form.when")}</span>
+                    <select value={hookDraft.event} onChange={(event) => setHookDraft((current) => ({ ...current, event: event.target.value as CreateHookRequest["event"] }))}>
+                      <option value="run.before">{t("extensions.event.runBefore")}</option>
+                      <option value="run.after">{t("extensions.event.runAfter")}</option>
+                      <option value="tool.before">{t("extensions.event.toolBefore")}</option>
+                      <option value="tool.after">{t("extensions.event.toolAfter")}</option>
+                    </select>
+                  </label>
+                  <label className="wide">
+                    <span>{t("extensions.form.command")}</span>
+                    <input value={hookDraft.command} placeholder="npm test" onChange={(event) => setHookDraft((current) => ({ ...current, command: event.target.value }))} />
+                  </label>
+                  <details className="extensionFormAdvanced wide">
+                    <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
+                    <label>
+                      <span>{t("extensions.form.failurePolicy")}</span>
+                      <select value={hookDraft.failurePolicy} onChange={(event) => setHookDraft((current) => ({ ...current, failurePolicy: event.target.value as CreateHookRequest["failure_policy"] }))}>
+                        <option value="warn">{t("extensions.failure.warn")}</option>
+                        <option value="block">{t("extensions.failure.block")}</option>
+                      </select>
+                    </label>
+                  </details>
+                  <button type="submit" disabled={busy || !hookDraft.name.trim() || !hookDraft.command.trim()}>{t("extensions.createAndEnable")}</button>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="extensionCapabilityList">
+            <ExtensionGroup icon={<Server size={16} />} title={t("extensions.mcp")} count={extensions?.catalog.mcp_servers.length ?? 0} empty={t("extensions.mcpEmpty")}>
+              {(extensions?.catalog.mcp_servers ?? []).map((server) => {
+                const enabled = settings.enabled_mcp_server_ids.includes(server.id);
+                const discovery = extensions?.discovered_tools.find((item) => item.server_id === server.id);
+                return <CapabilityRow key={server.id} name={server.name} description={discovery ? t("extensions.toolsDiscovered", { count: discovery.tool_count }) : t("extensions.mcpFallback")} enabled={enabled} disabled={!editable || busy || !server.valid} valid={server.valid} compatible event={evidenceByTarget.get(server.id)} onToggle={() => void toggle("enabled_mcp_server_ids", server.id)} />;
+              })}
+            </ExtensionGroup>
+
+            <ExtensionGroup icon={<Workflow size={16} />} title={t("extensions.hooks")} count={extensions?.catalog.hooks.length ?? 0} empty={t("extensions.hooksEmpty")}>
+              {(extensions?.catalog.hooks ?? []).map((hook) => {
+                const enabled = settings.enabled_hook_ids.includes(hook.id);
+                return <CapabilityRow key={hook.id} name={hook.name} description={eventLabel(hook.event, t)} enabled={enabled} disabled={!editable || busy || !hook.valid} valid={hook.valid} compatible event={evidenceByTarget.get(hook.id)} onToggle={() => void toggle("enabled_hook_ids", hook.id)} />;
+              })}
+            </ExtensionGroup>
+          </div>
+
           {(extensions?.catalog.diagnostics.length ?? 0) > 0 ? (
             <div className="extensionDiagnostics"><AlertTriangle size={14} /><span>{extensions?.catalog.diagnostics.map((item) => translateExtensionDiagnostic(locale, item)).join(" · ")}</span></div>
           ) : <p className="extensionTechnicalEmpty">{t("extensions.noDiagnostics")}</p>}
@@ -314,14 +337,47 @@ function ExtensionGroup({ icon, title, count, empty, children }: { icon: ReactNo
   );
 }
 
-function CapabilityRow({ name, description, enabled, disabled, event, onToggle }: { name: string; description: string; enabled: boolean; disabled: boolean; event?: TraceEvent; onToggle: () => void }) {
+function CapabilityRow({
+  name,
+  description,
+  detail,
+  enabled,
+  disabled,
+  valid,
+  compatible,
+  event,
+  onToggle,
+}: {
+  name: string;
+  description: string;
+  detail?: string;
+  enabled: boolean;
+  disabled: boolean;
+  valid: boolean;
+  compatible: boolean;
+  event?: TraceEvent;
+  onToggle: () => void;
+}) {
   const { locale, t } = usePreferences();
   const failed = event?.payload.ok === false;
-  const status = failed ? translateKnownText(locale, event?.event ?? "") : enabled ? t("extensions.badge.enabled") : t("extensions.badge.off");
+  const status = failed
+    ? translateKnownText(locale, event?.event ?? "")
+    : !valid
+      ? t("extensions.badge.invalid")
+      : !compatible
+        ? t("extensions.badge.incompatible")
+        : enabled
+          ? t("extensions.badge.enabled")
+          : t("extensions.badge.off");
+  const tone = failed ? "failed" : !valid || !compatible ? "warning" : enabled ? "enabled" : "off";
   return (
-    <label className={`extensionRow ${enabled ? "enabled" : ""} ${failed ? "failed" : ""}`}>
-      <span className="extensionMain"><strong>{name}</strong><small>{description}</small></span>
-      <span className={`extensionRowStatus ${failed ? "failed" : enabled ? "enabled" : "off"}`}>{failed ? <AlertTriangle size={13} /> : enabled ? <CheckCircle2 size={13} /> : <CircleDashed size={13} />}{status}</span>
+    <label className={`extensionRow ${enabled ? "enabled" : ""} ${failed ? "failed" : ""} ${!valid || !compatible ? "unavailable" : ""}`}>
+      <span className="extensionMain">
+        <strong>{name}</strong>
+        <small>{description}</small>
+        {detail ? <em>{detail}</em> : null}
+      </span>
+      <span className={`extensionRowStatus ${tone}`}>{failed || !valid || !compatible ? <AlertTriangle size={13} /> : enabled ? <CheckCircle2 size={13} /> : <CircleDashed size={13} />}{status}</span>
       <input type="checkbox" checked={enabled} disabled={disabled} onChange={onToggle} />
       <span className="extensionToggle" aria-hidden="true" />
     </label>

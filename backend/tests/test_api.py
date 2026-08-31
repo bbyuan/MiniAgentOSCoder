@@ -926,6 +926,12 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
     assert initial.json()["summary"]["available_total"] >= initial.json()["summary"]["enabled_total"]
     assert initial.json()["summary"]["has_runtime_activation"] is False
     assert all("command" not in server for server in initial.json()["catalog"]["mcp_servers"])
+    skill_compatibility = {
+        skill["id"]: skill["compatible"]
+        for skill in initial.json()["catalog"]["skills"]
+    }
+    assert skill_compatibility["bugfix"] is True
+    assert skill_compatibility["code-review"] is False
     assert updated.json()["settings"]["active_skill_ids"] == ["bugfix"]
     assert invalid.status_code == 422
 

@@ -394,6 +394,7 @@ export interface SkillManifest {
   default_tools: string[];
   risk: string;
   recommended: boolean;
+  compatible?: boolean;
   valid: boolean;
   errors: string[];
 }
