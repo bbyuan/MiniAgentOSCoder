@@ -24898,11 +24898,18 @@ summary:focus-visible {
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessLead {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, max-content) auto;
+  justify-content: start;
+  gap: 10px;
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessLead strong {
   white-space: normal;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead time {
+  align-self: center;
+  margin-top: 1px;
 }
 
 @media (max-width: 760px) {
