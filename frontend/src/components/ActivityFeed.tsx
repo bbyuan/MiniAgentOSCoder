@@ -28,6 +28,7 @@ import {
   type WorkItemCategory,
   type WorkItemChangeSet,
   type WorkItemKind,
+  type WorkItemPhase,
 } from "../activity/workItems";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -58,6 +59,8 @@ const ITEM_ICONS: Record<WorkItemKind, LucideIcon> = {
   terminal: Terminal,
   user: UserRound,
 };
+
+const PHASE_ORDER: WorkItemPhase[] = ["context", "inspect", "change", "validate", "summary"];
 
 function ActivityItem({ item, onInspectChangeSet }: { item: WorkItem; onInspectChangeSet?: (changeSet: WorkItemChangeSet) => void }) {
   const { t } = usePreferences();
@@ -154,14 +157,45 @@ export function ActivityFeed({ events, status, embedded = false, onInspectChange
           <span>{t("activity.emptyDescription")}</span>
         </div>
       ) : expanded ? (
-        <ol className="agentProcessList">
-          {visibleItems.map((item, index) => (
-            <ActivityItem item={item} onInspectChangeSet={onInspectChangeSet} key={`${item.time}-${item.title}-${index}`} />
+        <div className="agentPhaseList">
+          {buildPhaseGroups(visibleItems).map((group) => (
+            <details className={`agentPhaseGroup phase-${group.phase}`} open key={group.phase}>
+              <summary>
+                <span>{t(`activity.phase.${group.phase}` as TranslationKey)}</span>
+                <small>{t("activity.phaseCount", { count: group.items.length })} · {phaseTimeRange(group.items)}</small>
+              </summary>
+              <ol className="agentProcessList">
+                {group.items.map((item, index) => (
+                  <ActivityItem item={item} onInspectChangeSet={onInspectChangeSet} key={`${item.time}-${item.title}-${index}`} />
+                ))}
+              </ol>
+            </details>
           ))}
-        </ol>
+        </div>
       ) : null}
     </section>
   );
+}
+
+function buildPhaseGroups(items: WorkItem[]): Array<{ phase: WorkItemPhase; items: WorkItem[] }> {
+  const grouped = new Map<WorkItemPhase, WorkItem[]>();
+  items.forEach((item) => {
+    const group = grouped.get(item.phase) ?? [];
+    group.push(item);
+    grouped.set(item.phase, group);
+  });
+  return PHASE_ORDER
+    .filter((phase) => grouped.has(phase))
+    .map((phase) => ({ phase, items: grouped.get(phase) ?? [] }));
+}
+
+function phaseTimeRange(items: WorkItem[]): string {
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (!first || !last) return "";
+  const start = eventTime(first.time);
+  const end = eventTime(last.time);
+  return start === end ? start : `${start} - ${end}`;
 }
 
 function workDuration(

@@ -7,6 +7,7 @@ import ts from "typescript";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workItemsSource = readFileSync(resolve(root, "src/activity/workItems.ts"), "utf8");
 const activityFeedSource = readFileSync(resolve(root, "src/components/ActivityFeed.tsx"), "utf8");
+const workspaceFilesSource = readFileSync(resolve(root, "src/components/WorkspaceFilesDialog.tsx"), "utf8");
 const mainSource = readFileSync(resolve(root, "src/main.tsx"), "utf8");
 const runSurfaceSource = readFileSync(resolve(root, "src/styles/run-surface.css"), "utf8");
 
@@ -49,6 +50,12 @@ const t = (key, variables = {}) => {
     "activity.category.system": "系统",
     "activity.category.thinking": "思考",
     "activity.categoryCount": "{label} {count}",
+    "activity.phase.change": "修改与审批",
+    "activity.phase.context": "收集上下文",
+    "activity.phase.inspect": "检查代码",
+    "activity.phase.summary": "整理总结",
+    "activity.phase.validate": "验证结果",
+    "activity.phaseCount": "{count} 条动作",
     "activity.detail.modelRequested": "正在让模型给出受约束的下一步动作。",
     "activity.fileLabel": "文件：",
     "activity.modelLabel": "模型：",
@@ -78,6 +85,7 @@ const resolvedItems = buildWorkItems([
 assert(resolvedItems.length === 1, "A resolved model request should collapse into the following concrete action.");
 assert(resolvedItems[0].title === "读取 calculator.py", "The transcript should lead with the concrete file read.");
 assert(resolvedItems[0].category === "file", "File reads should be categorized as file activity.");
+assert(resolvedItems[0].phase === "inspect", "File reads should belong to the inspect-code phase.");
 assert(resolvedItems[0].chips.includes("文件：calculator.py"), "File metadata should remain visible after model request cleanup.");
 
 const pendingItems = buildWorkItems([
@@ -91,6 +99,7 @@ const pendingItems = buildWorkItems([
 assert(pendingItems.length === 1, "An unresolved model request should still be shown while the agent is thinking.");
 assert(pendingItems[0].title === "请求模型判断下一步", "The active thinking state should stay visible.");
 assert(pendingItems[0].category === "thinking", "Active model requests should be categorized as thinking activity.");
+assert(pendingItems[0].phase === "context", "Active model requests should belong to the context phase.");
 assert(pendingItems[0].chips.includes("模型：deepseek-v4-flash"), "Model metadata should stay attached to active thinking events.");
 
 const patchItems = buildWorkItems([
@@ -112,17 +121,23 @@ const patchItems = buildWorkItems([
 ], "zh", t);
 
 assert(patchItems[0].category === "change", "Patch operations should be categorized as change activity.");
+assert(patchItems[0].phase === "change", "Patch approvals should appear in the change-review phase.");
 assert(patchItems[0].changeSet?.kind === "pending", "Patch approval events should carry a pending workspace change set.");
 assert(patchItems[0].changeSet?.changedFiles[0] === "calculator.py", "Patch change sets should preserve changed file names.");
+assert(patchItems[0].changeSet?.focusPath === "calculator.py", "Patch change sets should focus the triggering file.");
 
 assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should keep transcript metadata chips as a dedicated component.");
 assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
+assert(activityFeedSource.includes("agentPhaseGroup"), "The transcript should render collapsible phase groups.");
+assert(activityFeedSource.includes("buildPhaseGroups(visibleItems)"), "The transcript should group activity by phase.");
 assert(activityFeedSource.includes("agentProcessLink"), "Patch activity items should offer a lightweight link to changed files.");
 assert(activityFeedSource.includes("workBreakdown(workItems, t)"), "The transcript header should summarize activity categories.");
 assert(
   activityFeedSource.includes("const match = chip.match(/^([^:：]+[:：])\\s*(.+)$/);"),
   "Metadata chips should split localized labels from values.",
 );
+assert(workspaceFilesSource.includes("focusPath?: string;"), "Workspace change sets should support a focused file.");
+assert(workspaceFilesSource.includes("changeSet?.focusPath ?? firstChanged"), "Workspace file review should open on the requested focused file.");
 
 assert(
   mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),
@@ -132,6 +147,7 @@ assert(runSurfaceSource.includes("Run surface v6"), "Run surface overrides shoul
 assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should align with the visible icon column.");
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
 assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
+assert(runSurfaceSource.includes(".agentPhaseGroup"), "Phase groups should have dedicated run-surface styling.");
 assert(runSurfaceSource.includes(".agentProcessLink"), "Changed-file links should be styled inside the transcript.");
 assert(runSurfaceSource.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
 

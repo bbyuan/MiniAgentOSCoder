@@ -206,6 +206,7 @@ export function Workbench() {
         title: t("workspaceFiles.pendingChanges"),
         patch: approval.target.patch,
         changedFiles: approval.target.files ?? [],
+        focusPath: approval.target.files?.[0],
         insertions: approval.target.additions,
         deletions: approval.target.deletions,
         kind: "pending" as const,

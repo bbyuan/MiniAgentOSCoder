@@ -9,6 +9,7 @@ export interface WorkspaceChangeSet {
   title: string;
   patch: string;
   changedFiles: string[];
+  focusPath?: string;
   insertions: number;
   deletions: number;
   kind?: "pending" | "applied";
@@ -83,12 +84,12 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
     if (!open || !project) return;
     setQuery("");
     const firstChanged = firstChangedPath(changeSet?.patch ?? "", changeSet?.changedFiles ?? []);
-    setSelectedPath(changeSet?.changedFiles[0] ?? firstChanged ?? "");
+    setSelectedPath(changeSet?.focusPath ?? firstChanged ?? "");
     setPreviewMode(changeSet ? "diff" : "source");
     setFileScope(changeSet ? "changes" : "all");
     setContent(undefined);
     void loadFiles("");
-  }, [open, project?.project_id, changeSet?.title]);
+  }, [open, project?.project_id, changeSet?.title, changeSet?.focusPath]);
 
   useEffect(() => {
     if (!open || !project) return;
@@ -144,7 +145,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
       setSelectedPath((current) => {
         if (nextFiles.some((item) => item.path === current) || changedByPath.has(current)) return current;
         const changedPath = firstChangedPath(changeSet?.patch ?? "", changeSet?.changedFiles ?? []);
-        return changedPath ?? nextFiles[0]?.path ?? "";
+        return changeSet?.focusPath ?? changedPath ?? nextFiles[0]?.path ?? "";
       });
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadFailed")));

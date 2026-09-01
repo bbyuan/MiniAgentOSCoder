@@ -30,6 +30,13 @@ export type WorkItemCategory =
   | "system"
   | "thinking";
 
+export type WorkItemPhase =
+  | "change"
+  | "context"
+  | "inspect"
+  | "summary"
+  | "validate";
+
 export interface ProcessEvent {
   title: string;
   detail: string;
@@ -43,6 +50,7 @@ export interface WorkItemChangeSet {
   title: string;
   patch: string;
   changedFiles: string[];
+  focusPath?: string;
   insertions: number;
   deletions: number;
   kind: "pending" | "applied";
@@ -51,6 +59,7 @@ export interface WorkItemChangeSet {
 export interface WorkItem extends ProcessEvent {
   category: WorkItemCategory;
   kind: WorkItemKind;
+  phase: WorkItemPhase;
   tone: string;
   time: string;
 }
@@ -82,6 +91,7 @@ export function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translat
       ...processEvent(event, locale, t),
       category: workCategory(event),
       kind: presentation.kind,
+      phase: workPhase(event),
       tone: presentation.tone,
       time: event.time,
     };
@@ -198,6 +208,16 @@ function workCategory(event: TraceEvent): WorkItemCategory {
   if (name === "run_command" || name === "run_test" || name === "run_lint") return "command";
   if (name === "finish") return "result";
   return "system";
+}
+
+function workPhase(event: TraceEvent): WorkItemPhase {
+  const name = actionName(event);
+  if (event.event === "completion.passed" || event.event === "completion.rejected" || event.event === "report.generated" || event.event.startsWith("run.") || name === "finish") return "summary";
+  if (name === "run_command" || name === "run_test" || name === "run_lint") return "validate";
+  if (name === "apply_patch" || event.event.startsWith("approval.") || event.event.startsWith("patch.") || event.event.startsWith("rollback.")) return "change";
+  if (name === "read_file" || name === "search_code" || name === "git_status" || name === "git_diff") return "inspect";
+  if (name === "list_files" || event.event.startsWith("context.") || event.event.startsWith("memory.") || event.event.startsWith("model.")) return "context";
+  return "context";
 }
 
 function processEvent(event: TraceEvent, locale: Locale, t: Translator): ProcessEvent {
@@ -414,6 +434,7 @@ function activityChangeSet(event: TraceEvent, t: Translator): WorkItemChangeSet 
     title: t("workspaceFiles.pendingChanges"),
     patch,
     changedFiles: arrayOfStrings(target?.files),
+    focusPath: focusedChangePath(patch, arrayOfStrings(target?.files)),
     insertions: Number(numberValue(target?.additions) ?? 0),
     deletions: Number(numberValue(target?.deletions) ?? 0),
     kind: "pending",
@@ -436,6 +457,19 @@ function numberValue(value: unknown): string | undefined {
 
 function arrayOfStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function focusedChangePath(patch: string, changedFiles: string[]): string | undefined {
+  return changedFiles[0] ?? firstPatchPath(patch);
+}
+
+function firstPatchPath(patch: string): string | undefined {
+  const plusPath = patch.match(/^\+\+\+\s+b\/(.+)$/m)?.[1];
+  if (plusPath && plusPath !== "/dev/null") return plusPath.trim();
+  const diffPath = patch.match(/^diff --git\s+a\/\S+\s+b\/(.+)$/m)?.[1];
+  if (diffPath && diffPath !== "/dev/null") return diffPath.trim();
+  const minusPath = patch.match(/^---\s+a\/(.+)$/m)?.[1];
+  return minusPath && minusPath !== "/dev/null" ? minusPath.trim() : undefined;
 }
 
 function compactText(value: string, max = 128): string {
