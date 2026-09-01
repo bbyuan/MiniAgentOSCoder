@@ -81,8 +81,9 @@ export function CompletionSummary({
   });
   const showEvidence = status === "completed" || completion?.verdict === "passed";
   const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
+  const testsWereRun = Boolean(tests && !["Not run", "Not Run", "not_run", "not run", "-"].includes(tests.status));
   const failedWithOnlyPassedTests = status !== "completed" && tests?.status === "Passed" && !hasCodeDiff;
-  const showSignals = Boolean(tests && !failedWithOnlyPassedTests);
+  const showSignals = testsWereRun && !failedWithOnlyPassedTests;
   const leadMessage = status === "failed"
     ? failureLeadMessage(terminationReason, displayedObservationError, t)
     : messagePreview;

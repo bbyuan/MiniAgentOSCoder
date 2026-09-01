@@ -21740,6 +21740,122 @@ button > svg {
   line-height: 1.45;
 }
 
+/* Completion card v2: finished runs should feel resolved, not empty. */
+.completionSummary.tone-completed {
+  position: relative;
+  gap: 12px;
+  padding: 18px;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 42%, var(--surface)) 0, var(--surface-raised) 150px),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045), 0 20px 66px rgba(15, 23, 42, 0.075);
+}
+
+.completionSummary.tone-completed::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--success), color-mix(in srgb, var(--accent) 34%, var(--success)));
+}
+
+.completionSummary.tone-completed .completionLead {
+  min-height: 84px;
+  padding: 14px 16px 14px 18px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--success) 22%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--success-soft) 72%, transparent), transparent 78%),
+    color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+}
+
+.completionSummary.tone-completed .completionLead > svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  background: color-mix(in srgb, var(--success-soft) 74%, var(--surface));
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--success-soft) 46%, transparent);
+}
+
+.completionSummary.tone-completed .completionLead strong {
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 820;
+  line-height: 1.08;
+}
+
+.completionSummary.tone-completed .completionSignals {
+  padding: 0;
+}
+
+.completionSummary.tone-completed .completionSignals > div {
+  min-height: 54px;
+  padding: 10px 12px;
+  border-color: color-mix(in srgb, var(--success) 18%, var(--border));
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.completionSummary.tone-completed .completionDetails,
+.completionSummary.tone-completed .completionEvidenceDisclosure {
+  border-color: color-mix(in srgb, var(--border) 66%, transparent);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow: none;
+}
+
+.completionSummary.tone-completed .completionDetails summary,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  min-height: 52px;
+}
+
+.completionSummary.tone-completed .completionDetails summary {
+  padding-inline: 16px;
+  font-size: 14px;
+}
+
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  padding-inline: 16px;
+}
+
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary > svg:first-child {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 58%, var(--surface));
+}
+
+.completionSummary.tone-completed .completionFullMessage {
+  padding: 14px 16px 16px;
+}
+
+.completionSummary.tone-completed .completionDetailGrid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+@media (min-width: 920px) {
+  .completionSummary.tone-completed .completionDetails,
+  .completionSummary.tone-completed .completionEvidenceDisclosure {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .completionSummary.tone-completed {
+    padding: 14px;
+  }
+
+  .completionSummary.tone-completed .completionLead {
+    min-height: 74px;
+    padding: 12px;
+  }
+
+  .completionSummary.tone-completed .completionLead strong {
+    font-size: 24px;
+  }
+}
+
 @media (max-width: 760px) {
   .completionEvidence.embeddedEvidence ul {
     grid-template-columns: minmax(0, 1fr);
