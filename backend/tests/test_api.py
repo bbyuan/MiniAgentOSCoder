@@ -1420,11 +1420,15 @@ def test_history_run_can_be_deleted_after_terminal_state(tmp_path: Path) -> None
     store.history.update_run(run)
     deleted = client.delete(f"/history/runs/{run.run_id}")
     missing = client.get(f"/history/runs/{run.run_id}")
+    missing_runtime = client.get(f"/runs/{run.run_id}")
+    missing_artifacts = client.get(f"/runs/{run.run_id}/artifacts")
 
     assert active_delete.status_code == 409
     assert deleted.status_code == 200
     assert deleted.json()["deleted"] is True
     assert missing.status_code == 404
+    assert missing_runtime.status_code == 404
+    assert missing_artifacts.status_code == 404
     assert not run_dir.exists()
 
 

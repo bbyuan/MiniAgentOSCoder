@@ -138,6 +138,7 @@ def delete_history_run(run_id: str) -> dict[str, object]:
             raise HTTPException(status_code=409, detail=f"Unable to delete run artifacts: {exc}") from exc
     if not store.history.delete_run(run_id):
         raise HTTPException(status_code=404, detail="Run not found")
+    _delete_runtime_state(run_id)
     return {"run_id": run_id, "deleted": True}
 
 
@@ -147,6 +148,24 @@ def _history_run(run_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Run not found")
     run["duration_ms"] = _duration_ms(run)
     return run
+
+
+def _delete_runtime_state(run_id: str) -> None:
+    store.runs.pop(run_id, None)
+    store.contracts.pop(run_id, None)
+    store.contexts.pop(run_id, None)
+    store.artifacts.pop(run_id, None)
+    store.admissions.pop(run_id, None)
+    store.model_routes.pop(run_id, None)
+    store.run_results.pop(run_id, None)
+    store.run_projects.pop(run_id, None)
+    store.governance.pop(run_id, None)
+    store.extension_catalogs.pop(run_id, None)
+    store.extension_settings.pop(run_id, None)
+    store.skills_registries.pop(run_id, None)
+    for approval_id, approval in list(store.approvals.items()):
+        if approval.run_id == run_id:
+            store.approvals.pop(approval_id, None)
 
 
 def _artifact_path(run: dict[str, Any], key: str) -> Path:
