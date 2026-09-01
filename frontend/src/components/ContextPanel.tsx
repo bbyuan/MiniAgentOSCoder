@@ -76,67 +76,70 @@ export function ContextPanel({ context, busy, onCompact }: ContextPanelProps) {
         />
       </div>
 
-      <div className="contextBudget">
-        <div>
-          <span>{t("context.budget")}</span>
-          <strong>{usagePercent}%</strong>
-        </div>
-        <div className={`budgetTrack state-${context?.threshold_state ?? "normal"}`}>
-          <span style={{ width: `${usagePercent}%` }} />
-        </div>
-        <small>
-          {t("context.usage", {
-            used: budget?.used_tokens ?? 0,
-            max: budget?.max_tokens ?? 0,
-          })}
-          <b className={`thresholdState state-${context?.threshold_state ?? "normal"}`}>
-            {t(`context.state.${context?.threshold_state ?? "normal"}` as TranslationKey)}
-          </b>
-        </small>
-      </div>
-
-      <div className="contextComposition">
-        <div className="subsectionLabel">{t("context.composition")}</div>
-        {composition.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : composition.map(([type, tokens], index) => (
-          <div className={`compositionRow tone-${index % 5}`} key={type}>
-            <span><i />{translateKnownText(locale, type)}</span>
-            <em aria-hidden="true"><b style={{ width: `${compositionTotal ? Math.max(3, Math.round((tokens / compositionTotal) * 100)) : 0}%` }} /></em>
-            <strong>{t("context.tokens", { count: tokens })}</strong>
+      <div className="contextBoardGrid">
+        <div className="contextBudget">
+          <div>
+            <span>{t("context.budget")}</span>
+            <strong>{usagePercent}%</strong>
           </div>
-        ))}
-      </div>
-
-      <div className="compactionControl">
-        <div className="compactionTarget">
-          <label htmlFor="context-target">{t("context.target")}</label>
-          <strong>{targetPercent}%</strong>
-        </div>
-        <input
-          id="context-target"
-          type="range"
-          min="35"
-          max="75"
-          step="5"
-          value={targetPercent}
-          onChange={(event) => setTargetPercent(Number(event.target.value))}
-        />
-        {needsConfirmation ? (
-          <div className="criticalNotice"><ShieldAlert size={14} /><span>{t("context.confirmCritical")}</span></div>
-        ) : null}
-        <button type="button" onClick={compact} disabled={!context || busy}>
-          <Minimize2 size={14} />
-          <span>{busy ? t("context.compacting") : needsConfirmation ? t("context.confirm") : t("context.compact")}</span>
-        </button>
-        {result ? (
-          <small className={`compactionResult result-${result.status}`}>
-            {translateKnownText(locale, result.reason)}
-            {result.status === "compacted" ? ` · ${result.before_tokens} -> ${result.after_tokens}` : ""}
+          <div className={`budgetTrack state-${context?.threshold_state ?? "normal"}`}>
+            <span style={{ width: `${usagePercent}%` }} />
+          </div>
+          <small>
+            {t("context.usage", {
+              used: budget?.used_tokens ?? 0,
+              max: budget?.max_tokens ?? 0,
+            })}
+            <b className={`thresholdState state-${context?.threshold_state ?? "normal"}`}>
+              {t(`context.state.${context?.threshold_state ?? "normal"}` as TranslationKey)}
+            </b>
           </small>
-        ) : null}
+        </div>
+
+        <div className="contextComposition">
+          <div className="subsectionLabel">{t("context.composition")}</div>
+          {composition.length === 0 ? <p className="emptyText">{t("context.empty")}</p> : composition.map(([type, tokens], index) => (
+            <div className={`compositionRow tone-${index % 5}`} key={type}>
+              <span><i />{translateKnownText(locale, type)}</span>
+              <em aria-hidden="true"><b style={{ width: `${compositionTotal ? Math.max(3, Math.round((tokens / compositionTotal) * 100)) : 0}%` }} /></em>
+              <strong>{t("context.tokens", { count: tokens })}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="compactionControl">
+          <div className="compactionTarget">
+            <label htmlFor="context-target">{t("context.target")}</label>
+            <strong>{targetPercent}%</strong>
+          </div>
+          <input
+            id="context-target"
+            type="range"
+            min="35"
+            max="75"
+            step="5"
+            value={targetPercent}
+            onChange={(event) => setTargetPercent(Number(event.target.value))}
+          />
+          {needsConfirmation ? (
+            <div className="criticalNotice"><ShieldAlert size={14} /><span>{t("context.confirmCritical")}</span></div>
+          ) : null}
+          <button type="button" onClick={compact} disabled={!context || busy}>
+            <Minimize2 size={14} />
+            <span>{busy ? t("context.compacting") : needsConfirmation ? t("context.confirm") : t("context.compact")}</span>
+          </button>
+          {result ? (
+            <small className={`compactionResult result-${result.status}`}>
+              {translateKnownText(locale, result.reason)}
+              {result.status === "compacted" ? ` · ${result.before_tokens} -> ${result.after_tokens}` : ""}
+            </small>
+          ) : null}
+        </div>
       </div>
 
       <div className="contextItems">
         <div className="subsectionLabel">{t("context.items")}</div>
+        {(context?.explanation ?? []).length === 0 ? <p className="emptyText">{t("context.empty")}</p> : null}
         {(context?.explanation ?? []).map((item) => (
           <article key={item.id}>
             <div>

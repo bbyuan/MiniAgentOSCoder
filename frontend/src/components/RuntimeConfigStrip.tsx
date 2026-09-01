@@ -1,8 +1,9 @@
-import { BrainCircuit, ChevronRight, Database, FileText, Gauge, GitBranch, PlugZap, ShieldCheck, Sparkles } from "lucide-react";
+import { BrainCircuit, Braces, ChevronRight, Database, FileText, Gauge, GitBranch, ShieldCheck, Sparkles } from "lucide-react";
 import type {
   AgentContract,
   ContextPack,
   ExtensionResponse,
+  FormalAgentProgram,
   GovernanceResponse,
   MemoryResponse,
   ModelProviderStatus,
@@ -19,6 +20,7 @@ interface RuntimeConfigStripProps {
   context?: ContextPack;
   evidence?: RunEvidenceLedger;
   extensions?: ExtensionResponse;
+  formalProgram?: FormalAgentProgram;
   governance?: GovernanceResponse;
   memory?: MemoryResponse;
   model?: ModelProviderStatus;
@@ -39,7 +41,7 @@ export function RuntimeConfigStrip({
   contract,
   context,
   evidence,
-  extensions,
+  formalProgram,
   governance,
   memory,
   model,
@@ -58,11 +60,6 @@ export function RuntimeConfigStrip({
     : selectedContext;
   const sandbox = governance?.settings.sandbox_profile ?? "standard";
   const policyCount = Object.keys(governance?.contract.policies ?? contract?.policies ?? {}).length;
-  const enabledExtensions = extensions
-    ? extensions.settings.active_skill_ids.length
-      + extensions.settings.enabled_mcp_server_ids.length
-      + extensions.settings.enabled_hook_ids.length
-    : 0;
   const providerRequests = trace.filter((event) => event.event === "model.requested").length;
   const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const promptLayerCount = latestPromptLayerCount(trace);
@@ -86,6 +83,18 @@ export function RuntimeConfigStrip({
         : modelValue,
       icon: Sparkles,
       target: "overview",
+    },
+    {
+      id: "program",
+      label: "runtimeConfig.program",
+      value: formalProgram
+        ? t("runtimeConfig.programValue", {
+            nodes: countProgramNodes(formalProgram.nodes),
+            checks: formalProgram.lints.filter((lint) => lint.status === "passed").length,
+          })
+        : t("runtimeConfig.programPending"),
+      icon: Braces,
+      target: "program",
     },
     {
       id: "prompt",
@@ -123,16 +132,6 @@ export function RuntimeConfigStrip({
       target: "context",
     },
     {
-      id: "capabilities",
-      label: "runtimeConfig.capabilities",
-      value: t("runtimeConfig.capabilityValue", {
-        effects: contract?.effects.allow.length ?? 0,
-        extensions: enabledExtensions,
-      }),
-      icon: PlugZap,
-      target: "extensions",
-    },
-    {
       id: "memory",
       label: "runtimeConfig.memory",
       value: t("runtimeConfig.memoryValue", { count: memorySuggestions }),
@@ -149,7 +148,7 @@ export function RuntimeConfigStrip({
   ];
 
   return (
-    <section className="runtimeConfigStrip" aria-label={t("runtimeConfig.title")}>
+    <section className="runtimeConfigStrip runtimeConfigStripReadable" aria-label={t("runtimeConfig.title")}>
       <header>
         <div>
           <span>{t("runtimeConfig.eyebrow")}</span>
@@ -161,13 +160,20 @@ export function RuntimeConfigStrip({
           <ChevronRight size={15} />
         </button>
       </header>
-      <div className="runtimeConfigSignals">
+      <div className="runtimeConfigSignals runtimeConfigSignalList">
         {signals.map(({ id, label, value, icon: Icon, target }) => (
-          <button type="button" onClick={() => onOpen(target)} key={id}>
+          <button type="button" className={`runtimeConfigSignal signal-${id}`} onClick={() => onOpen(target)} key={id}>
             <Icon size={15} />
             <span>
               <small>{t(label)}</small>
-              <strong title={value}>{value}</strong>
+              <strong className="runtimeConfigValue" title={value}>
+                {value.split(" · ").map((part, index) => (
+                  <span key={`${id}-${index}-${part}`}>
+                    {index > 0 ? <em aria-hidden="true">·</em> : null}
+                    {part}
+                  </span>
+                ))}
+              </strong>
             </span>
           </button>
         ))}
@@ -185,6 +191,13 @@ function latestPromptLayerCount(trace: TraceEvent[]): number {
     if (Array.isArray(layers)) return layers.length;
   }
   return 0;
+}
+
+function countProgramNodes(nodes: Array<{ children?: unknown[] }>): number {
+  return nodes.reduce((total, node) => {
+    const children = Array.isArray(node.children) ? node.children as Array<{ children?: unknown[] }> : [];
+    return total + 1 + countProgramNodes(children);
+  }, 0);
 }
 
 function latestMemorySuggestionCount(trace: TraceEvent[]): number {

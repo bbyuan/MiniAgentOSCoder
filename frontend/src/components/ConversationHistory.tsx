@@ -25,7 +25,7 @@ export function ConversationHistory({ conversation, currentRunId }: Conversation
           const successful = turn.status === "completed";
           const outcome = turn.final_message || turn.termination_reason || t("conversation.noOutcome");
           return (
-            <details className="conversationPriorTurn" key={turn.run_id} open={index === previousTurns.length - 1}>
+            <details className="conversationPriorTurn" key={turn.run_id} open>
               <summary>
                 <span className={`priorTurnState ${successful ? "successful" : "attention"}`}>
                   {successful ? <CheckCircle2 size={15} /> : <CircleAlert size={15} />}

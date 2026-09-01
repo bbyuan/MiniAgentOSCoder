@@ -13,6 +13,7 @@ import {
   type ContextCompactionResponse,
   type ExtensionResponse,
   type ExtensionSettings,
+  type FormalAgentProgram,
   type GovernanceResponse,
   type HistoryProject,
   type HistoryRunDetail,
@@ -76,6 +77,7 @@ interface LoadedRunHeader {
   contract?: AgentContract;
   admission?: RunAdmission;
   model_route?: ModelRoutePlan;
+  formal_program?: FormalAgentProgram;
 }
 
 export function Workbench() {
@@ -105,6 +107,7 @@ export function Workbench() {
   const [governanceBusy, setGovernanceBusy] = useState(false);
   const [extensions, setExtensions] = useState<ExtensionResponse>();
   const [extensionsBusy, setExtensionsBusy] = useState(false);
+  const [formalProgram, setFormalProgram] = useState<FormalAgentProgram>();
   const [artifacts, setArtifacts] = useState<RunArtifacts | undefined>();
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelProviderStatus | undefined>();
@@ -233,6 +236,7 @@ export function Workbench() {
     setContract(run.contract);
     setAdmission(run.admission);
     setModelRoute(run.model_route);
+    setFormalProgram(run.formal_program ?? resources.formalProgram);
     applyRunResources(resources, artifactsOverride);
     clearTerminalState();
   }
@@ -246,6 +250,7 @@ export function Workbench() {
     setMemory(resources.memory);
     setGovernance(resources.governance);
     setExtensions(resources.extensions);
+    setFormalProgram(resources.formalProgram);
     setConversation(resources.conversation);
     setTraceEvents(resources.trace.events);
   }
@@ -459,6 +464,7 @@ export function Workbench() {
     setMemory(undefined);
     setGovernance(undefined);
     setExtensions(undefined);
+    setFormalProgram(undefined);
     stopRunStream();
     try {
       const [run, providerStatus] = await Promise.all([
@@ -506,14 +512,16 @@ export function Workbench() {
     setError(null);
     setRuntimeDetailsOpen(false);
     try {
-      const [latestTrace, latestAdmission, latestModelRoute] = await Promise.all([
+      const [latestTrace, latestAdmission, latestModelRoute, latestFormalProgram] = await Promise.all([
         daemonApi.getTrace(runId),
         daemonApi.getAdmission(runId),
         daemonApi.getModelRoute(runId),
+        daemonApi.getFormalProgram(runId),
       ]);
       setTraceEvents(latestTrace.events);
       setAdmission(latestAdmission);
       setModelRoute(latestModelRoute);
+      setFormalProgram(latestFormalProgram);
       if (!latestAdmission.can_start) {
         setError(t("admission.launchBlocked"));
         return;
@@ -535,11 +543,20 @@ export function Workbench() {
       const cancelled = await daemonApi.cancelRun(runId);
       setRunStatus(cancelled.status);
       if (cancelled.status === "cancelled") {
-        const [latestReport, latestEvidence, latestGovernance, latestExtensions, latestTrace, latestConversation] = await Promise.all([
+        const [
+          latestReport,
+          latestEvidence,
+          latestGovernance,
+          latestExtensions,
+          latestFormalProgram,
+          latestTrace,
+          latestConversation,
+        ] = await Promise.all([
           daemonApi.getReport(runId),
           daemonApi.getEvidence(runId),
           daemonApi.getGovernance(runId),
           daemonApi.getExtensions(runId),
+          daemonApi.getFormalProgram(runId),
           daemonApi.getTrace(runId),
           daemonApi.getConversation(runId),
         ]);
@@ -547,6 +564,7 @@ export function Workbench() {
         setEvidence(latestEvidence);
         setGovernance(latestGovernance);
         setExtensions(latestExtensions);
+        setFormalProgram(latestFormalProgram);
         setTraceEvents(latestTrace.events);
         setConversation(latestConversation);
       }
@@ -599,6 +617,7 @@ export function Workbench() {
     setMemory(undefined);
     setGovernance(undefined);
     setExtensions(undefined);
+    setFormalProgram(undefined);
     setArtifacts(undefined);
     setTraceEvents([]);
     setFinalMessage("");
@@ -754,8 +773,12 @@ export function Workbench() {
     setError(null);
     try {
       const latestGovernance = await daemonApi.updateGovernance(runId, profile, overrides);
-      const latestTrace = await daemonApi.getTrace(runId);
+      const [latestTrace, latestFormalProgram] = await Promise.all([
+        daemonApi.getTrace(runId),
+        daemonApi.getFormalProgram(runId),
+      ]);
       setGovernance(latestGovernance);
+      setFormalProgram(latestFormalProgram);
       setTraceEvents(latestTrace.events);
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("error.governanceWrite")));
@@ -771,12 +794,14 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.updateExtensions(runId, settings);
-      const [latestTrace, latestAdmission, latestModelRoute] = await Promise.all([
+      const [latestTrace, latestAdmission, latestModelRoute, latestFormalProgram] = await Promise.all([
         daemonApi.getTrace(runId),
         daemonApi.getAdmission(runId),
         daemonApi.getModelRoute(runId),
+        daemonApi.getFormalProgram(runId),
       ]);
       setExtensions(latestExtensions);
+      setFormalProgram(latestFormalProgram);
       setTraceEvents(latestTrace.events);
       setAdmission(latestAdmission);
       setModelRoute(latestModelRoute);
@@ -794,7 +819,9 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.createSkill(runId, request);
+      const latestFormalProgram = await daemonApi.getFormalProgram(runId);
       setExtensions(latestExtensions);
+      setFormalProgram(latestFormalProgram);
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
@@ -809,7 +836,9 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.createMCPServer(runId, request);
+      const latestFormalProgram = await daemonApi.getFormalProgram(runId);
       setExtensions(latestExtensions);
+      setFormalProgram(latestFormalProgram);
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
@@ -824,7 +853,9 @@ export function Workbench() {
     setError(null);
     try {
       const latestExtensions = await daemonApi.createHook(runId, request);
+      const latestFormalProgram = await daemonApi.getFormalProgram(runId);
       setExtensions(latestExtensions);
+      setFormalProgram(latestFormalProgram);
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("error.extensionsWrite")));
       throw caught;
@@ -943,7 +974,7 @@ export function Workbench() {
                     agentPackDrift={agentPackState.drift}
                     onOpenAgentPack={() => void agentPackState.openDialog()}
                   />
-                  <details className="preflightAdvancedDetails">
+                  <details className="preflightAdvancedDetails" open>
                     <summary>
                       <span>{t("runSettings.advancedDetails")}</span>
                       <ChevronDown size={15} />
@@ -955,6 +986,7 @@ export function Workbench() {
                         variant="manifest"
                         mode={mode}
                         contract={contract}
+                        formalProgram={formalProgram}
                         context={contextPack}
                         memory={memory}
                         governance={governance}
@@ -989,6 +1021,7 @@ export function Workbench() {
 
           <RuntimeConfigStrip
             contract={contract}
+            formalProgram={formalProgram}
             context={contextPack}
             evidence={evidence}
             extensions={extensions}
@@ -1117,6 +1150,7 @@ export function Workbench() {
           governanceBusy={governanceBusy}
           extensions={extensions}
           extensionsBusy={extensionsBusy}
+          formalProgram={formalProgram}
           diff={displayDiff}
           tests={displayTests}
           trace={traceEvents}

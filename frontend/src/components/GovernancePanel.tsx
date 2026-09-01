@@ -98,7 +98,7 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
         </div>
       </div>
 
-      <details className="governanceAdvanced">
+      <details className="governanceAdvanced" open>
         <summary><Wrench size={15} /><span><strong>{t("governance.advancedControls")}</strong><small>{t("governance.advancedControlsHint")}</small></span><ChevronDown size={15} /></summary>
         <div>
           <div className="governanceTools">
@@ -118,7 +118,7 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
           </div>
 
           {!setupMode ? (
-            <details className="governanceTechnical">
+            <details className="governanceTechnical" open>
               <summary><Gauge size={14} />{t("governance.technicalDetails")}<ChevronDown size={14} /></summary>
               <div className="governanceTechnicalBody">
                 <div className="sandboxBackend"><Gauge size={13} /><span>{t("governance.backend")}</span><code>{governance?.capabilities.backend ?? "-"}</code></div>

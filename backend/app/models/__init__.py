@@ -13,6 +13,7 @@ from app.models.extensions import (
     MCPServerManifest,
     SkillManifest,
 )
+from app.models.formal_program import FormalAgentProgram, FormalProgramGrade, FormalProgramLint, FormalProgramNode
 from app.models.memory import MemoryEntry, MemoryScope
 from app.models.model_routing import ModelRoutePlan, ModelRouteProfile, ModelRouteSelection
 from app.models.governance import (
@@ -60,6 +61,10 @@ __all__ = [
     "EffectSet",
     "ExtensionCatalog",
     "ExtensionSettings",
+    "FormalAgentProgram",
+    "FormalProgramGrade",
+    "FormalProgramLint",
+    "FormalProgramNode",
     "GovernanceSettings",
     "GuardDecision",
     "HookEvent",

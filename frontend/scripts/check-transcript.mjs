@@ -167,8 +167,10 @@ assert(patchItems[0].changeSet?.focusHunk === "@@ -1 +1 @@", "Patch change sets 
 
 assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should keep transcript metadata chips as a dedicated component.");
 assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
-assert(activityFeedSource.includes("agentPhaseGroup"), "The transcript should render collapsible phase groups.");
-assert(activityFeedSource.includes("buildPhaseGroups(visibleItems)"), "The transcript should group activity by phase.");
+assert(activityFeedSource.includes("agentPhaseGroup"), "The transcript should render visible phase groups.");
+assert(activityFeedSource.includes("agentPhaseHeader"), "Phase groups should keep a visible header without hiding their actions.");
+assert(activityFeedSource.includes("buildPhaseGroups(workItems)"), "The transcript should group all visible activity by phase.");
+assert(!activityFeedSource.includes("agentProcessPreview"), "The transcript should not hide activity behind a collapsed preview.");
 assert(phasesSource.includes("current?.phase === item.phase"), "Phase groups should preserve timeline order instead of sorting event types.");
 assert(activityFeedSource.includes("agentProcessLink"), "Patch activity items should offer a lightweight link to changed files.");
 assert(activityFeedSource.includes("workBreakdown(workItems, t)"), "The transcript header should summarize activity categories.");
@@ -201,7 +203,7 @@ assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should ali
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
 assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
 assert(runSurfaceSource.includes(".agentPhaseGroup"), "Phase groups should have dedicated run-surface styling.");
-assert(runSurfaceSource.includes("summary::before"), "Phase groups should have a compact visual anchor.");
+assert(runSurfaceSource.includes("agentPhaseHeader::before"), "Phase groups should have a compact visual anchor.");
 assert(runSurfaceSource.includes(".agentProcessLink"), "Changed-file links should be styled inside the transcript.");
 assert(runSurfaceSource.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
 

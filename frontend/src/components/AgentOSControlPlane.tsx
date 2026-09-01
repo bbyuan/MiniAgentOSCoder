@@ -1,5 +1,6 @@
 import {
   BrainCircuit,
+  Braces,
   Check,
   CircleAlert,
   CircleGauge,
@@ -10,11 +11,11 @@ import {
   PlugZap,
   ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
 import type {
   AgentContract,
   ContextPack,
   ExtensionResponse,
+  FormalAgentProgram,
   GovernanceResponse,
   MemoryResponse,
   RunMode,
@@ -23,12 +24,13 @@ import type {
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
-export type ControlPlaneTarget = "overview" | "context" | "memory" | "governance" | "extensions" | "changes";
+export type ControlPlaneTarget = "overview" | "program" | "context" | "memory" | "governance" | "extensions" | "changes";
 
 interface AgentOSControlPlaneProps {
   variant: "manifest" | "runtime";
   mode: RunMode;
   contract?: AgentContract;
+  formalProgram?: FormalAgentProgram;
   context?: ContextPack;
   memory?: MemoryResponse;
   governance?: GovernanceResponse;
@@ -54,6 +56,7 @@ export function AgentOSControlPlane({
   variant,
   mode,
   contract,
+  formalProgram,
   context,
   memory,
   governance,
@@ -64,7 +67,6 @@ export function AgentOSControlPlane({
   onOpen,
 }: AgentOSControlPlaneProps) {
   const { t } = usePreferences();
-  const [expanded, setExpanded] = useState(false);
   const contextBudget = context?.budget_report;
   const contextPercent = contextBudget?.max_tokens
     ? Math.min(100, Math.round((contextBudget.used_tokens / contextBudget.max_tokens) * 100))
@@ -93,6 +95,15 @@ export function AgentOSControlPlane({
       hint: t("control.hint.contract"),
       icon: FileCheck2,
       target: "overview",
+    },
+    {
+      id: "program",
+      label: "control.program",
+      value: t("control.programValue", { count: formalProgram?.lints.filter((lint) => lint.status === "passed").length ?? 0 }),
+      hint: t("control.hint.program"),
+      icon: Braces,
+      target: "program",
+      tone: formalProgram?.lints.some((lint) => lint.status !== "passed") ? "warning" : "success",
     },
     {
       id: "context",
@@ -140,8 +151,9 @@ export function AgentOSControlPlane({
     },
   ];
 
+  const signalById = new Map(runtimeSignals.map((signal) => [signal.id, signal]));
   const manifestSignals: ControlSignal[] = [
-    runtimeSignals[0],
+    signalById.get("contract")!,
     {
       id: "budget",
       label: "control.budget",
@@ -153,9 +165,9 @@ export function AgentOSControlPlane({
       icon: Gauge,
       target: "overview",
     },
-    runtimeSignals[1],
-    runtimeSignals[3],
-    runtimeSignals[5],
+    signalById.get("program")!,
+    signalById.get("context")!,
+    signalById.get("sandbox")!,
     {
       id: "verification",
       label: "control.verification",
@@ -169,7 +181,7 @@ export function AgentOSControlPlane({
   const signals = variant === "manifest" ? manifestSignals : runtimeSignals;
   const primaryIds = variant === "manifest"
     ? new Set(["budget", "sandbox", "verification"])
-    : new Set(["context", "sandbox", "extensions"]);
+    : new Set(["program", "context", "sandbox"]);
   const primarySignals = signals.filter((signal) => primaryIds.has(signal.id));
   const secondarySignals = signals.filter((signal) => !primaryIds.has(signal.id));
   const runtimeState = controlPlaneRuntimeState(runStatus);
@@ -179,8 +191,8 @@ export function AgentOSControlPlane({
     const Icon = signal.icon;
     const content = (
       <>
-        <Icon size={16} />
-        <span>
+        <span className="controlSignalIcon"><Icon size={16} /></span>
+        <span className="controlSignalCopy">
           <small>{t(signal.label)}</small>
           <strong title={signal.value}>{signal.value}</strong>
           <em>{signal.hint}</em>
@@ -226,10 +238,8 @@ export function AgentOSControlPlane({
       </div>
       {secondarySignals.length ? (
         <div className="controlPlaneMore">
-          <button type="button" onClick={() => setExpanded((current) => !current)}>
-            {t(expanded ? "control.hideAdvanced" : "control.showAdvanced")}
-          </button>
-          {expanded ? <div className="controlPlaneSignals secondary">{secondarySignals.map(renderSignal)}</div> : null}
+          <div className="controlPlaneMoreLabel">{t("control.showAdvanced")}</div>
+          <div className="controlPlaneSignals secondary">{secondarySignals.map(renderSignal)}</div>
         </div>
       ) : null}
     </section>

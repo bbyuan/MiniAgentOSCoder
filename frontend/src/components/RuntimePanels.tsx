@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, Database, FlaskConical, FileText, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Activity, Braces, BrainCircuit, Check, CircleAlert, CircleGauge, Database, FlaskConical, FileText, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -8,6 +8,8 @@ import type {
   CreateSkillRequest,
   ExtensionResponse,
   ExtensionSettings,
+  FormalAgentProgram,
+  FormalProgramNode,
   GovernanceResponse,
   MemoryInput,
   MemoryResponse,
@@ -31,7 +33,7 @@ import { GovernancePanel } from "./GovernancePanel";
 import { ExtensionPanel } from "./ExtensionPanel";
 
 type ControlView = ControlPlaneTarget | "trace";
-type PrimaryControlView = "overview" | "changes" | "context" | "settings";
+type PrimaryControlView = "overview" | "program" | "changes" | "context" | "settings";
 
 interface RuntimePanelsProps {
   initialTarget?: ControlPlaneTarget;
@@ -53,6 +55,7 @@ interface RuntimePanelsProps {
   governanceBusy: boolean;
   extensions?: ExtensionResponse;
   extensionsBusy: boolean;
+  formalProgram?: FormalAgentProgram;
   diff: {
     files: number;
     insertions: number;
@@ -96,6 +99,7 @@ export function RuntimePanels({
   governanceBusy,
   extensions,
   extensionsBusy,
+  formalProgram,
   diff,
   tests,
   trace,
@@ -146,18 +150,22 @@ export function RuntimePanels({
       .map((event) => event.payload.skill_id)
       .filter((id): id is string => typeof id === "string"),
   ));
-  const activePrimary: PrimaryControlView = activeView === "overview" || activeView === "changes" || activeView === "context"
+  const activePrimary: PrimaryControlView = activeView === "overview" || activeView === "program" || activeView === "changes" || activeView === "context"
     ? activeView
     : "settings";
   const primaryViews: Array<{ id: PrimaryControlView; icon: typeof Activity; label: TranslationKey }> = [
     { id: "overview", icon: Activity, label: "inspector.overview" },
+    { id: "program", icon: Braces, label: "inspector.program" },
     { id: "changes", icon: GitPullRequest, label: "inspector.changes" },
     { id: "context", icon: BrainCircuit, label: "inspector.context" },
     { id: "settings", icon: Settings2, label: "inspector.settings" },
   ];
 
   return (
-    <aside className="inspector" aria-label={t("control.runtimeTitle")}>
+    <div className="agentPackBackdrop runtimeConfigBackdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+    <section className="inspector runtimeConfigBoard" role="dialog" aria-modal="true" aria-label={t("control.runtimeTitle")}>
       <div className="inspectorTop">
         <div className="inspectorTitleRow">
           <div>
@@ -200,14 +208,16 @@ export function RuntimePanels({
         ) : null}
         {activeView === "overview" ? (
           <section className="inspectorSection controlOverviewSection">
-            <div className="sectionHeader controlOverviewHeader">
-              <div><h3>{t("control.overviewTitle")}</h3><span>{t("control.overviewDescription")}</span></div>
-              <ShieldCheck size={17} />
-            </div>
+            <div className="runtimeOverviewIntro">
+              <div className="sectionHeader controlOverviewHeader">
+                <div><h3>{t("control.overviewTitle")}</h3><span>{t("control.overviewDescription")}</span></div>
+                <ShieldCheck size={17} />
+              </div>
 
-            <div className="contractAssurance">
-              <span><Check size={16} /></span>
-              <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
+              <div className="contractAssurance">
+                <span><Check size={16} /></span>
+                <div><strong>{t("control.governedTitle")}</strong><p>{t("control.governedDescription")}</p></div>
+              </div>
             </div>
 
             <div className="runtimeFocusSummary">
@@ -243,127 +253,141 @@ export function RuntimePanels({
               </article>
             </div>
 
-            <details className="runtimeAdvancedDetails">
-              <summary>{t("control.advancedRuntime")}</summary>
-
-            <div className="evidenceLedger">
-              <header>
-                <div className="modelGateHeading"><ShieldCheck size={15} /><strong>{t("evidence.title")}</strong></div>
-                <span>{evidence ? t("evidence.score", { ready: evidence.ready, total: evidence.items.length }) : t("evidence.pending")}</span>
-              </header>
-              <div className="evidenceLedgerGrid">
-                {(evidence?.items ?? []).map((item) => (
-                  <article className={`evidenceLedgerItem state-${item.state}`} key={item.id}>
-                    <span>
-                      {item.state === "ready" ? <Check size={13} /> : <CircleAlert size={13} />}
-                      {t(`evidence.state.${item.state}` as TranslationKey)}
-                    </span>
-                    <strong>{t(`evidence.item.${item.id}` as TranslationKey)}</strong>
-                    <small title={item.detail}>{localizeEvidenceDetail(item.detail, locale)}</small>
-                    {item.details.length > 0 ? (
-                      <div className="evidenceDetailList">
-                        {item.details.slice(0, 4).map((detail, index) => (
-                          <span className={`state-${detail.state}`} title={detail.value} key={`${detail.label}-${detail.value}-${index}`}>
-                            <em>{t(`evidence.detail.${detail.label}` as TranslationKey)}</em>
-                            <b>{localizeEvidenceValue(detail.value, locale)}</b>
-                          </span>
-                        ))}
-                      </div>
+            <div className="runtimeOverviewShowcase">
+              <div className="runtimeOverviewMain">
+                <div className="evidenceLedger">
+                  <header>
+                    <div className="modelGateHeading"><ShieldCheck size={15} /><strong>{t("evidence.title")}</strong></div>
+                    <span>{evidence ? t("evidence.score", { ready: evidence.ready, total: evidence.items.length }) : t("evidence.pending")}</span>
+                  </header>
+                  <div className="evidenceLedgerGrid">
+                    {(evidence?.items ?? []).map((item) => (
+                      <article className={`evidenceLedgerItem state-${item.state}`} key={item.id}>
+                        <span>
+                          {item.state === "ready" ? <Check size={13} /> : <CircleAlert size={13} />}
+                          {t(`evidence.state.${item.state}` as TranslationKey)}
+                        </span>
+                        <strong>{t(`evidence.item.${item.id}` as TranslationKey)}</strong>
+                        <small title={item.detail}>{localizeEvidenceDetail(item.detail, locale)}</small>
+                        {item.details.length > 0 ? (
+                          <div className="evidenceDetailList">
+                            {item.details.slice(0, 4).map((detail, index) => (
+                              <span className={`state-${detail.state}`} title={detail.value} key={`${detail.label}-${detail.value}-${index}`}>
+                                <em>{t(`evidence.detail.${detail.label}` as TranslationKey)}</em>
+                                <b>{localizeEvidenceValue(detail.value, locale)}</b>
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        <code>{translateKnownText(locale, item.source)} · {item.count}</code>
+                      </article>
+                    ))}
+                    {!evidence ? (
+                      <article className="evidenceLedgerItem state-pending">
+                        <span><CircleAlert size={13} />{t("evidence.state.pending")}</span>
+                        <strong>{t("evidence.emptyTitle")}</strong>
+                        <small>{t("evidence.emptyDescription")}</small>
+                        <code>runtime · 0</code>
+                      </article>
                     ) : null}
-                    <code>{translateKnownText(locale, item.source)} · {item.count}</code>
-                  </article>
-                ))}
-                {!evidence ? (
-                  <article className="evidenceLedgerItem state-pending">
-                    <span><CircleAlert size={13} />{t("evidence.state.pending")}</span>
-                    <strong>{t("evidence.emptyTitle")}</strong>
-                    <small>{t("evidence.emptyDescription")}</small>
-                    <code>runtime · 0</code>
-                  </article>
-                ) : null}
-              </div>
-              {evidence ? (
-                <footer>
-                  <span>{t("evidence.privacy")}</span>
-                  <strong>{t("evidence.privacyNoContent")}</strong>
-                </footer>
-              ) : null}
-            </div>
+                  </div>
+                  {evidence ? (
+                    <footer>
+                      <span>{t("evidence.privacy")}</span>
+                      <strong>{t("evidence.privacyNoContent")}</strong>
+                    </footer>
+                  ) : null}
+                </div>
 
-            <div className="modelGateEvidence">
-              <div className="modelGateHeading"><Sparkles size={15} /><strong>{t("control.modelGateTitle")}</strong></div>
-              <div>
-                <span><small>{t("control.planningTurns")}</small><strong>{planningTurns}</strong></span>
-                <span><small>{t("control.providerRequests")}</small><strong>{providerRequests}</strong></span>
-                <span><small>{t("control.cacheHits")}</small><strong>{cacheHits}</strong></span>
-              </div>
-            </div>
-
-            {routedUsage.length ? (
-              <div className="modelRouteEvidence">
-                <div className="modelGateHeading"><GitBranch size={15} /><strong>{t("control.modelRouteTitle")}</strong></div>
-                <div className="modelRouteUsageList">
-                  {routedUsage.map((usage) => (
-                    <div key={usage.profile}>
-                      <span><strong>{usage.profile}</strong><small>{usage.model}</small></span>
-                      <span>{t("control.modelRouteCalls", { count: usage.calls })}</span>
-                      <span>{t("control.modelRouteTokens", { count: usage.tokens })}</span>
+                <div className="capabilityMenuEvidence">
+                  <div className="modelGateHeading"><Layers3 size={15} /><strong>{t("control.capabilityMenuTitle")}</strong></div>
+                  <div className="capabilityMenuSummary">
+                    <span>{t(`control.capabilityPhase.${capabilityPhase}` as TranslationKey)}</span>
+                    <strong>{t("control.disclosedToolCount", { count: disclosedTools.length })}</strong>
+                  </div>
+                  <div className="capabilityToolList capabilityToolCards">
+                    {disclosedTools.map((tool) => {
+                      const toolInfo = describeCapabilityTool(tool, t);
+                      return (
+                        <article className="capabilityToolCard" key={tool}>
+                          <strong>{toolInfo.name}</strong>
+                          <small>{toolInfo.description}</small>
+                          <code>{tool}</code>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  <div className="capabilityLoadedSkills">
+                    <span>{t("control.loadedSkills")}</span>
+                    <div>
+                      {loadedSkillIds.length > 0
+                        ? loadedSkillIds.map((skill) => <code key={skill}>{skill}</code>)
+                        : <small>{t("control.noLoadedSkills")}</small>}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
-            ) : null}
 
-            <div className="capabilityMenuEvidence">
-              <div className="modelGateHeading"><Layers3 size={15} /><strong>{t("control.capabilityMenuTitle")}</strong></div>
-              <div className="capabilityMenuSummary">
-                <span>{t(`control.capabilityPhase.${capabilityPhase}` as TranslationKey)}</span>
-                <strong>{t("control.disclosedToolCount", { count: disclosedTools.length })}</strong>
-              </div>
-              <div className="capabilityToolList">
-                {disclosedTools.map((tool) => <code key={tool}>{tool}</code>)}
-              </div>
-              <div className="capabilityLoadedSkills">
-                <span>{t("control.loadedSkills")}</span>
-                <div>
-                  {loadedSkillIds.length > 0
-                    ? loadedSkillIds.map((skill) => <code key={skill}>{skill}</code>)
-                    : <small>{t("control.noLoadedSkills")}</small>}
+              <aside className="runtimeOverviewSide">
+                <div className="modelGateEvidence">
+                  <div className="modelGateHeading"><Sparkles size={15} /><strong>{t("control.modelGateTitle")}</strong></div>
+                  <div>
+                    <span><small>{t("control.planningTurns")}</small><strong>{planningTurns}</strong></span>
+                    <span><small>{t("control.providerRequests")}</small><strong>{providerRequests}</strong></span>
+                    <span><small>{t("control.cacheHits")}</small><strong>{cacheHits}</strong></span>
+                  </div>
                 </div>
-              </div>
+
+                {routedUsage.length ? (
+                  <div className="modelRouteEvidence">
+                    <div className="modelGateHeading"><GitBranch size={15} /><strong>{t("control.modelRouteTitle")}</strong></div>
+                    <div className="modelRouteUsageList">
+                      {routedUsage.map((usage) => (
+                        <div key={usage.profile}>
+                          <span><strong>{usage.profile}</strong><small>{usage.model}</small></span>
+                          <span>{t("control.modelRouteCalls", { count: usage.calls })}</span>
+                          <span>{t("control.modelRouteTokens", { count: usage.tokens })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="runtimeContractPanel">
+                  <div className="subsectionLabel">{t("control.capabilitiesTitle")}</div>
+                  <ul className="capabilityList">
+                    {contract.effects.map((effect) => (
+                      <li key={effect}><Check size={13} /><span>{effectLabel(effect, t)}</span></li>
+                    ))}
+                  </ul>
+
+                  <div className="subsectionLabel policyLabel">{t("control.budgetTitle")}</div>
+                  <div className="controlBudgetGrid">
+                    <div><CircleGauge size={15} /><span>{t("control.maxSteps")}</span><strong>{contract.budget?.max_steps ?? 0}</strong></div>
+                    <div><Gauge size={15} /><span>{t("control.maxTools")}</span><strong>{contract.budget?.max_tool_calls ?? 0}</strong></div>
+                    <div><ShieldCheck size={15} /><span>{t("control.maxMinutes")}</span><strong>{Math.ceil((contract.budget?.max_wall_time_seconds ?? 0) / 60)}</strong></div>
+                  </div>
+
+                  <details className="policyDisclosure" open>
+                    <summary>{t("control.policyDetails", { count: contract.policies.length })}</summary>
+                    <ul>
+                      {contract.policies.map((policy) => (
+                        <li key={policy.name}>
+                          <span>{translateKnownText(locale, policy.name)}</span>
+                          <strong>{translateKnownText(locale, policy.value)}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+              </aside>
             </div>
-
-            <div className="subsectionLabel">{t("control.capabilitiesTitle")}</div>
-            <ul className="capabilityList">
-              {contract.effects.map((effect) => (
-                <li key={effect}><Check size={13} /><span>{effectLabel(effect, t)}</span></li>
-              ))}
-            </ul>
-
-            <div className="subsectionLabel policyLabel">{t("control.budgetTitle")}</div>
-            <div className="controlBudgetGrid">
-              <div><CircleGauge size={15} /><span>{t("control.maxSteps")}</span><strong>{contract.budget?.max_steps ?? 0}</strong></div>
-              <div><Gauge size={15} /><span>{t("control.maxTools")}</span><strong>{contract.budget?.max_tool_calls ?? 0}</strong></div>
-              <div><ShieldCheck size={15} /><span>{t("control.maxMinutes")}</span><strong>{Math.ceil((contract.budget?.max_wall_time_seconds ?? 0) / 60)}</strong></div>
-            </div>
-
-            <details className="policyDisclosure">
-              <summary>{t("control.policyDetails", { count: contract.policies.length })}</summary>
-              <ul>
-                {contract.policies.map((policy) => (
-                  <li key={policy.name}>
-                    <span>{translateKnownText(locale, policy.name)}</span>
-                    <strong>{translateKnownText(locale, policy.value)}</strong>
-                  </li>
-                ))}
-              </ul>
-            </details>
-            </details>
           </section>
         ) : null}
 
+        {activeView === "program" ? <FormalProgramPanel program={formalProgram} /> : null}
         {activeView === "changes" ? (
-          <>
+          <section className="runtimeChangesBoard">
             <section className="inspectorSection signalGrid">
               <div className="signalItem">
                 <div className="signalTitle"><GitPullRequest size={15} /><span>{t("diff.title")}</span></div>
@@ -378,7 +402,7 @@ export function RuntimePanels({
             </section>
             <RunReportPanel report={report} />
             <RecoveryPanel recovery={recovery} busyCheckpoint={rollbackBusy} onRollback={onRollback} />
-          </>
+          </section>
         ) : null}
 
         {activeView === "context" ? <ContextPanel context={context} busy={contextBusy} onCompact={onCompactContext} /> : null}
@@ -387,7 +411,106 @@ export function RuntimePanels({
         {activeView === "governance" ? <GovernancePanel governance={governance} busy={governanceBusy} onSave={onSaveGovernance} /> : null}
         {activeView === "trace" ? <TraceReplayPanel runId={runId} runStatus={runStatus} events={trace} /> : null}
       </div>
-    </aside>
+    </section>
+    </div>
+  );
+}
+
+function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
+  const { t } = usePreferences();
+  const passed = program?.lints.filter((lint) => lint.status === "passed").length ?? 0;
+  if (!program) {
+    return (
+      <section className="inspectorSection formalProgramPanel">
+        <div className="agentPackLoading">{t("program.pending")}</div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="inspectorSection formalProgramPanel">
+      <div className="formalProgramHeader">
+        <div>
+          <span className="stageEyebrow">{program.calculus}</span>
+          <h3>{t("program.title")}</h3>
+          <p>{t("program.description")}</p>
+        </div>
+        <strong>{t("program.lintScore", { passed, total: program.lints.length })}</strong>
+      </div>
+
+      <div className="formalProgramMain">
+        <div className="programTermBlock">
+          <header><Braces size={15} /><strong>{t("program.term")}</strong></header>
+          <pre>{program.term}</pre>
+        </div>
+
+        <div className="programTree">
+          <header><GitBranch size={15} /><strong>{t("program.structure")}</strong></header>
+          <ol>
+            {program.nodes.map((node) => <ProgramNodeItem node={node} key={node.id} />)}
+          </ol>
+        </div>
+      </div>
+
+      <aside className="formalProgramSide">
+        <div className="programTypeRow">
+          <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
+          <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
+          <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
+        </div>
+
+        <div className="programEvidenceGrid">
+          <article>
+            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
+            <p>{program.grade.expression}</p>
+            <div>
+              <code>steps &lt;= {program.grade.steps}</code>
+              <code>tools &lt;= {program.grade.tool_calls}</code>
+              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+            </div>
+          </article>
+          <article>
+            <header><ShieldCheck size={15} /><strong>{t("program.traceRules")}</strong></header>
+            <ul>
+              {program.trace_rules.map((rule) => <li key={rule}>{rule}</li>)}
+            </ul>
+          </article>
+        </div>
+
+        <div className="programLintHeader">
+          <strong>{t("program.semanticLint")}</strong>
+          <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
+        </div>
+        <div className="programLintGrid">
+          {program.lints.map((lint) => (
+            <article className={`state-${lint.status}`} key={lint.id}>
+              <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
+              <div>
+                <strong>{lint.summary}</strong>
+                <small>{lint.evidence}</small>
+              </div>
+            </article>
+          ))}
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+function ProgramNodeItem({ node }: { node: FormalProgramNode }) {
+  return (
+    <li>
+      <div>
+        <code>{node.op}</code>
+        <strong>{node.label}</strong>
+        {node.detail ? <small>{node.detail}</small> : null}
+      </div>
+      {node.children.length ? (
+        <ol>
+          {node.children.map((child) => <ProgramNodeItem node={child} key={child.id} />)}
+        </ol>
+      ) : null}
+    </li>
   );
 }
 
@@ -401,6 +524,20 @@ function effectLabel(effect: string, t: (key: TranslationKey, values?: Record<st
     "mcp.call": "effect.mcp.call",
   };
   return labels[effect] ? t(labels[effect]) : effect;
+}
+
+function describeCapabilityTool(tool: string, t: (key: TranslationKey, values?: Record<string, string | number>) => string): { name: string; description: string } {
+  const knownTools = new Set(["read_file", "search_code", "apply_patch", "run_test", "list_files", "run_lint", "git_status", "git_diff", "run_command"]);
+  if (!knownTools.has(tool)) {
+    return {
+      name: tool.replace(/_/g, " "),
+      description: t("control.tool.unknown.description"),
+    };
+  }
+  return {
+    name: t(`control.tool.${tool}.name` as TranslationKey),
+    description: t(`control.tool.${tool}.description` as TranslationKey),
+  };
 }
 
 function summarizeRoutedUsage(trace: TraceEvent[]): Array<{ profile: string; model: string; calls: number; tokens: number }> {

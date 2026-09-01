@@ -109,19 +109,18 @@ export function TaskSetup({
               <Sparkles size={15} />
               <span>{t("task.tryExample")}</span>
             </button>
+            <button
+              type="button"
+              className="runSettingsAction"
+              disabled={busy || !task.trim() || !modelReady}
+              onClick={onReviewSettings}
+              title={t("task.reviewSettings")}
+            >
+              <SlidersHorizontal size={16} />{t("task.reviewSettings")}
+            </button>
           </div>
 
           <div className="taskPrimaryActions">
-            {task.trim() ? (
-              <button
-                type="button"
-                className="runSettingsAction"
-                disabled={busy || !modelReady}
-                onClick={onReviewSettings}
-              >
-                <SlidersHorizontal size={16} />{t("task.reviewSettings")}
-              </button>
-            ) : null}
             <button
               type="button"
               className="startTaskAction"

@@ -197,7 +197,7 @@ export function ExtensionPanel({
         </ExtensionGroup>
       </div>
 
-      <details className="extensionTechnical">
+      <details className="extensionTechnical" open>
         <summary><Braces size={15} /><span>{t("extensions.advancedTitle", { enabled: advancedEnabled, available: advancedAvailable })}</span><ChevronDown size={14} /></summary>
         <div>
           {creatingAllowed ? (
@@ -222,7 +222,7 @@ export function ExtensionPanel({
                     <span>{t("extensions.form.skillContent")}</span>
                     <textarea rows={5} value={skillDraft.content} placeholder={t("extensions.skillContentPlaceholder")} onChange={(event) => setSkillDraft((current) => ({ ...current, content: event.target.value }))} />
                   </label>
-                  <details className="extensionFormAdvanced wide">
+                  <details className="extensionFormAdvanced wide" open>
                     <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
                     <label>
                       <span>{t("extensions.form.description")}</span>
@@ -244,7 +244,7 @@ export function ExtensionPanel({
                     <input value={mcpDraft.command} placeholder="npx -y @modelcontextprotocol/server-filesystem ." onChange={(event) => setMcpDraft((current) => ({ ...current, command: event.target.value }))} />
                     <small>{t("extensions.commandHint")}</small>
                   </label>
-                  <details className="extensionFormAdvanced wide">
+                  <details className="extensionFormAdvanced wide" open>
                     <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
                     <label>
                       <span>{t("extensions.form.envAllow")}</span>
@@ -274,7 +274,7 @@ export function ExtensionPanel({
                     <span>{t("extensions.form.command")}</span>
                     <input value={hookDraft.command} placeholder="npm test" onChange={(event) => setHookDraft((current) => ({ ...current, command: event.target.value }))} />
                   </label>
-                  <details className="extensionFormAdvanced wide">
+                  <details className="extensionFormAdvanced wide" open>
                     <summary>{t("extensions.optionalDetails")}<ChevronDown size={14} /></summary>
                     <label>
                       <span>{t("extensions.form.failurePolicy")}</span>

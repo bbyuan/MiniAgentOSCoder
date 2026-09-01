@@ -18,6 +18,7 @@ from app.runtime.contract_compiler import compile_agent_contract
 from app.runtime.config import load_governance_settings
 from app.runtime.completion_guard import completion_expectations
 from app.runtime.extensions import load_extension_catalog
+from app.runtime.formal_program import compile_formal_program
 from app.runtime.history_store import TERMINAL_STATUSES
 from app.runtime.model_provider import (
     ModelConfigurationError,
@@ -144,6 +145,23 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
             "diagnostics": extension_catalog.diagnostics,
         },
     )
+    formal_program = _formal_program_dict(run.run_id)
+    tracer.event(
+        run.run_id,
+        "formal.program.compiled",
+        {
+            "calculus": formal_program["calculus"],
+            "type": f"{formal_program['input_type']} -> {formal_program['output_type']}",
+            "effect": formal_program["effect"],
+            "grade": formal_program["grade"],
+            "lint_statuses": {
+                str(item["id"]): str(item["status"])
+                for item in formal_program["lints"]
+                if isinstance(item, dict)
+            },
+        },
+        role="Orchestrator",
+    )
     tracer.event(
         run.run_id,
         "run.admission.assessed",
@@ -183,6 +201,7 @@ def create_run(request: CreateRunRequest) -> dict[str, object]:
         "artifacts": artifacts.to_dict(),
         "admission": admission.to_dict(),
         "model_route": store.model_routes[run.run_id].to_dict(),
+        "formal_program": formal_program,
         "completion_expectations": completion_expectations(run.mode),
     }
 
@@ -225,6 +244,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "memory_refs": run.memory_refs,
         "admission": store.admissions.get(run_id).to_dict() if run_id in store.admissions else None,
         "model_route": store.model_routes.get(run_id).to_dict() if run_id in store.model_routes else None,
+        "formal_program": _formal_program_dict(run_id),
     }
 
 
@@ -253,6 +273,13 @@ def get_run_model_route(run_id: str) -> dict[str, object]:
         raise HTTPException(status_code=404, detail="Run not found")
     _refresh_run_admission(run_id)
     return store.model_routes[run_id].to_dict()
+
+
+@router.get("/{run_id}/formal-program")
+def get_run_formal_program(run_id: str) -> dict[str, object]:
+    if run_id not in store.runs:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return _formal_program_dict(run_id)
 
 
 @router.post("/{run_id}/start", status_code=202)
@@ -572,6 +599,7 @@ def resume_run(run_id: str, request: ResumeRunRequest) -> dict[str, object]:
         "artifacts": artifacts.to_dict(),
         "admission": store.admissions[run_id].to_dict(),
         "model_route": store.model_routes[run_id].to_dict(),
+        "formal_program": _formal_program_dict(run_id),
     }
 
 
@@ -761,6 +789,20 @@ def _refresh_run_admission(run_id: str) -> RunAdmission:
     )
     store.admissions[run_id] = admission
     return admission
+
+
+def _formal_program_dict(run_id: str) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    contract = store.contracts.get(run_id)
+    if run is None or contract is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return compile_formal_program(
+        run_id=run_id,
+        contract=contract,
+        governance=store.governance.get(run_id),
+        extensions=store.extension_catalogs.get(run_id),
+        extension_settings=store.extension_settings.get(run_id),
+    ).to_dict()
 
 
 def _admission_trace_payload(admission: RunAdmission) -> dict[str, object]:

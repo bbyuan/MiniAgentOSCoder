@@ -177,6 +177,7 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     trace = client.get(f"/runs/{run['run_id']}/trace").json()
     context = client.get(f"/runs/{run['run_id']}/context").json()
     artifacts = client.get(f"/runs/{run['run_id']}/artifacts").json()
+    formal_program = client.get(f"/runs/{run['run_id']}/formal-program").json()
 
     assert run_response.status_code == 200
     assert run["status"] == "planning"
@@ -186,6 +187,10 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["artifacts"]["plan"][0]["title"] == "Scan workspace"
     assert run["admission"]["can_start"] is True
     assert run["admission"]["basis"] in {"heuristic", "hybrid", "history"}
+    assert run["formal_program"]["calculus"] == "MiniAgent DSL / λA projection"
+    assert "Route(ActionIR.type" in run["formal_program"]["term"]
+    assert formal_program["effect"].startswith("allow(")
+    assert formal_program["grade"]["steps"] == 20
     assert trace["events"][0]["event"] == "run.created"
     assert context["required_items"] == ["user_task", "project_profile", "current_plan"]
     assert context["explanation"][0]["id"] == "user_task"
@@ -202,6 +207,7 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
         "wall_time_seconds",
     }
     assert any(event["event"] == "run.admission.assessed" for event in trace["events"])
+    assert any(event["event"] == "formal.program.compiled" for event in trace["events"])
     assert run["model_route"]["strategy"] == "single"
     assert run["model_route"]["can_start"] is True
 

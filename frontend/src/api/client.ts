@@ -71,6 +71,46 @@ export interface AgentContract {
   policies: Record<string, string>;
 }
 
+export interface FormalProgramNode {
+  id: string;
+  op: string;
+  label: string;
+  detail: string;
+  children: FormalProgramNode[];
+}
+
+export interface FormalProgramLint {
+  id: string;
+  status: "passed" | "warning" | "failed" | string;
+  summary: string;
+  evidence: string;
+}
+
+export interface FormalProgramGrade {
+  steps: number;
+  model_calls: number;
+  tool_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  wall_time_seconds: number;
+  expression: string;
+}
+
+export interface FormalAgentProgram {
+  run_id: string;
+  calculus: string;
+  source: string;
+  input_type: string;
+  output_type: string;
+  term: string;
+  effect: string;
+  grade: FormalProgramGrade;
+  nodes: FormalProgramNode[];
+  lints: FormalProgramLint[];
+  trace_rules: string[];
+  highlights: string[];
+}
+
 export interface ResourceForecast {
   low: number;
   expected: number;
@@ -162,6 +202,7 @@ export interface RunSummary {
   completion_expectations?: string[];
   admission?: RunAdmission;
   model_route?: ModelRoutePlan;
+  formal_program?: FormalAgentProgram;
 }
 
 export interface ConversationTurn {
@@ -748,6 +789,7 @@ export interface ResumeRunResponse {
   artifacts: RunArtifacts;
   admission: RunAdmission;
   model_route: ModelRoutePlan;
+  formal_program: FormalAgentProgram;
 }
 
 export interface ApprovalRequest {
@@ -1017,6 +1059,7 @@ export const daemonApi = {
   getRun: (runId: string) => request<RunSummary>(`/runs/${runId}`),
   getAdmission: (runId: string) => request<RunAdmission>(`/runs/${runId}/admission`),
   getModelRoute: (runId: string) => request<ModelRoutePlan>(`/runs/${runId}/model-route`),
+  getFormalProgram: (runId: string) => request<FormalAgentProgram>(`/runs/${runId}/formal-program`),
   getConversation: (runId: string) => request<ConversationResponse>(`/runs/${runId}/conversation`),
   getArtifacts: (runId: string) => request<RunArtifacts>(`/runs/${runId}/artifacts`),
   getReport: (runId: string) => request<RunReportResponse>(`/runs/${runId}/report`),

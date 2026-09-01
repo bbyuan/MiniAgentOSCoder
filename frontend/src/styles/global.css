@@ -24077,11 +24077,10 @@ summary:focus-visible {
 
 .completionSummary.tone-completed .completionFullMessage.markdownDocument {
   box-sizing: border-box;
-  width: calc(100% - clamp(64px, 10vw, 176px));
+  width: 100%;
   min-width: 0;
-  max-width: 1280px;
-  margin-right: auto;
-  margin-left: auto;
+  max-width: none;
+  margin: 0;
   padding: 16px 0 18px;
 }
 
@@ -25168,4 +25167,827 @@ summary:focus-visible {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }
+}
+
+/* Task launcher controls: keep focus visible without the browser's square blue outline. */
+.productTaskSetup .taskTypeSelect:focus-within,
+.productTaskSetup .exampleFillAction:focus-visible,
+.productTaskSetup .runSettingsAction:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border-strong));
+  background: var(--surface-raised);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.productTaskSetup .taskTypeSelect select:focus,
+.productTaskSetup .taskTypeSelect select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.productTaskSetup .taskComposerOptions .runSettingsAction {
+  display: inline-flex;
+}
+
+.productTaskSetup .taskComposerOptions .runSettingsAction:disabled {
+  color: color-mix(in srgb, var(--text-tertiary) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 62%, transparent);
+  opacity: 0.72;
+}
+
+/* Run settings: presentation-first layout for demoable runtime controls. */
+.productContent .preflightCanvas {
+  padding-top: clamp(26px, 4vh, 46px);
+}
+
+.runSettingsPage {
+  display: grid;
+  gap: 16px;
+}
+
+.runSettingsHeader {
+  min-height: 0;
+  padding: 0 2px 18px;
+  border-bottom: 0;
+}
+
+.runSettingsHeader h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(30px, 3vw, 38px);
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.runSettingsHeader p {
+  max-width: 650px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.runSettingsModel {
+  border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface) 88%, transparent));
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.055);
+}
+
+.runSettingsModel strong {
+  font-size: 13px;
+}
+
+.runSettingsModel small {
+  font-size: 12px;
+}
+
+.runSettingsModel.ready {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 34%, var(--surface-raised)), var(--surface-raised));
+}
+
+.runSettingsTask {
+  margin: 0;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 94%, transparent), color-mix(in srgb, var(--surface) 88%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 56%, transparent);
+}
+
+.runSettingsTask > span {
+  padding: 7px 10px;
+  border: 0;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent);
+  font-size: 12px;
+}
+
+.runSettingsTask p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.runSettingsPage .preflightControlDeck {
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 58%, transparent),
+    0 20px 60px rgba(15, 23, 42, 0.07);
+}
+
+.runSettingsPage .preflightControlDeck.tone-ready {
+  box-shadow:
+    inset 4px 0 0 var(--success),
+    inset 0 0 0 1px color-mix(in srgb, var(--success) 24%, var(--border)),
+    0 20px 60px rgba(15, 23, 42, 0.07);
+}
+
+.runSettingsPage .preflightDeckHero {
+  padding: 24px 28px 10px;
+  border-bottom: 0;
+}
+
+.runSettingsPage .preflightDeckHero h2 {
+  font-size: clamp(20px, 2.2vw, 24px);
+  line-height: 1.22;
+}
+
+.runSettingsPage .preflightDeckHero p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.runSettingsPage .preflightQuickChecks {
+  padding: 14px 28px 28px;
+  gap: 10px;
+}
+
+.runSettingsPage .preflightCheckRow,
+.runSettingsPage .preflightAgentPackStrip {
+  min-height: 96px;
+  border: 0;
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 44%, transparent);
+}
+
+.runSettingsPage .preflightAgentPackStrip:hover {
+  background: color-mix(in srgb, var(--accent-soft) 28%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+
+.runSettingsPage .preflightCheckRow strong,
+.runSettingsPage .preflightAgentPackStrip strong {
+  font-size: 14px;
+  line-height: 1.32;
+}
+
+.runSettingsPage .preflightCheckRow small,
+.runSettingsPage .preflightAgentPackStrip small,
+.runSettingsPage .preflightCheckRow em {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.runSettingsPage .preflightAdvancedDetails {
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.runSettingsPage .preflightAdvancedDetails > summary {
+  min-height: 54px;
+  padding: 0 18px;
+  border-radius: 8px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 54%, transparent);
+}
+
+.runSettingsPage .preflightAdvancedDetails[open] > summary {
+  margin-bottom: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 20%, var(--surface-raised));
+}
+
+.runSettingsPage .preflightAdvancedDetails > div {
+  display: grid;
+  gap: 12px;
+}
+
+.runSettingsPage .preflightAdvancedDetails .admissionSummary,
+.runSettingsPage .preflightAdvancedDetails .modelRouteSummary,
+.runSettingsPage .preflightAdvancedDetails .controlPlane {
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 42%, transparent);
+}
+
+.runSettingsPage .advancedSetup {
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 54%, transparent),
+    0 18px 52px rgba(15, 23, 42, 0.06);
+}
+
+.runSettingsPage .advancedSetupHeader {
+  padding: 22px 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface-subtle) 42%, transparent));
+}
+
+.runSettingsPage .advancedSetupIcon {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 48%, transparent);
+}
+
+.runSettingsPage .advancedSetupHeader h2 {
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.runSettingsPage .advancedSetupHeader p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.runSettingsPage .advancedSetupBadge {
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 42%, transparent);
+}
+
+.runSettingsPage .advancedSetupLayout {
+  grid-template-columns: 252px minmax(0, 1fr);
+  gap: 0;
+}
+
+.runSettingsPage .advancedSetupNav {
+  padding: 18px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 42%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 44%, transparent);
+}
+
+.runSettingsPage .advancedSetupNav button {
+  min-height: 74px;
+  padding: 13px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.runSettingsPage .advancedSetupNav button strong {
+  font-size: 14px;
+}
+
+.runSettingsPage .advancedSetupNav button small {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.runSettingsPage .advancedSetupNav button:hover {
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+}
+
+.runSettingsPage .advancedSetupNav button.active {
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, var(--border)),
+    0 8px 22px rgba(15, 23, 42, 0.055);
+}
+
+.runSettingsPage .advancedSetupNav button small,
+.runSettingsPage .advancedSetupNav > p {
+  color: var(--text-tertiary);
+}
+
+.runSettingsPage .advancedSetupNav > p {
+  margin: 16px 4px 0;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 44%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.runSettingsPage .advancedSetupBody {
+  padding: 18px;
+  background: transparent;
+}
+
+.runSettingsPage .advancedSetupBody .inspectorSection {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.runSettingsPage .advancedSetupBody .sectionHeader {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0 2px;
+  border-bottom: 0;
+}
+
+.runSettingsPage .advancedSetupBody .sectionHeader h3 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.runSettingsPage .advancedSetupBody .sectionHeader span {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.runSettingsPage .governanceOverview strong,
+.runSettingsPage .extensionOverview strong,
+.runSettingsPage .governanceLevel header strong,
+.runSettingsPage .extensionGroupTitle strong,
+.runSettingsPage .extensionMain > strong,
+.runSettingsPage .governanceTools article strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.runSettingsPage .governanceOverview small,
+.runSettingsPage .extensionOverview small,
+.runSettingsPage .governanceLevel header span,
+.runSettingsPage .extensionGroupTitle span,
+.runSettingsPage .extensionMain > small,
+.runSettingsPage .extensionMeta,
+.runSettingsPage .governanceTools article p {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.runSettingsPage .governanceOverview,
+.runSettingsPage .extensionOverview {
+  border: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 34%, var(--surface-raised)), var(--surface-raised));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 18%, var(--border));
+}
+
+.runSettingsPage .extensionOverview.warning {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warning-soft) 42%, var(--surface-raised)), var(--surface-raised));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 22%, var(--border));
+}
+
+.runSettingsPage .governanceLevel,
+.runSettingsPage .extensionCapabilityList,
+.runSettingsPage .extensionCreator,
+.runSettingsPage .governanceAdvanced,
+.runSettingsPage .extensionTechnical {
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 44%, transparent);
+}
+
+.runSettingsPage .sandboxProfileControl button,
+.runSettingsPage .extensionRow,
+.runSettingsPage .governanceTools article {
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 38%, transparent);
+}
+
+.runSettingsPage .sandboxProfileControl button.active,
+.runSettingsPage .extensionRow:has(input:checked) {
+  background: color-mix(in srgb, var(--accent-soft) 24%, var(--surface-raised));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.runSettingsPage .governanceAdvanced > summary,
+.runSettingsPage .extensionTechnical > summary {
+  border-radius: 8px;
+  background: transparent;
+}
+
+.runSettingsFooter {
+  margin-top: 0;
+  padding: 18px 0 0;
+  border-top: 0;
+}
+
+/* Launch advanced settings: compact the two option switches into a true segmented control. */
+.runSettingsPage .advancedSetup {
+  --settings-font-caption: 13px;
+  --settings-font-body: 14px;
+  --settings-font-card-title: 15px;
+  --settings-font-section: 18px;
+  --settings-font-title: 20px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+  border-radius: 12px;
+  font-size: var(--settings-font-body);
+}
+
+.runSettingsPage .advancedSetupHeader {
+  min-height: 84px;
+  padding: 18px 22px;
+}
+
+.runSettingsPage .advancedSetupIcon {
+  width: 40px;
+  height: 40px;
+}
+
+.runSettingsPage .advancedSetupHeader h2 {
+  font-size: var(--settings-font-title);
+  line-height: 1.22;
+}
+
+.runSettingsPage .advancedSetupHeader p {
+  margin-top: 5px;
+  font-size: var(--settings-font-body);
+  line-height: 1.45;
+}
+
+.runSettingsPage .advancedSetupLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.runSettingsPage .advancedSetupNav {
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 280px));
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-right: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 42%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 82%, var(--surface)), color-mix(in srgb, var(--surface-subtle) 42%, var(--surface)));
+}
+
+.runSettingsPage .advancedSetupNav button {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 44%, transparent);
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  box-shadow: none;
+}
+
+.runSettingsPage .advancedSetupNav button + button {
+  margin-top: 0;
+}
+
+.runSettingsPage .advancedSetupNav button svg {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.runSettingsPage .advancedSetupNav button span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.runSettingsPage .advancedSetupNav button strong {
+  font-size: var(--settings-font-card-title);
+  font-weight: 780;
+  line-height: 1.2;
+}
+
+.runSettingsPage .advancedSetupNav button small {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--settings-font-caption);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runSettingsPage .advancedSetupNav button:hover {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
+  background: var(--surface);
+}
+
+.runSettingsPage .advancedSetupNav button.active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent),
+    0 6px 16px rgba(37, 99, 235, 0.08);
+}
+
+.runSettingsPage .advancedSetupNav > p {
+  grid-column: 1 / -1;
+  width: min(100%, 680px);
+  margin: 0;
+  padding: 8px 0 0;
+  justify-self: center;
+  border-top: 1px solid color-mix(in srgb, var(--border-strong) 32%, transparent);
+  border-left: 0;
+  color: var(--text-tertiary);
+  font-size: var(--settings-font-caption);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.runSettingsPage .advancedSetupBody {
+  padding: 18px 20px 20px;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced > summary {
+  min-height: 56px;
+  padding: 10px 16px;
+  grid-template-columns: 24px minmax(0, 1fr) 20px;
+  gap: 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 38%, transparent);
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced > summary strong {
+  font-size: var(--settings-font-card-title);
+  font-weight: 780;
+  line-height: 1.25;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced > summary small {
+  margin-top: 3px;
+  font-size: var(--settings-font-caption);
+  line-height: 1.35;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools article {
+  min-height: 70px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 220px);
+  align-items: center;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 36%, transparent);
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 82%, var(--surface)), var(--surface));
+  box-shadow: none;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools article strong {
+  font-size: var(--settings-font-body);
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools article small {
+  margin-top: 5px;
+  overflow: visible;
+  color: var(--text-secondary);
+  font-size: var(--settings-font-caption);
+  line-height: 1.4;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 52%, transparent);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: var(--settings-font-caption);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .runSettingsTask,
+  .runSettingsPage .advancedSetupLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runSettingsPage .advancedSetupNav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 42%, transparent);
+  }
+
+  .runSettingsPage .advancedSetupNav > p {
+    grid-column: 1 / -1;
+    padding: 10px 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--border-strong) 38%, transparent);
+    border-left: 0;
+  }
+
+  .runSettingsPage .advancedSetupBody .governanceAdvanced .governanceTools article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .runSettingsPage .advancedSetupNav {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.admissionBasis {
+  padding: 14px 15px 13px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 42%, transparent);
+}
+
+.admissionBasis > strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.admissionBasisGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admissionBasisGrid > span {
+  min-width: 0;
+  padding: 10px 11px;
+  display: grid;
+  gap: 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+}
+
+.admissionBasis small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.admissionBasis em,
+.admissionBasis p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
+.runSettingsPage .admissionBasis {
+  background: color-mix(in srgb, var(--surface) 54%, transparent);
+}
+
+.runSettingsPage .admissionBasisGrid > span {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 34%, transparent);
+}
+
+@media (max-width: 900px) {
+  .admissionBasisGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admissionBasisGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Core agent evidence should read as visible page content, not hidden drawers. */
+.agentProcessTitle {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+}
+
+.agentProcessTitle span,
+.agentProcessTitle strong,
+.agentProcessTitle small {
+  display: block;
+}
+
+.agentProcessTitle strong {
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.agentProcessTitle small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.agentPhaseList {
+  display: grid;
+  gap: 6px;
+  padding: 0 0 12px;
+}
+
+.agentPhaseGroup {
+  min-width: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+}
+
+.agentPhaseHeader {
+  min-height: 38px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.agentPhaseHeader small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.agentPhaseGroup .agentProcessList {
+  max-height: none;
+  overflow: visible;
+}
+
+.activityOutput > strong {
+  min-height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.controlPlaneMoreLabel {
+  margin: 0 0 8px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.completionDetailsStatic > header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.completionEvidenceDisclosure.completionDetailsStatic > header {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+}
+
+.completionDetailsStatic > header svg {
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.completionDetailsStatic .completionFullMessage,
+.completionEvidenceDisclosure.completionDetailsStatic > div {
+  margin-top: 10px;
+}
+
+.historyDiffStatic > header {
+  padding: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 720;
 }

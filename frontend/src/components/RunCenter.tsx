@@ -456,7 +456,7 @@ function RunDetail({
       <section className="historyDetailSection">
         <CompletionEvidence assessment={run.completion} />
       </section>
-      <details className="historyTechnicalMetrics">
+      <details className="historyTechnicalMetrics" open>
         <summary>{t("history.runData")}<ChevronDown size={15} /></summary>
         <div className="historyMetricGrid">
           <Metric label={t("history.metric.steps")} value={run.steps} />
@@ -517,8 +517,8 @@ function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
         {(files.length || parsedFiles.length) > 8 ? <p>{t("history.moreChangedFiles", { count: (files.length || parsedFiles.length) - 8 })}</p> : null}
       </div>
       {patch.available ? (
-        <details className="historyDiffDisclosure">
-          <summary>{t("history.showPatch")}<ChevronDown size={15} /></summary>
+        <section className="historyDiffDisclosure historyDiffStatic">
+          <header>{t("history.showPatch")}</header>
           <DiffReview
             title={t("codeDiff.changedFiles", { count: files.length || parsedFiles.length })}
             subtitle={t("codeDiff.historyHint")}
@@ -530,7 +530,7 @@ function HistoryPatchPreview({ detail }: { detail: HistoryRunDetail }) {
             tone="applied"
             compact
           />
-        </details>
+        </section>
       ) : null}
     </section>
   );

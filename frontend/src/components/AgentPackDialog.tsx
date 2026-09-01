@@ -203,7 +203,7 @@ export function AgentPackDialog({
               )}
             </section>
 
-            <details className="agentPackJson">
+            <details className="agentPackJson" open>
               <summary>{t("agentPack.viewManifest")}</summary>
               <pre>{JSON.stringify(manifest, null, 2)}</pre>
             </details>

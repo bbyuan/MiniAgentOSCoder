@@ -1,4 +1,4 @@
-import { daemonApi, type ContextPack, type ConversationResponse, type ExtensionResponse, type GovernanceResponse, type MemoryResponse, type RecoveryResponse, type RunArtifacts, type RunEvidenceLedger, type RunReportResponse, type TraceResponse } from "../api/client";
+import { daemonApi, type ContextPack, type ConversationResponse, type ExtensionResponse, type FormalAgentProgram, type GovernanceResponse, type MemoryResponse, type RecoveryResponse, type RunArtifacts, type RunEvidenceLedger, type RunReportResponse, type TraceResponse } from "../api/client";
 
 export interface RunResources {
   context: ContextPack;
@@ -10,6 +10,7 @@ export interface RunResources {
   memory: MemoryResponse;
   governance: GovernanceResponse;
   extensions: ExtensionResponse;
+  formalProgram: FormalAgentProgram;
   conversation: ConversationResponse;
 }
 
@@ -24,6 +25,7 @@ export async function loadRunResources(runId: string): Promise<RunResources> {
     memory,
     governance,
     extensions,
+    formalProgram,
     conversation,
   ] = await Promise.all([
     daemonApi.getContext(runId),
@@ -35,6 +37,7 @@ export async function loadRunResources(runId: string): Promise<RunResources> {
     daemonApi.getMemory(runId),
     daemonApi.getGovernance(runId),
     daemonApi.getExtensions(runId),
+    daemonApi.getFormalProgram(runId),
     daemonApi.getConversation(runId),
   ]);
 
@@ -48,6 +51,7 @@ export async function loadRunResources(runId: string): Promise<RunResources> {
     memory,
     governance,
     extensions,
+    formalProgram,
     conversation,
   };
 }

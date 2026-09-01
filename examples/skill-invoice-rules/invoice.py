@@ -22,14 +22,15 @@ def calculate_discount_cents(subtotal_cents: int, discount_percent: Decimal) -> 
 
 
 def tax_rate_for(region: str, *, digital: bool = False) -> Decimal:
-    if digital:
-        return Decimal("0")
+    region = region.upper()
+    if digital and region == "OR":
+        return Decimal("0.00")
     rates = {
-        "CA": Decimal("0.07"),
+        "CA": Decimal("0.075"),
         "NY": Decimal("0.08875"),
         "OR": Decimal("0.00"),
     }
-    return rates.get(region.upper(), Decimal("0.00"))
+    return rates.get(region, Decimal("0.00"))
 
 
 def calculate_tax_cents(taxable_cents: int, region: str, *, digital: bool = False) -> int:

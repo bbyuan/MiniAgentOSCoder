@@ -235,6 +235,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
       output: outputPreview(locale, event),
     };
   }
+  if (event.event === "model.failed") return modelFailedEvent(event, locale, t);
 
   const error = event.payload.error;
   if (typeof error === "string" && error.trim()) {
@@ -279,7 +280,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
   }
   if (event.event === "model.requested") return { title: t("activity.title.modelRequested"), detail: t("activity.detail.modelRequested"), chips };
   if (event.event === "model.responded") return { title: t("activity.title.modelResponded"), detail: t("activity.detail.modelResponded"), chips };
-  if (event.event === "model.failed") return { title: t("activity.title.failed"), detail: resultError ?? t("activity.detail.failed"), chips };
+  if (event.event === "model.failed") return modelFailedEvent(event, locale, t);
   if (event.event === "action.parsed") {
     const label = actionLabel(event, t);
     if (actionName(event) !== "finish") {
@@ -333,6 +334,18 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
   if (event.event === "run.finished") return { title: t("activity.title.completed"), detail: t("activity.detail.completed"), chips };
   if (event.event === "run.cancelled") return { title: t("activity.title.cancelled"), detail: t("activity.detail.cancelled"), chips };
   return { title: t("activity.title.runtime"), detail: t("activity.detail.system"), chips };
+}
+
+function modelFailedEvent(event: TraceEvent, locale: Locale, t: Translator): ProcessEvent {
+  const rawError = stringValue(event.payload.error) ?? stringValue(resultFrom(event)?.error);
+  const timedOut = Boolean(rawError && /timeout|timed out/i.test(rawError));
+  return {
+    title: t(timedOut ? "activity.title.modelTimeout" : "activity.title.modelFailed"),
+    detail: rawError
+      ? translateKnownText(locale, rawError)
+      : t(timedOut ? "activity.detail.modelTimeout" : "activity.detail.modelFailed"),
+    chips: activityChips(locale, event, t),
+  };
 }
 
 function actionLabel(event: TraceEvent, t: Translator): string {

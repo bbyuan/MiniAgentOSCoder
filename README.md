@@ -255,6 +255,7 @@ For a focused Web demo walkthrough and talking points, see:
 
 ```text
 docs/演示脚本与汇报要点.md
+docs/Agent架构完备性演示文档.md
 ```
 
 ## How To Work In This Repo

@@ -88,8 +88,31 @@ export function AdmissionSummary({ admission }: AdmissionSummaryProps) {
         </div>
       ) : null}
 
+      <div className="admissionBasis">
+        <strong>{t("admission.basisTitle")}</strong>
+        <div className="admissionBasisGrid">
+          <span>
+            <small>{t("admission.basisSource")}</small>
+            <em>{t(`admission.basis.${admission.basis}` as TranslationKey, { count: admission.sample_size })}</em>
+          </span>
+          <span>
+            <small>{t("admission.basisSamples")}</small>
+            <em>{t("admission.basisSamplesValue", { count: admission.sample_size })}</em>
+          </span>
+          <span>
+            <small>{t("admission.basisConfidence")}</small>
+            <em>{t(`admission.confidence.${admission.confidence}` as TranslationKey)}</em>
+          </span>
+          <span>
+            <small>{t("admission.basisLimits")}</small>
+            <em>{t("admission.basisLimitsText")}</em>
+          </span>
+        </div>
+        <p>{t("admission.basisMethodText")}</p>
+      </div>
+
       <footer className="admissionFootnote">
-        <span>{t(`admission.basis.${admission.basis}` as TranslationKey, { count: admission.sample_size })}</span>
+        <span>{t("admission.ceilingSource")}</span>
         <span>{t("admission.notGuarantee")}</span>
       </footer>
     </section>

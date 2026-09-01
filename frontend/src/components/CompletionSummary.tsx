@@ -1,7 +1,6 @@
 import {
   Ban,
   CheckCircle2,
-  ChevronDown,
   CircleAlert,
   FileDiff,
   FlaskConical,
@@ -152,34 +151,24 @@ export function CompletionSummary({
         </div>
       ) : null}
       {showCompletionDetails ? (
-        <details className="completionDetails">
-          <summary>
+        <section className="completionDetails completionDetailsStatic">
+          <header>
             <span className="completionDisclosureCopy">
               <span className="completionDisclosureTitle">{t("completion.showDetails")}</span>
               <small>{t("completion.summaryHint")}</small>
             </span>
-            <span className="completionDisclosureCue">
-              <span className="completionDisclosureCueOpen">{t("completion.openDisclosure")}</span>
-              <span className="completionDisclosureCueClose">{t("completion.closeDisclosure")}</span>
-            </span>
-            <ChevronDown size={14} />
-          </summary>
+          </header>
           <MarkdownDocument className="completionFullMessage" content={completionMessage} />
-        </details>
+        </section>
       ) : null}
       {showEvidence ? (
-        <details className="completionEvidenceDisclosure">
-          <summary>
+        <section className="completionDetails completionEvidenceDisclosure completionDetailsStatic">
+          <header>
             <ListChecks size={16} />
             <span><strong>{t("completion.evidenceTitle")}</strong><small>{completion?.verdict === "passed" ? t("completion.passed") : t("completion.notPassed")}</small></span>
-            <span className="completionDisclosureCue">
-              <span className="completionDisclosureCueOpen">{t("completion.openDisclosure")}</span>
-              <span className="completionDisclosureCueClose">{t("completion.closeDisclosure")}</span>
-            </span>
-            <ChevronDown size={15} />
-          </summary>
+          </header>
           <div><CompletionEvidence assessment={completion} embedded /></div>
-        </details>
+        </section>
       ) : null}
     </section>
   );
