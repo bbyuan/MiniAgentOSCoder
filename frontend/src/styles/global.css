@@ -24271,15 +24271,17 @@ summary:focus-visible {
 .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
   min-height: 56px;
   margin-inline: 0;
-  padding-inline: 0 20px;
+  padding-inline: 0 36px;
 }
 
 .completionSummary.tone-completed .completionDetails summary {
-  grid-template-columns: minmax(0, 1fr) auto 16px;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  gap: 12px;
 }
 
 .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
-  grid-template-columns: 30px minmax(0, 1fr) auto 16px;
+  grid-template-columns: 30px minmax(0, 1fr) auto 18px;
+  gap: 12px;
 }
 
 .completionSummary.tone-completed .completionDetails summary:hover,
