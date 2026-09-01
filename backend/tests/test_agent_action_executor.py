@@ -82,6 +82,18 @@ def test_action_executor_runs_allowed_tool_and_traces_result(tmp_path: Path) -> 
     assert [event["event"] for event in events] == ["action.parsed", "tool.executed"]
 
 
+def test_action_executor_traces_runtime_phase(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('ok')\n", encoding="utf-8")
+    gateway = make_gateway(tmp_path)
+    tracer = TraceWriter(tmp_path / "runs")
+    executor = ActionExecutor(gateway=gateway, tracer=tracer, run_id="run-001", phase="verify")
+
+    executor.execute(ActionIR(type="read_file", rationale="inspect", params={"path": "app.py"}))
+
+    events = tracer.read_events("run-001")
+    assert [event["payload"]["phase"] for event in events] == ["verify", "verify"]
+
+
 def test_action_executor_returns_failed_result_for_blocked_tool(tmp_path: Path) -> None:
     gateway = make_gateway(tmp_path)
     tracer = TraceWriter(tmp_path / "runs")

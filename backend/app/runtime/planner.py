@@ -183,7 +183,7 @@ def plan_next_action(
                 {"request_digest": prompt_cache.key_for(request)},
                 role="Planner",
             )
-        tracer.event(run_id, "model.requested", {"request": _trace_request(request)}, role="Planner")
+        tracer.event(run_id, "model.requested", {"phase": capability_phase, "request": _trace_request(request)}, role="Planner")
 
         try:
             response = model_client.complete(request)
@@ -191,14 +191,14 @@ def plan_next_action(
             tracer.event(
                 run_id,
                 "model.failed",
-                {"error": str(exc), "error_type": type(exc).__name__},
+                {"phase": capability_phase, "error": str(exc), "error_type": type(exc).__name__},
                 role="Planner",
             )
             raise
         tracer.event(
             run_id,
             "model.responded",
-            {"response": response.to_dict()},
+            {"phase": capability_phase, "response": response.to_dict()},
             role="Planner",
         )
 

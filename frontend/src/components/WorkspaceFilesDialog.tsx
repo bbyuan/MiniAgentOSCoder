@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Check, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronUp, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
 import { daemonApi, type ChangeReview, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
 import { localizeErrorMessage, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -45,7 +45,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
   const [error, setError] = useState("");
-  const focusedHunkRef = useRef<HTMLElement | null>(null);
+  const hunkRefs = useRef(new Map<number, HTMLElement>());
+  const [activeHunkIndex, setActiveHunkIndex] = useState(-1);
 
   const files = useMemo(() => items.filter((item) => item.kind === "file"), [items]);
   const changed = useMemo(() => buildDiffFiles(changeSet?.patch ?? "", changeSet?.changedFiles ?? []), [changeSet]);
@@ -76,7 +77,9 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   }, [changedByPath, displayFiles, fileScope, hasChanges]);
   const selectedItem = displayFiles.find((item) => item.path === selectedPath);
   const selectedDiff = changedByPath.get(selectedPath);
+  const hunkIndexes = useMemo(() => diffHunkIndexes(selectedDiff?.lines ?? []), [selectedDiff]);
   const focusedHunkIndex = selectedDiff ? diffFocusIndex(selectedDiff.lines, changeSet?.focusHunk) : -1;
+  const activeHunkPosition = hunkIndexes.findIndex((index) => index === activeHunkIndex);
   const reviewStatus = normalizeReviewStatus(reviewActions?.review?.status);
   const canReview = hasChanges && Boolean(reviewActions?.onAccept || reviewActions?.onReject);
   const isPendingPatch = changeSet?.kind === "pending";
@@ -126,12 +129,17 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   }, [open, project?.project_id, selectedPath, files]);
 
   useEffect(() => {
-    if (!open || previewMode !== "diff" || focusedHunkIndex < 0) return;
+    if (!open || previewMode !== "diff" || !selectedDiff) return;
+    setActiveHunkIndex(focusedHunkIndex >= 0 ? focusedHunkIndex : hunkIndexes[0] ?? -1);
+  }, [open, previewMode, selectedPath, selectedDiff, focusedHunkIndex, hunkIndexes]);
+
+  useEffect(() => {
+    if (!open || previewMode !== "diff" || activeHunkIndex < 0) return;
     const frame = window.requestAnimationFrame(() => {
-      focusedHunkRef.current?.scrollIntoView({ block: "center" });
+      hunkRefs.current.get(activeHunkIndex)?.scrollIntoView({ block: "center" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, previewMode, selectedPath, focusedHunkIndex, changeSet?.focusHunk]);
+  }, [open, previewMode, selectedPath, activeHunkIndex]);
 
   if (!open || !project) return null;
 
@@ -163,6 +171,13 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
     } finally {
       setLoadingFiles(false);
     }
+  }
+
+  function moveHunk(direction: -1 | 1) {
+    if (!hunkIndexes.length) return;
+    const current = activeHunkPosition >= 0 ? activeHunkPosition : 0;
+    const next = Math.min(hunkIndexes.length - 1, Math.max(0, current + direction));
+    setActiveHunkIndex(hunkIndexes[next]);
   }
 
   return (
@@ -264,13 +279,45 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
                 </header>
                 {previewMode === "diff" && selectedDiff ? (
                   <div className="workspaceDiffPreview">
-                    <div><strong>{selectedDiff.path}</strong><span><b className="positive">+{selectedDiff.additions}</b><b className="negative">-{selectedDiff.deletions}</b></span></div>
+                    <div>
+                      <strong>{selectedDiff.path}</strong>
+                      <span>
+                        {hunkIndexes.length ? (
+                          <em className="workspaceDiffHunks">
+                            <button
+                              type="button"
+                              disabled={activeHunkPosition <= 0}
+                              onClick={() => moveHunk(-1)}
+                              title={t("workspaceFiles.previousHunk")}
+                              aria-label={t("workspaceFiles.previousHunk")}
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            {t("workspaceFiles.hunkPosition", { current: Math.max(1, activeHunkPosition + 1), total: hunkIndexes.length })}
+                            <button
+                              type="button"
+                              disabled={activeHunkPosition < 0 || activeHunkPosition >= hunkIndexes.length - 1}
+                              onClick={() => moveHunk(1)}
+                              title={t("workspaceFiles.nextHunk")}
+                              aria-label={t("workspaceFiles.nextHunk")}
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          </em>
+                        ) : null}
+                        <b className="positive">+{selectedDiff.additions}</b>
+                        <b className="negative">-{selectedDiff.deletions}</b>
+                      </span>
+                    </div>
                     {selectedDiff.hasPatch ? (
                       <pre tabIndex={0}>
                         {selectedDiff.lines.map((line, index) => (
                           <code
-                            className={`line-${classifyDiffLine(line)}${index === focusedHunkIndex ? " focusedHunk" : ""}`}
-                            ref={index === focusedHunkIndex ? (node) => { focusedHunkRef.current = node; } : undefined}
+                            className={`line-${classifyDiffLine(line)}${index === activeHunkIndex ? " focusedHunk" : ""}`}
+                            ref={line.startsWith("@@") ? (node) => {
+                              if (node) hunkRefs.current.set(index, node);
+                              else hunkRefs.current.delete(index);
+                            } : undefined}
                             key={`${selectedDiff.path}-${index}-${line}`}
                           >
                             {line || " "}
@@ -381,6 +428,10 @@ function diffFocusIndex(lines: string[], focusHunk: string | undefined): number 
     if (exact >= 0) return exact;
   }
   return lines.findIndex((line) => line.startsWith("@@"));
+}
+
+function diffHunkIndexes(lines: string[]): number[] {
+  return lines.flatMap((line, index) => line.startsWith("@@") ? [index] : []);
 }
 
 function normalizeReviewStatus(status: string | undefined): "pending" | "accepted" | "reverted" {

@@ -294,7 +294,7 @@ class AgentRunLoop:
                 self.tracer.event(
                     self.run_id,
                     "action.parsed",
-                    {"action": decision.action.to_dict(), "control_action": True},
+                    {"phase": capability_menu.phase, "action": decision.action.to_dict(), "control_action": True},
                     role=decision.action.role,
                 )
                 final_message = decision.action.params.get("message")
@@ -310,7 +310,7 @@ class AgentRunLoop:
                 self.tracer.event(
                     self.run_id,
                     "completion.evaluated",
-                    {"assessment": last_completion.to_dict()},
+                    {"phase": capability_menu.phase, "assessment": last_completion.to_dict()},
                     role=decision.action.role,
                 )
                 active_task, superseded = self._apply_steering(active_task, observations, step)
@@ -339,7 +339,7 @@ class AgentRunLoop:
                     self.tracer.event(
                         self.run_id,
                         "completion.rejected",
-                        {"action": decision.action.to_dict(), "assessment": last_completion.to_dict()},
+                        {"phase": capability_menu.phase, "action": decision.action.to_dict(), "assessment": last_completion.to_dict()},
                         role=decision.action.role,
                     )
                     self.tracer.event(
@@ -362,7 +362,7 @@ class AgentRunLoop:
                 self.tracer.event(
                     self.run_id,
                     "completion.passed",
-                    {"assessment": last_completion.to_dict()},
+                    {"phase": capability_menu.phase, "assessment": last_completion.to_dict()},
                     role=decision.action.role,
                 )
                 result = self._result(
@@ -387,6 +387,7 @@ class AgentRunLoop:
                 gateway=self.gateway,
                 tracer=self.tracer,
                 run_id=self.run_id,
+                phase=capability_menu.phase,
             ).execute(decision.action)
             observation = ActionObservation(
                 step=step,

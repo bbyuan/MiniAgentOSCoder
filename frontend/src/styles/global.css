@@ -17550,9 +17550,45 @@ button.controlSignal.active {
 
 .workspaceDiffPreview > div span {
   display: inline-flex;
+  align-items: center;
   gap: 8px;
   font-size: 12px;
   font-weight: 780;
+}
+
+.workspaceDiffHunks {
+  height: 26px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  font-style: normal;
+  font-weight: 720;
+}
+
+.workspaceDiffHunks button {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.workspaceDiffHunks button:not(:disabled):hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
+}
+
+.workspaceDiffHunks button:disabled {
+  cursor: not-allowed;
+  opacity: 0.36;
 }
 
 .workspaceDiffPreview pre {

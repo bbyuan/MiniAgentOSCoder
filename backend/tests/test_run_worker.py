@@ -166,7 +166,10 @@ def test_run_worker_waits_for_patch_approval_and_resumes_same_loop(tmp_path: Pat
     assert (tmp_path / "runs" / run.run_id / "patch.diff").read_text(encoding="utf-8").count("# Applied patch") == 1
     assert (tmp_path / "runs" / run.run_id / "report.md").exists()
     assert list((tmp_path / "runs" / run.run_id / "snapshots").rglob("manifest.json"))
-    events = [event["event"] for event in job.tracer.read_events(run.run_id)]
+    trace = job.tracer.read_events(run.run_id)
+    events = [event["event"] for event in trace]
+    approval_event = next(event for event in trace if event["event"] == "approval.requested")
+    assert approval_event["payload"]["phase"] == "waiting_approval"
     assert "approval.requested" in events
     assert "approval.resolved" in events
     assert "patch.snapshot.created" in events

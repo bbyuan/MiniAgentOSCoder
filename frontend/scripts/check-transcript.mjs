@@ -75,7 +75,7 @@ const resolvedItems = buildWorkItems([
   {
     event: "model.requested",
     time: "2026-09-01T09:21:33.000Z",
-    payload: { step: 1, request: { model: "deepseek-v4-flash" } },
+    payload: { phase: "inspect", step: 1, request: { model: "deepseek-v4-flash" } },
   },
   {
     event: "tool.executed",
@@ -106,6 +106,20 @@ assert(pendingItems[0].title === "请求模型判断下一步", "The active thin
 assert(pendingItems[0].category === "thinking", "Active model requests should be categorized as thinking activity.");
 assert(pendingItems[0].phase === "context", "Active model requests should belong to the context phase.");
 assert(pendingItems[0].chips.includes("模型：deepseek-v4-flash"), "Model metadata should stay attached to active thinking events.");
+
+const routedItems = buildWorkItems([
+  {
+    event: "tool.executed",
+    time: "2026-09-01T09:21:40.000Z",
+    payload: {
+      phase: "verify",
+      action: { action_id: "a2", type: "read_file", params: { path: "calculator.py" } },
+      result: { output: "ok" },
+    },
+  },
+], "zh", t);
+
+assert(routedItems[0].phase === "validate", "Runtime phase metadata should override the frontend action-name fallback.");
 
 const patchItems = buildWorkItems([
   {
@@ -147,6 +161,8 @@ assert(workspaceFilesSource.includes("focusPath?: string;"), "Workspace change s
 assert(workspaceFilesSource.includes("focusHunk?: string;"), "Workspace change sets should support a focused diff hunk.");
 assert(workspaceFilesSource.includes("changeSet?.focusPath ?? firstChanged"), "Workspace file review should open on the requested focused file.");
 assert(workspaceFilesSource.includes("scrollIntoView({ block: \"center\" })"), "Workspace file review should scroll the focused hunk into view.");
+assert(workspaceFilesSource.includes("diffHunkIndexes"), "Workspace file review should index diff hunks for navigation.");
+assert(workspaceFilesSource.includes("workspaceFiles.hunkPosition"), "Workspace file review should show the current diff hunk position.");
 
 assert(
   mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),

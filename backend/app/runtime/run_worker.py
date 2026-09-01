@@ -379,7 +379,7 @@ class RunWorker:
         job.tracer.event(
             job.run.run_id,
             "approval.requested",
-            {"approval": approval.to_dict()},
+            {"phase": job.run.status.value, "approval": approval.to_dict()},
         )
         job.tracer.event(job.run.run_id, "run.transitioned", {"status": job.run.status.value})
         job.on_state_changed(job.run, None)

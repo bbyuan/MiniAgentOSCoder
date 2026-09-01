@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 from uuid import uuid4
 
 from app.models import ActionIR, ToolResult
@@ -16,15 +17,16 @@ class ActionExecution(Serializable):
 
 
 class ActionExecutor:
-    def __init__(self, gateway: ToolGateway, tracer: TraceWriter, run_id: str) -> None:
+    def __init__(self, gateway: ToolGateway, tracer: TraceWriter, run_id: str, phase: str | None = None) -> None:
         self.gateway = gateway
         self.tracer = tracer
         self.run_id = run_id
+        self.phase = phase
 
     def execute(self, action: ActionIR) -> ActionExecution:
         if action.action_id is None:
             action.action_id = f"action-{uuid4().hex[:10]}"
-        self.tracer.event(self.run_id, "action.parsed", {"action": action.to_dict()}, role=action.role)
+        self.tracer.event(self.run_id, "action.parsed", self._payload({"action": action.to_dict()}), role=action.role)
 
         try:
             result = self.gateway.call(action)
@@ -38,7 +40,7 @@ class ActionExecutor:
             self.tracer.event(
                 self.run_id,
                 "action.rejected",
-                {"action": action.to_dict(), "result": result.to_dict()},
+                self._payload({"action": action.to_dict(), "result": result.to_dict()}),
                 role=action.role,
             )
             return ActionExecution(action=action, result=result)
@@ -47,7 +49,12 @@ class ActionExecutor:
         self.tracer.event(
             self.run_id,
             event_name,
-            {"action": action.to_dict(), "result": result.to_dict()},
+            self._payload({"action": action.to_dict(), "result": result.to_dict()}),
             role=action.role,
         )
         return ActionExecution(action=action, result=result)
+
+    def _payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if self.phase:
+            return {"phase": self.phase, **payload}
+        return payload

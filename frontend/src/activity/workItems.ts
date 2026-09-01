@@ -213,6 +213,8 @@ function workCategory(event: TraceEvent): WorkItemCategory {
 }
 
 function workPhase(event: TraceEvent): WorkItemPhase {
+  const phase = tracePhase(event);
+  if (phase) return phase;
   const name = actionName(event);
   if (event.event === "completion.passed" || event.event === "completion.rejected" || event.event === "report.generated" || event.event.startsWith("run.") || name === "finish") return "summary";
   if (name === "run_command" || name === "run_test" || name === "run_lint") return "validate";
@@ -220,6 +222,21 @@ function workPhase(event: TraceEvent): WorkItemPhase {
   if (name === "read_file" || name === "search_code" || name === "git_status" || name === "git_diff") return "inspect";
   if (name === "list_files" || event.event.startsWith("context.") || event.event.startsWith("memory.") || event.event.startsWith("model.")) return "context";
   return "context";
+}
+
+function tracePhase(event: TraceEvent): WorkItemPhase | undefined {
+  const request = asRecord(event.payload.request);
+  const metadata = asRecord(request?.metadata);
+  const raw = stringValue(event.payload.phase) ?? stringValue(metadata?.capability_phase);
+  if (!raw) return undefined;
+  if (raw === "inspect") return "inspect";
+  if (raw === "work" || raw === "repair") return "change";
+  if (raw === "verify") return "validate";
+  if (raw === "waiting_approval" || raw === "applying_patch") return "change";
+  if (raw === "testing") return "validate";
+  if (raw === "planning" || raw === "created") return "context";
+  if (raw === "completed" || raw === "failed" || raw === "cancelled") return "summary";
+  return undefined;
 }
 
 function processEvent(event: TraceEvent, locale: Locale, t: Translator): ProcessEvent {
