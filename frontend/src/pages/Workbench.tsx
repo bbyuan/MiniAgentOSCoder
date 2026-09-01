@@ -1143,8 +1143,12 @@ export function Workbench() {
                 busy: approvalBusy,
                 canAccept: true,
                 canReject: true,
-                onAccept: approveAction,
-                onReject: () => denyAction(t("approval.defaultDenyReason")),
+                onAccept: () => {
+                  void approveAction().finally(workspaceReview.closeWorkspaceFiles);
+                },
+                onReject: () => {
+                  void denyAction(t("approval.defaultDenyReason")).finally(workspaceReview.closeWorkspaceFiles);
+                },
               }
             : workspaceReview.appliedReviewActions
         }
