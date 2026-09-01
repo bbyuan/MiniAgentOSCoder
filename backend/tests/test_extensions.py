@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FAKE_MCP = Path(__file__).parent / "fixtures" / "fake_mcp_server.py"
 
 
-def test_catalog_recommends_mode_skills_and_rejects_incompatible_selection(tmp_path: Path) -> None:
+def test_catalog_recommends_mode_skills_and_allows_manual_selection(tmp_path: Path) -> None:
     catalog, settings, registry = load_extension_catalog(
         tmp_path,
         "Review",
@@ -40,12 +40,11 @@ def test_catalog_recommends_mode_skills_and_rejects_incompatible_selection(tmp_p
     assert settings.active_skill_ids == ["code-review"]
     assert next(skill for skill in catalog.skills if skill.id == "code-review").recommended is True
 
-    with pytest.raises(ValueError, match="not compatible"):
-        validate_extension_settings(
-            catalog,
-            ExtensionSettings(active_skill_ids=["bugfix"]),
-            "Review",
-        )
+    validate_extension_settings(
+        catalog,
+        ExtensionSettings(active_skill_ids=["bugfix"]),
+        "Review",
+    )
 
 
 def test_planner_discloses_only_active_skill_content() -> None:

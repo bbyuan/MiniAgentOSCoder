@@ -925,7 +925,7 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
             "enabled_hook_ids": [],
         },
     )
-    invalid = client.put(
+    cross_mode = client.put(
         url,
         json={
             "active_skill_ids": ["code-review"],
@@ -948,7 +948,8 @@ def test_extensions_api_configures_mode_skills_before_launch(tmp_path: Path) -> 
     assert skill_compatibility["bugfix"] is True
     assert skill_compatibility["code-review"] is False
     assert updated.json()["settings"]["active_skill_ids"] == ["bugfix"]
-    assert invalid.status_code == 422
+    assert cross_mode.status_code == 200
+    assert cross_mode.json()["settings"]["active_skill_ids"] == ["code-review"]
 
 
 def test_extensions_are_activated_in_planner_and_locked_after_launch(tmp_path: Path, monkeypatch) -> None:

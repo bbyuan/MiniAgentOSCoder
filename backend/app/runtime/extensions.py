@@ -86,8 +86,6 @@ def validate_extension_settings(catalog: ExtensionCatalog, settings: ExtensionSe
         skill = skills.get(skill_id)
         if skill is None or not skill.valid:
             raise ValueError(f"Unknown or invalid skill: {skill_id}")
-        if skill.modes and mode not in skill.modes:
-            raise ValueError(f"Skill {skill_id} is not compatible with mode {mode}")
     for server_id in settings.enabled_mcp_server_ids:
         server = servers.get(server_id)
         if server is None or not server.valid:

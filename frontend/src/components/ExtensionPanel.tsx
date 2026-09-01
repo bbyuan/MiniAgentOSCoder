@@ -175,7 +175,7 @@ export function ExtensionPanel({
           {skills.map((skill) => {
             const enabled = settings.active_skill_ids.includes(skill.id);
             const compatible = skill.compatible ?? true;
-            const disabled = !editable || busy || !skill.valid || (!compatible && !enabled);
+            const disabled = !editable || busy || !skill.valid;
             const modeDetail = skill.modes.length > 0
               ? t("extensions.skillModes", { modes: skill.modes.map((mode) => translateMode(locale, mode)).join(locale === "zh" ? "、" : ", ") })
               : t("extensions.allModes");
@@ -364,14 +364,16 @@ function CapabilityRow({
     ? translateKnownText(locale, event?.event ?? "")
     : !valid
       ? t("extensions.badge.invalid")
-      : !compatible
-        ? t("extensions.badge.incompatible")
-        : enabled
-          ? t("extensions.badge.enabled")
-          : t("extensions.badge.off");
+      : enabled && !compatible
+        ? t("extensions.badge.enabledOverride")
+        : !compatible
+          ? t("extensions.badge.notRecommended")
+          : enabled
+            ? t("extensions.badge.enabled")
+            : t("extensions.badge.off");
   const tone = failed ? "failed" : !valid || !compatible ? "warning" : enabled ? "enabled" : "off";
   return (
-    <label className={`extensionRow ${enabled ? "enabled" : ""} ${failed ? "failed" : ""} ${!valid || !compatible ? "unavailable" : ""}`}>
+    <label className={`extensionRow ${enabled ? "enabled" : ""} ${failed ? "failed" : ""} ${!valid ? "unavailable" : ""} ${!compatible ? "notRecommended" : ""}`}>
       <span className="extensionMain">
         <strong>{name}</strong>
         <small>{description}</small>
