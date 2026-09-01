@@ -23757,3 +23757,122 @@ summary:focus-visible {
     border-bottom: 1px solid var(--hairline);
   }
 }
+
+/* Completion card v3: remove nested boxes and let the result breathe. */
+.completionSummary.tone-completed {
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 34%, var(--surface)) 0, var(--surface-raised) 132px),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045), 0 22px 68px rgba(15, 23, 42, 0.075);
+}
+
+.completionSummary.tone-completed::before {
+  width: 3px;
+}
+
+.completionSummary.tone-completed .completionLead {
+  min-height: 92px;
+  padding: 22px 24px 20px 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.completionSummary.tone-completed .completionLead > svg {
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border: 0;
+  background: color-mix(in srgb, var(--success-soft) 72%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+.completionSummary.tone-completed .completionLead strong {
+  font-size: clamp(24px, 2vw, 30px);
+}
+
+.completionSummary.tone-completed .completionSignals,
+.completionSummary.tone-completed .completionDetails,
+.completionSummary.tone-completed .completionEvidenceDisclosure {
+  margin: 0 24px;
+}
+
+.completionSummary.tone-completed .completionSignals {
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+}
+
+.completionSummary.tone-completed .completionSignals > div {
+  min-height: 52px;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.completionSummary.tone-completed .completionSignals svg {
+  background: color-mix(in srgb, var(--surface-subtle) 62%, transparent);
+}
+
+.completionSummary.tone-completed .completionDetails,
+.completionSummary.tone-completed .completionEvidenceDisclosure {
+  overflow: visible;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+
+.completionSummary.tone-completed .completionDetails:last-child,
+.completionSummary.tone-completed .completionEvidenceDisclosure:last-child {
+  margin-bottom: 18px;
+}
+
+.completionSummary.tone-completed .completionDetails summary,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  min-height: 58px;
+  padding: 0;
+  background: transparent;
+}
+
+.completionSummary.tone-completed .completionDetails[open] summary {
+  border-bottom-color: color-mix(in srgb, var(--border) 54%, transparent);
+}
+
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary > svg:first-child {
+  background: color-mix(in srgb, var(--success-soft) 54%, var(--surface));
+}
+
+.completionSummary.tone-completed .completionEvidenceDisclosure > div {
+  border-top-color: color-mix(in srgb, var(--border) 54%, transparent);
+}
+
+.completionSummary.tone-completed .completionFullMessage {
+  padding: 16px 0 18px;
+}
+
+.completionSummary.tone-completed .completionDetailGrid article {
+  border: 0;
+  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
+}
+
+.completionSummary.tone-completed .completionEvidence.embeddedEvidence ul {
+  padding: 8px 0 16px;
+}
+
+@media (max-width: 760px) {
+  .completionSummary.tone-completed .completionLead {
+    min-height: 80px;
+    padding: 18px 18px 16px 22px;
+  }
+
+  .completionSummary.tone-completed .completionSignals,
+  .completionSummary.tone-completed .completionDetails,
+  .completionSummary.tone-completed .completionEvidenceDisclosure {
+    margin-inline: 18px;
+  }
+}
