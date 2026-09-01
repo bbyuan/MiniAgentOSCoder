@@ -190,6 +190,8 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert context["required_items"] == ["user_task", "project_profile", "current_plan"]
     assert context["explanation"][0]["id"] == "user_task"
     assert artifacts["test_summary"]["command"] in ["pytest", "Not selected"]
+    assert artifacts["diff_preview"] == {"available": False, "content": "", "truncated": False}
+    assert set(artifacts["change_review"]) == {"status", "decided_at", "checkpoint_id", "reason"}
     admission = client.get(f"/runs/{run['run_id']}/admission").json()
     assert admission["run_id"] == run["run_id"]
     assert set(admission["resources"]) == {

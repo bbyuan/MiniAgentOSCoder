@@ -30,6 +30,7 @@ from app.runtime.model_provider import (
 from app.runtime.model_routing import blocked_model_route_plan, build_model_route_plan
 from app.runtime.paths import default_agent_dir
 from app.runtime.recovery import RecoveryError, RunRecovery
+from app.runtime.run_review import read_patch_preview, record_change_review
 from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.run_worker import RunJob, RunWorkerConflict
 from app.runtime.state_machine import transition_run
@@ -328,7 +329,8 @@ def get_run_artifacts(run_id: str) -> dict[str, object]:
     if artifacts is None:
         raise HTTPException(status_code=404, detail="Run artifacts not found")
     payload = artifacts.to_dict()
-    payload["diff_preview"] = _read_patch_preview(run_id)
+    project = _project_for_run(run_id)
+    payload["diff_preview"] = read_patch_preview(project.path if project is not None else None, run_id)
     return payload
 
 
@@ -394,23 +396,6 @@ def get_run_report(run_id: str) -> dict[str, object]:
         "patch_available": writer.patch_path.is_file(),
         "patch_count": run.applied_patches,
         "files": run.changed_files,
-    }
-
-
-def _read_patch_preview(run_id: str, max_lines: int = 180) -> dict[str, object]:
-    project = _project_for_run(run_id)
-    if project is None:
-        return {"available": False, "content": "", "truncated": False}
-    writer = RunArtifactWriter(project.path, run_id)
-    if not writer.patch_path.is_file():
-        return {"available": False, "content": "", "truncated": False}
-    content = redact_secrets(writer.patch_path.read_text(encoding="utf-8", errors="replace"))
-    lines = content.splitlines()
-    truncated = len(lines) > max_lines
-    return {
-        "available": True,
-        "content": "\n".join(lines[:max_lines]),
-        "truncated": truncated,
     }
 
 
@@ -993,13 +978,14 @@ def _set_change_review(
     artifacts = store.artifacts.get(run_id)
     if artifacts is None:
         raise HTTPException(status_code=404, detail="Run artifacts not found")
-    artifacts.change_review.status = status
-    artifacts.change_review.decided_at = datetime.now(timezone.utc).isoformat()
-    artifacts.change_review.checkpoint_id = checkpoint_id
-    artifacts.change_review.reason = redact_secrets(reason.strip())[:1000]
-    review = artifacts.change_review.to_dict()
-    store.history.update_change_review(run_id, review)
-    return review
+    return record_change_review(
+        artifacts=artifacts,
+        history=store.history,
+        run_id=run_id,
+        status=status,
+        reason=reason,
+        checkpoint_id=checkpoint_id,
+    )
 
 
 def _consolidate_terminal_memory(run_id: str, tracer: TraceWriter) -> None:
