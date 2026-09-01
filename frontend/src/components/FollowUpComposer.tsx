@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, FlaskConical, MessageSquareText, Wrench } from "lucide-react";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -50,16 +50,32 @@ export function FollowUpComposer({
       <div className="followUpTemplates" aria-label={t("session.templates")}>
         <span>{t("session.templatesShort")}</span>
         {templates.map((template) => (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onUseTemplate(template)}
-            key={template}
-          >
-            {t(template)}
-          </button>
+          <TemplateButton busy={busy} key={template} template={template} onClick={() => onUseTemplate(template)} />
         ))}
       </div>
     </section>
+  );
+}
+
+function TemplateButton({
+  busy,
+  template,
+  onClick,
+}: {
+  busy: boolean;
+  template: TranslationKey;
+  onClick: () => void;
+}) {
+  const { t } = usePreferences();
+  const Icon = template === "session.template.fixFailure"
+    ? Wrench
+    : template === "session.template.addTests"
+      ? FlaskConical
+      : MessageSquareText;
+  return (
+    <button type="button" disabled={busy} onClick={onClick}>
+      <Icon size={13} />
+      {t(template)}
+    </button>
   );
 }

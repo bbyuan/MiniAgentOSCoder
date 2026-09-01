@@ -24676,3 +24676,142 @@ summary:focus-visible {
     white-space: normal;
   }
 }
+
+/* Follow-up composer v4: quiet command surface with legible suggestions. */
+.productContent .runSimpleLayout .followUpComposer {
+  margin-top: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .followUpComposer > label {
+  padding: 0 0 9px 2px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type {
+  min-height: 72px;
+  padding: 11px 12px 11px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 52%, transparent),
+    0 10px 28px rgba(15, 23, 42, 0.045);
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type:focus-within {
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, var(--border-strong)),
+    0 12px 30px rgba(15, 23, 42, 0.055);
+}
+
+.productContent .runSimpleLayout .followUpComposer textarea {
+  min-height: 48px;
+  padding: 4px 0;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.productContent .runSimpleLayout .followUpComposer textarea:focus,
+.productContent .runSimpleLayout .followUpComposer textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type > button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--text);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type > button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--accent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type > button:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--text-tertiary) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--text-tertiary));
+  opacity: 1;
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .followUpTemplates {
+  margin-top: 10px;
+  padding-left: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates > span {
+  margin-right: 2px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 28px;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button {
+  width: auto;
+  min-height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-subtle) 54%, transparent);
+  font-size: 12px;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button + button::before {
+  content: none;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button svg {
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-secondary));
+}
+
+.productContent .runSimpleLayout .followUpTemplates button:hover:not(:disabled) {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 52%, transparent);
+}
+
+@media (max-width: 640px) {
+  .productContent .runSimpleLayout .followUpTemplates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productContent .runSimpleLayout .followUpTemplates button {
+    justify-content: flex-start;
+    white-space: normal;
+  }
+}
