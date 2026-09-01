@@ -24,9 +24,11 @@ frontend/desktop-build/
 # Runtime outputs
 runs/
 .tmp-*/
-.agent/index/
-.agent/project-profile.json
-.agent/sandboxes/
+**/.agent/index/
+**/.agent/project-profile.json
+**/.agent/agentpacks/versions/
+**/.agent/memory/
+**/.agent/sandboxes/
 
 # Local secrets
 .env
