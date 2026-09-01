@@ -25,11 +25,14 @@ def get_run_evidence(run_id: str) -> dict[str, object]:
     artifacts = store.artifacts.get(run_id)
     result = store.run_results.get(run_id)
     items = [
+        _prompt_evidence(trace),
         _context_evidence(context),
         _model_evidence(trace),
+        _role_evidence(trace),
         _tool_evidence(trace),
         _governance_evidence(trace),
         _extension_evidence(trace),
+        _memory_evidence(trace),
         _test_evidence(artifacts.test_summary.to_dict() if artifacts is not None else None),
         _completion_evidence(result.completion.to_dict() if result is not None and result.completion is not None else None, run.status),
     ]
@@ -70,6 +73,20 @@ def _context_evidence(context) -> dict[str, object]:
     return _item("context", "ready" if selected else "pending", len(selected), detail, "context_pack", details)
 
 
+def _prompt_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
+    request_events = [event for event in trace if event.get("event") == "model.requested"]
+    latest_layers = _latest_prompt_layers(request_events)
+    layer_count = len(latest_layers)
+    state = "ready" if layer_count else "pending"
+    token_total = sum(int(layer.get("tokens", 0) or 0) for layer in latest_layers)
+    detail = f"{layer_count} prompt layers, approximately {token_total} tokens"
+    details = [
+        _detail("prompt_layer", f"{_safe_value(str(layer.get('id', 'layer')))}: {int(layer.get('tokens', 0) or 0)}")
+        for layer in latest_layers[:6]
+    ]
+    return _item("prompt", state, layer_count, detail, "planner", details)
+
+
 def _model_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
     requested = _count(trace, "model.requested")
     cached = _count(trace, "model.cache.hit")
@@ -84,6 +101,26 @@ def _model_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
         *_limited_details("model_name", model_names, limit=4),
     ]
     return _item("model", state, requested + cached + responded, detail, "trace", details)
+
+
+def _role_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
+    reviews = _count(trace, "agent.review.completed")
+    verifications = _count(trace, "agent.verification.completed")
+    warnings = sum(
+        1 for event in trace
+        if event.get("event") == "agent.review.completed"
+        and isinstance(event.get("payload"), dict)
+        and isinstance(event["payload"].get("assessment"), dict)
+        and event["payload"]["assessment"].get("verdict") == "needs_attention"
+    )
+    state = "warning" if warnings else "ready" if reviews or verifications else "pending"
+    detail = f"{reviews} reviewer checks, {verifications} verifier checks, {warnings} warnings"
+    details = [
+        _detail("agent_review", str(reviews), "warning" if warnings else "ready"),
+        _detail("agent_verification", str(verifications)),
+        _detail("agent_warning", str(warnings), "warning" if warnings else "ready"),
+    ]
+    return _item("agent_roles", state, reviews + verifications, detail, "role_board", details)
 
 
 def _tool_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
@@ -128,6 +165,20 @@ def _extension_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
         _detail("hook_events", str(hooks)),
     ]
     return _item("extensions", state, skills + mcp_calls + hooks, detail, "extension_runtime", details)
+
+
+def _memory_evidence(trace: list[dict[str, Any]]) -> dict[str, object]:
+    written = _count(trace, "memory.written")
+    failed = _count(trace, "memory.failed")
+    latest = _latest_memory_recommendations(trace)
+    state = "failed" if failed else "ready" if written or latest else "pending"
+    detail = f"{len(latest)} recommendations, {written} writes, {failed} failed"
+    details = [
+        _detail("memory_recommendations", str(len(latest))),
+        _detail("memory_written", str(written)),
+        _detail("memory_failed", str(failed), "failed" if failed else "ready"),
+    ]
+    return _item("memory", state, len(latest) + written, detail, "memory_manager", details)
 
 
 def _test_evidence(test_summary: dict[str, Any] | None) -> dict[str, object]:
@@ -260,3 +311,33 @@ def _model_names(trace: list[dict[str, Any]]) -> list[str]:
         if isinstance(request, dict) and isinstance(request.get("model"), str):
             names.append(request["model"])
     return names
+
+
+def _latest_prompt_layers(request_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for event in reversed(request_events):
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        request = payload.get("request", {})
+        if not isinstance(request, dict):
+            continue
+        metadata = request.get("metadata", {})
+        if not isinstance(metadata, dict):
+            continue
+        layers = metadata.get("prompt_layers", [])
+        if isinstance(layers, list):
+            return [layer for layer in layers if isinstance(layer, dict)]
+    return []
+
+
+def _latest_memory_recommendations(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for event in reversed(trace):
+        if event.get("event") != "memory.written":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            return []
+        recommendations = payload.get("recommendations", [])
+        if isinstance(recommendations, list):
+            return [item for item in recommendations if isinstance(item, dict)]
+    return []

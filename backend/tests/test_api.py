@@ -690,10 +690,13 @@ def test_run_evidence_summarizes_runtime_without_content(tmp_path: Path) -> None
     assert payload["ready"] >= 4
     assert {item["id"] for item in payload["items"]} == {
         "context",
+        "prompt",
         "model",
+        "agent_roles",
         "tools",
         "governance",
         "extensions",
+        "memory",
         "tests",
         "completion",
     }

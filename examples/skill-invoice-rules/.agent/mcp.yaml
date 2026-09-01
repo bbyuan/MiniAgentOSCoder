@@ -1,0 +1,11 @@
+servers:
+  - id: invoice-rules
+    name: Invoice Rules MCP
+    transport: stdio
+    command:
+      - python3
+      - scripts/rules_mcp.py
+    timeout_seconds: 15
+    env_allow: []
+    effect: mcp.call
+    risk: medium

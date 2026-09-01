@@ -1,0 +1,13 @@
+skills:
+  - id: regional-tax-bugfix
+    name: Regional Tax Bugfix
+    description: Fix invoice tax logic using the local tax rules document before editing code.
+    path: .agent/skills/regional-tax-bugfix/SKILL.md
+    modes:
+      - Bugfix
+    default_tools:
+      - read_file
+      - search_code
+      - apply_patch
+      - run_test
+    risk: medium

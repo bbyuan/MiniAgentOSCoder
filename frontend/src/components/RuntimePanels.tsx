@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, FlaskConical, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Activity, BrainCircuit, Check, CircleAlert, CircleGauge, Database, FlaskConical, FileText, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -131,6 +131,9 @@ export function RuntimePanels({
   const providerRequests = trace.filter((event) => event.event === "model.requested").length;
   const cacheHits = trace.filter((event) => event.event === "model.cache.hit").length;
   const planningTurns = providerRequests + cacheHits;
+  const promptLayerCount = latestPromptLayerCount(trace);
+  const roleChecks = trace.filter((event) => event.event === "agent.review.completed" || event.event === "agent.verification.completed").length;
+  const memorySuggestions = memory?.recommendations?.length ?? latestMemorySuggestionCount(trace);
   const routedUsage = summarizeRoutedUsage(trace);
   const latestMenu = [...trace].reverse().find((event) => event.event === "capability.menu.built");
   const disclosedTools = Array.isArray(latestMenu?.payload.tools)
@@ -209,16 +212,34 @@ export function RuntimePanels({
 
             <div className="runtimeFocusSummary">
               <article>
+                <GitPullRequest size={14} />
                 <small>{t("control.changedFiles")}</small>
                 <strong>{t("diff.files", { count: diff.files })}</strong>
               </article>
               <article>
+                <FlaskConical size={14} />
                 <small>{t("control.testStatus")}</small>
                 <strong>{translateKnownText(locale, tests.status)}</strong>
               </article>
               <article>
+                <ShieldCheck size={14} />
                 <small>{t("control.evidenceReady")}</small>
                 <strong>{evidence ? t("evidence.score", { ready: evidence.ready, total: evidence.items.length }) : t("evidence.pending")}</strong>
+              </article>
+              <article>
+                <FileText size={14} />
+                <small>{t("runtimeConfig.prompt")}</small>
+                <strong>{t("runtimeConfig.promptValue", { count: promptLayerCount })}</strong>
+              </article>
+              <article>
+                <GitBranch size={14} />
+                <small>{t("runtimeConfig.agents")}</small>
+                <strong>{t("runtimeConfig.agentValue", { count: roleChecks })}</strong>
+              </article>
+              <article>
+                <Database size={14} />
+                <small>{t("runtimeConfig.memory")}</small>
+                <strong>{t("runtimeConfig.memoryValue", { count: memorySuggestions })}</strong>
               </article>
             </div>
 
@@ -401,6 +422,26 @@ function summarizeRoutedUsage(trace: TraceEvent[]): Array<{ profile: string; mod
     usage.set(profile, current);
   }
   return [...usage.values()].sort((left, right) => right.calls - left.calls || left.profile.localeCompare(right.profile));
+}
+
+function latestPromptLayerCount(trace: TraceEvent[]): number {
+  for (const event of [...trace].reverse()) {
+    if (event.event !== "model.requested") continue;
+    const request = isRecord(event.payload.request) ? event.payload.request : undefined;
+    const metadata = request && isRecord(request.metadata) ? request.metadata : undefined;
+    const layers = metadata?.prompt_layers;
+    if (Array.isArray(layers)) return layers.length;
+  }
+  return 0;
+}
+
+function latestMemorySuggestionCount(trace: TraceEvent[]): number {
+  for (const event of [...trace].reverse()) {
+    if (event.event !== "memory.written") continue;
+    const recommendations = event.payload.recommendations;
+    return Array.isArray(recommendations) ? recommendations.length : 0;
+  }
+  return 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

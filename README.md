@@ -227,6 +227,13 @@ cd backend
 
 The demo copies `examples/python-bugfix` into a temporary workspace, scans it, builds a context pack, applies a patch through Patch Pipeline, runs tests before and after the patch, and writes artifacts under `runs/{run_id}/`.
 
+Additional Workbench fixtures live under `examples/`:
+
+- `feature-contact-book`: Feature-mode contact import behavior with failing unittest coverage.
+- `review-auth-service`: Review-mode security audit fixture with passing smoke tests but intentional risks.
+- `skill-invoice-rules`: Bugfix fixture with project Skill, optional Hook/MCP declarations, domain rule context, and failing tests.
+- `spec-cache-ttl`: Spec-mode OpenSpec change with failing TTL acceptance tests.
+
 Offline Benchmark and Context ablation:
 
 ```text

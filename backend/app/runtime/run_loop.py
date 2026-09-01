@@ -21,6 +21,7 @@ from app.runtime.completion_guard import evaluate_completion
 from app.runtime.model_client import ModelClient
 from app.runtime.planner import plan_next_action
 from app.runtime.prompt_cache import PromptCache
+from app.runtime.role_board import review_planned_action, verify_observation
 from app.runtime.tracer import TraceWriter
 from app.tools import ToolGateway
 
@@ -245,6 +246,18 @@ class AgentRunLoop:
             _add_usage(token_usage, decision.response.usage)
             if decision.cache_hit:
                 self.model_cache_hits += 1
+            review = review_planned_action(
+                decision.action,
+                contract=contract,
+                phase=capability_menu.phase,
+                observations=observations,
+            )
+            self.tracer.event(
+                self.run_id,
+                "agent.review.completed",
+                {"phase": capability_menu.phase, "assessment": review.to_dict()},
+                role=review.role,
+            )
             if self.should_cancel():
                 return self._cancelled_result(
                     steps=step,
@@ -398,6 +411,13 @@ class AgentRunLoop:
                 metadata=execution.result.metadata,
             )
             observations.append(observation)
+            verification = verify_observation(observation, phase=capability_menu.phase)
+            self.tracer.event(
+                self.run_id,
+                "agent.verification.completed",
+                {"phase": capability_menu.phase, "assessment": verification.to_dict()},
+                role=verification.role,
+            )
             self.tracer.event(
                 self.run_id,
                 "observation.recorded",

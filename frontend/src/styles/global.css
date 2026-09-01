@@ -2618,6 +2618,105 @@ button.statusChip:hover {
   background: var(--danger-soft);
 }
 
+.memoryRecommendationPanel {
+  margin: 0 0 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
+}
+
+.memoryRecommendationHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memoryRecommendationHeader > span {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.memoryRecommendationHeader div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.memoryRecommendationHeader strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 740;
+}
+
+.memoryRecommendationHeader small {
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.memoryRecommendationList {
+  margin-top: 9px;
+  display: grid;
+  gap: 7px;
+}
+
+.memoryRecommendationList article {
+  padding: 9px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.memoryRecommendationList header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memoryRecommendationList header span,
+.memoryRecommendationList header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memoryRecommendationList header span {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.memoryRecommendationList header strong {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 760;
+}
+
+.memoryRecommendationList p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.memoryRecommendationList small {
+  margin-top: 6px;
+  display: block;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 8px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .contextBudget > div:first-child,
 .compactionTarget,
 .memoryEditorHeader,
@@ -15917,20 +16016,34 @@ button.controlSignal.active {
 /* Product default: inspector shows user signals first, audit trail on demand. */
 .runtimeFocusSummary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .runtimeFocusSummary article {
   min-width: 0;
-  min-height: 62px;
-  padding: 11px 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border: 1px solid var(--hairline);
+  min-height: 72px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 9px;
+  border: 0;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 52%, transparent);
+}
+
+.runtimeFocusSummary article > svg {
+  width: 26px;
+  height: 26px;
+  padding: 6px;
+  grid-row: 1 / 3;
+  align-self: center;
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 76%, var(--surface));
 }
 
 .runtimeFocusSummary small,
@@ -15948,7 +16061,6 @@ button.controlSignal.active {
 }
 
 .runtimeFocusSummary strong {
-  margin-top: 5px;
   color: var(--text);
   font-size: 14px;
 }
@@ -23964,6 +24076,12 @@ summary:focus-visible {
 }
 
 .completionSummary.tone-completed .completionFullMessage.markdownDocument {
+  box-sizing: border-box;
+  width: calc(100% - clamp(64px, 10vw, 176px));
+  min-width: 0;
+  max-width: 1280px;
+  margin-right: auto;
+  margin-left: auto;
   padding: 16px 0 18px;
 }
 

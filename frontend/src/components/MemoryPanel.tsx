@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrainCircuit, Check, Clock3, Database, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { BrainCircuit, Check, Clock3, Database, Lightbulb, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { MemoryEntry, MemoryInput, MemoryResponse, MemoryScope } from "../api/client";
 import { translateKnownText, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -28,6 +28,7 @@ export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: Memo
   const latestEntry = Object.values(memory?.entries ?? {})
     .flat()
     .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
+  const recommendations = memory?.recommendations ?? [];
 
   useEffect(() => {
     setEditingId(undefined);
@@ -109,6 +110,30 @@ export function MemoryPanel({ memory, busy, onCreate, onUpdate, onDelete }: Memo
           <em title={latestEntry?.source}>{latestEntry?.source ?? t("memory.insight.noneHint")}</em>
         </div>
       </div>
+
+      {recommendations.length > 0 ? (
+        <div className="memoryRecommendationPanel">
+          <div className="memoryRecommendationHeader">
+            <span><Lightbulb size={14} /></span>
+            <div>
+              <strong>{t("memory.recommendations")}</strong>
+              <small>{t("memory.recommendationsHint", { count: recommendations.length })}</small>
+            </div>
+          </div>
+          <div className="memoryRecommendationList">
+            {recommendations.slice(0, 3).map((item, index) => (
+              <article key={`${item.kind}-${item.scope}-${index}`}>
+                <header>
+                  <span>{translateKnownText(locale, item.kind)}</span>
+                  <strong>{t("memory.importance", { score: item.importance })}</strong>
+                </header>
+                <p>{translateKnownText(locale, item.reason)}</p>
+                <small>{item.content_preview}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="memoryScopes" role="tablist" aria-label={t("memory.title")}>
         {scopes.map((item) => (

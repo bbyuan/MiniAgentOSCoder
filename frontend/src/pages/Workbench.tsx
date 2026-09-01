@@ -51,6 +51,7 @@ import { RunCenter } from "../components/RunCenter";
 import { RunChangeReviewPill } from "../components/RunChangeReviewPill";
 import { RuntimePanels } from "../components/RuntimePanels";
 import { RuntimeConnectionPanel } from "../components/RuntimeConnectionPanel";
+import { RuntimeConfigStrip } from "../components/RuntimeConfigStrip";
 import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { SplashScreen } from "../components/SplashScreen";
@@ -985,6 +986,19 @@ export function Workbench() {
           </header>
 
           <ConversationHistory conversation={conversation} currentRunId={runId} />
+
+          <RuntimeConfigStrip
+            contract={contract}
+            context={contextPack}
+            evidence={evidence}
+            extensions={extensions}
+            governance={governance}
+            memory={memory}
+            model={modelStatus}
+            status={runStatus}
+            trace={traceEvents}
+            onOpen={openControlPlaneTarget}
+          />
 
           {!terminal ? (
             <RunStatusDeck

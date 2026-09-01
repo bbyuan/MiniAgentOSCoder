@@ -51,6 +51,7 @@ def get_memory(run_id: str) -> dict[str, object]:
             "project": len(project_entries),
             "long_term": len(long_term),
         },
+        "recommendations": _memory_recommendations(run_id),
     }
 
 
@@ -139,3 +140,23 @@ def _trace(run_id: str, event: str, entry, *, automatic: bool) -> None:
         },
     )
 
+
+def _memory_recommendations(run_id: str) -> list[dict[str, object]]:
+    project = _project_for_run(run_id)
+    if project is None:
+        return []
+    events = TraceWriter(project.path / "runs").read_events(run_id)
+    for event in reversed(events):
+        if event.get("event") != "memory.written":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            return []
+        recommendations = payload.get("recommendations", [])
+        if not isinstance(recommendations, list):
+            return []
+        return [
+            item for item in recommendations
+            if isinstance(item, dict)
+        ]
+    return []

@@ -322,3 +322,20 @@ def test_planner_requests_a_concise_completion_in_the_task_language() -> None:
 
     assert "same language as the user's task" in system_prompt
     assert "result, changed files, and verification outcome" in system_prompt
+
+
+def test_planner_exposes_prompt_layer_metadata() -> None:
+    request = build_action_request("Fix the parser", AgentContract("agent"), [])
+
+    layers = request.metadata["prompt_layers"]
+    assert request.metadata["prompt_layer_count"] == len(layers)
+    assert [layer["id"] for layer in layers] == [
+        "system_action_ir",
+        "task",
+        "tools",
+        "skill_cards",
+        "loaded_skills",
+        "context",
+        "observations",
+    ]
+    assert all(layer["tokens"] > 0 for layer in layers)

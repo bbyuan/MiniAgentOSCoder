@@ -71,6 +71,10 @@ class RunArtifactWriter:
         mcp_servers = [event for event in trace_events if event.get("event") == "mcp.server.started"]
         mcp_calls = [event for event in trace_events if event.get("event") == "mcp.tool.called"]
         hook_executions = [event for event in trace_events if event.get("event") == "hook.finished"]
+        prompt_layers = _latest_prompt_layers(trace_events)
+        role_reviews = [event for event in trace_events if event.get("event") == "agent.review.completed"]
+        role_verifications = [event for event in trace_events if event.get("event") == "agent.verification.completed"]
+        memory_recommendations = _latest_memory_recommendations(trace_events)
         completion_lines = _completion_lines(result)
 
         report = "\n".join(
@@ -135,6 +139,13 @@ class RunArtifactWriter:
                 f"- Denied effects: {_inline_list(contract.effects.deny)}",
                 f"- Policies: {_mapping_list(policies)}",
                 "",
+                "## Prompt And Agent Roles",
+                "",
+                f"- Prompt layers: {len(prompt_layers)}",
+                *_prompt_layer_lines(prompt_layers),
+                f"- Reviewer checks: {len(role_reviews)}",
+                f"- Verifier checks: {len(role_verifications)}",
+                "",
                 "## Extensions",
                 "",
                 f"- Active skills: {_event_ids(active_skills, 'skill_id')}",
@@ -150,6 +161,8 @@ class RunArtifactWriter:
                 f"- Context compactions: {context_pack.compaction_count}",
                 f"- Context threshold: `{context_pack.threshold_state}`",
                 f"- Memory references: {_inline_list(run.memory_refs)}",
+                f"- Memory recommendations: {len(memory_recommendations)}",
+                *_memory_recommendation_lines(memory_recommendations),
                 f"- Policy evaluations: {len(policy_evaluations)} ({len(denied_evaluations)} denied)",
                 f"- Sandbox executions: {len(sandbox_executions)}",
                 f"- Trace events before report: {len(trace_events)}",
@@ -202,3 +215,49 @@ def _completion_lines(result: RunLoopResult) -> list[str]:
         for check in assessment.checks
     )
     return lines
+
+
+def _latest_prompt_layers(trace_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for event in reversed(trace_events):
+        if event.get("event") != "model.requested":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        request = payload.get("request", {})
+        if not isinstance(request, dict):
+            continue
+        metadata = request.get("metadata", {})
+        if not isinstance(metadata, dict):
+            continue
+        layers = metadata.get("prompt_layers", [])
+        if isinstance(layers, list):
+            return [layer for layer in layers if isinstance(layer, dict)]
+    return []
+
+
+def _prompt_layer_lines(layers: list[dict[str, Any]]) -> list[str]:
+    return [
+        f"- `{layer.get('id', 'layer')}`: {layer.get('tokens', 0)} tokens; {layer.get('purpose', '')}"
+        for layer in layers
+    ]
+
+
+def _latest_memory_recommendations(trace_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for event in reversed(trace_events):
+        if event.get("event") != "memory.written":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        recommendations = payload.get("recommendations", [])
+        if isinstance(recommendations, list):
+            return [item for item in recommendations if isinstance(item, dict)]
+    return []
+
+
+def _memory_recommendation_lines(recommendations: list[dict[str, Any]]) -> list[str]:
+    return [
+        f"- `{item.get('kind', 'memory')}` -> `{item.get('scope', 'project')}` score={item.get('importance', 0)}; {item.get('reason', '')}"
+        for item in recommendations
+    ]

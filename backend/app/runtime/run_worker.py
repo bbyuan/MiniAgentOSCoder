@@ -42,6 +42,7 @@ from app.runtime.prompt_cache import PromptCache
 from app.runtime.hooks import HookPipeline
 from app.runtime.mcp import MCPRuntime
 from app.runtime.run_loop import AgentRunLoop
+from app.runtime.role_board import recommend_memory_candidates
 from app.runtime.sandbox import SandboxExecutor
 from app.runtime.run_artifact_writer import RunArtifactWriter
 from app.runtime.state_machine import InvalidRunTransition, transition_run
@@ -604,6 +605,7 @@ class RunWorker:
 
     @staticmethod
     def _consolidate_memory(job: RunJob, result: RunLoopResult) -> None:
+        recommendations = recommend_memory_candidates(job.run, result, job.artifacts)
         try:
             entry = consolidate_run_memory(MemoryStore(job.workspace), job.run, result, job.artifacts)
             if entry.memory_id not in job.run.memory_refs:
@@ -611,7 +613,14 @@ class RunWorker:
             job.tracer.event(
                 job.run.run_id,
                 "memory.written",
-                {"memory_id": entry.memory_id, "scope": entry.scope.value, "kind": entry.kind, "automatic": True},
+                {
+                    "memory_id": entry.memory_id,
+                    "scope": entry.scope.value,
+                    "kind": entry.kind,
+                    "automatic": True,
+                    "recommendation_count": len(recommendations),
+                    "recommendations": [item.to_dict() for item in recommendations],
+                },
             )
         except (MemoryStoreError, OSError) as exc:
             job.tracer.event(

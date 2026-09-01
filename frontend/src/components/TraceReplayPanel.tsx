@@ -24,10 +24,13 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
   const replayEvents = snapshot?.events ?? [];
   const current = replayEvents[cursor];
   const eventGroups = useMemo(() => [
+    { label: "replay.group.prompt" as TranslationKey, count: events.filter((event) => event.event === "model.requested").length },
+    { label: "replay.group.agents" as TranslationKey, count: events.filter((event) => event.event.startsWith("agent.")).length },
     { label: "replay.group.model" as TranslationKey, count: events.filter((event) => event.event.startsWith("model.")).length },
     { label: "replay.group.tools" as TranslationKey, count: events.filter((event) => event.event.startsWith("tool.") || event.event.startsWith("action.")).length },
     { label: "replay.group.governance" as TranslationKey, count: events.filter((event) => event.event.startsWith("policy.") || event.event.startsWith("approval.") || event.event.startsWith("sandbox.")).length },
     { label: "replay.group.extensions" as TranslationKey, count: events.filter((event) => event.event.startsWith("skill.") || event.event.startsWith("mcp.") || event.event.startsWith("hook.")).length },
+    { label: "replay.group.memory" as TranslationKey, count: events.filter((event) => event.event.startsWith("memory.")).length },
   ], [events]);
 
   useEffect(() => {

@@ -298,10 +298,20 @@ export interface MemoryEntry {
   tags: string[];
 }
 
+export interface MemoryRecommendation {
+  kind: string;
+  scope: MemoryScope;
+  importance: number;
+  reason: string;
+  content_preview: string;
+  tags: string[];
+}
+
 export interface MemoryResponse {
   run_id: string;
   entries: Record<MemoryScope, MemoryEntry[]>;
   counts: Record<MemoryScope, number>;
+  recommendations?: MemoryRecommendation[];
 }
 
 export interface MemoryInput {

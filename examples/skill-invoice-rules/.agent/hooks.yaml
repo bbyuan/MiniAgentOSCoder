@@ -1,0 +1,9 @@
+hooks:
+  - id: demo-run-marker
+    name: Demo Run Marker
+    event: run.before
+    command:
+      - python3
+      - scripts/demo_hook.py
+    timeout_seconds: 10
+    failure_policy: warn
