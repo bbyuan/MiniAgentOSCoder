@@ -3,9 +3,6 @@ import { ChevronDown, UserRound } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
-  type AgentPackDrift,
-  type AgentPackManifest,
-  type AgentPackVersion,
   type ApprovalRequest,
   type ContextPack,
   type CompletionAssessment,
@@ -26,7 +23,6 @@ import {
   type ModelProviderStatus,
   type ModelRoutePlan,
   type OpenProjectResponse,
-  type ProjectProtocols,
   type RecoveryResponse,
   type RunEvidenceLedger,
   type RunArtifacts,
@@ -65,6 +61,7 @@ import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } fro
 import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 import { basename, hasVisibleDiff, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
+import { useAgentPackState } from "../run/useAgentPackState";
 import { loadRunResources, type RunResources } from "../run/resources";
 import { useRunSubscription } from "../run/useRunSubscription";
 import { useRunViewModel } from "../run/viewModel";
@@ -127,20 +124,13 @@ export function Workbench() {
   const [modelSetupOpen, setModelSetupOpen] = useState(false);
   const [modelSetupBusy, setModelSetupBusy] = useState(false);
   const [modelSetupError, setModelSetupError] = useState<string>();
-  const [agentPackOpen, setAgentPackOpen] = useState(false);
-  const [agentPackBusy, setAgentPackBusy] = useState(false);
-  const [agentPackVersionBusy, setAgentPackVersionBusy] = useState(false);
-  const [agentPackError, setAgentPackError] = useState<string>();
-  const [agentPack, setAgentPack] = useState<AgentPackManifest>();
-  const [agentPackVersions, setAgentPackVersions] = useState<AgentPackVersion[]>([]);
-  const [agentPackDrift, setAgentPackDrift] = useState<AgentPackDrift>();
-  const [projectProtocols, setProjectProtocols] = useState<ProjectProtocols>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
   const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
   const [changeDecision, setChangeDecision] = useState<"pending" | "accepted" | "reverted">("pending");
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const agentPackState = useAgentPackState({ project, mode, locale, t });
 
   const { subscribeToRun, stopRunStream } = useRunSubscription({
     t,
@@ -171,29 +161,6 @@ export function Workbench() {
   useEffect(() => {
     void refreshConnection();
   }, []);
-
-  useEffect(() => {
-    if (!project) return;
-    let cancelled = false;
-    Promise.all([
-      daemonApi.getAgentPackDrift(project.project_id, mode).catch(() => undefined),
-      daemonApi.getProjectProtocols(project.project_id).catch(() => undefined),
-    ])
-      .then(([drift, protocols]) => {
-        if (cancelled) return;
-        setAgentPackDrift(drift);
-        setProjectProtocols(protocols);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAgentPackDrift(undefined);
-          setProjectProtocols(undefined);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [project?.project_id, mode]);
 
   const {
     currentTurnIndex,
@@ -293,11 +260,6 @@ export function Workbench() {
       setWorkspacePath(opened.path);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
-      setAgentPack(undefined);
-      setAgentPackVersions([]);
-      setAgentPackDrift(undefined);
-      setProjectProtocols(undefined);
-      setAgentPackError(undefined);
       setConnection("connected");
       const history = await daemonApi.getHistoryProjects().catch(() => undefined);
       if (history) setRecentProjects(history.projects);
@@ -637,12 +599,6 @@ export function Workbench() {
     setWorkspacePath("");
     setModelStatus(undefined);
     setModelConfig(undefined);
-    setAgentPack(undefined);
-    setAgentPackVersions([]);
-    setAgentPackDrift(undefined);
-    setProjectProtocols(undefined);
-    setAgentPackError(undefined);
-    setAgentPackOpen(false);
     setRecentRuns([]);
   }
 
@@ -912,48 +868,6 @@ export function Workbench() {
     setRuntimeDetailsOpen(true);
   }
 
-  async function openAgentPack() {
-    if (!project) return;
-    setAgentPackOpen(true);
-    setAgentPackBusy(true);
-    setAgentPackError(undefined);
-    try {
-      const [manifest, versionResponse, drift] = await Promise.all([
-        daemonApi.getAgentPack(project.project_id, mode),
-        daemonApi.getAgentPackVersions(project.project_id),
-        daemonApi.getAgentPackDrift(project.project_id, mode),
-      ]);
-      setAgentPack(manifest);
-      setAgentPackVersions(versionResponse.versions);
-      setAgentPackDrift(drift);
-    } catch (caught) {
-      setAgentPackError(localizeErrorMessage(locale, caught, t("agentPack.loadError")));
-    } finally {
-      setAgentPackBusy(false);
-    }
-  }
-
-  async function saveAgentPackVersion() {
-    if (!project) return;
-    setAgentPackVersionBusy(true);
-    setAgentPackError(undefined);
-    try {
-      await daemonApi.saveAgentPackVersion(project.project_id, mode);
-      const [manifest, versionResponse, drift] = await Promise.all([
-        daemonApi.getAgentPack(project.project_id, mode),
-        daemonApi.getAgentPackVersions(project.project_id),
-        daemonApi.getAgentPackDrift(project.project_id, mode),
-      ]);
-      setAgentPack(manifest);
-      setAgentPackVersions(versionResponse.versions);
-      setAgentPackDrift(drift);
-    } catch (caught) {
-      setAgentPackError(localizeErrorMessage(locale, caught, t("agentPack.saveError")));
-    } finally {
-      setAgentPackVersionBusy(false);
-    }
-  }
-
   return (
     <main className="appShell">
       {showSplash ? <SplashScreen onEnter={() => setShowSplash(false)} /> : null}
@@ -1046,8 +960,8 @@ export function Workbench() {
                     contract={contract}
                     context={contextPack}
                     governance={governance}
-                    agentPackDrift={agentPackDrift}
-                    onOpenAgentPack={() => void openAgentPack()}
+                    agentPackDrift={agentPackState.drift}
+                    onOpenAgentPack={() => void agentPackState.openDialog()}
                   />
                   <details className="preflightAdvancedDetails">
                     <summary>
@@ -1287,16 +1201,16 @@ export function Workbench() {
         onSave={saveModelCredential}
       />
       <AgentPackDialog
-        open={agentPackOpen}
-        loading={agentPackBusy}
-        versionBusy={agentPackVersionBusy}
-        error={agentPackError}
-        manifest={agentPack}
-        versions={agentPackVersions}
-        drift={agentPackDrift}
-        onClose={() => setAgentPackOpen(false)}
-        onRefresh={() => void openAgentPack()}
-        onSaveVersion={() => void saveAgentPackVersion()}
+        open={agentPackState.open}
+        loading={agentPackState.busy}
+        versionBusy={agentPackState.versionBusy}
+        error={agentPackState.error}
+        manifest={agentPackState.manifest}
+        versions={agentPackState.versions}
+        drift={agentPackState.drift}
+        onClose={agentPackState.closeDialog}
+        onRefresh={() => void agentPackState.refresh()}
+        onSaveVersion={() => void agentPackState.saveVersion()}
       />
     </main>
   );
