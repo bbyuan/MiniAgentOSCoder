@@ -15,7 +15,7 @@ miniagent-benchmark = "app.evaluation.benchmark:main"
 
 [project.optional-dependencies]
 dev = [
-  "httpx2>=0.28",
+  "httpx>=0.28",
   "pytest>=8.0",
 ]
 desktop = [
