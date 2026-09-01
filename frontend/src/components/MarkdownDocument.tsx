@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 interface MarkdownDocumentProps {
@@ -8,7 +9,7 @@ interface MarkdownDocumentProps {
 type Block =
   | { type: "heading"; level: 1 | 2 | 3; text: string }
   | { type: "paragraph"; text: string }
-  | { type: "list"; items: string[] }
+  | { type: "list"; ordered: boolean; items: string[] }
   | { type: "code"; text: string };
 
 export function MarkdownDocument({ content, className = "" }: MarkdownDocumentProps) {
@@ -28,10 +29,11 @@ function renderBlock(block: Block, index: number): ReactNode {
     return <h4 key={index}>{children}</h4>;
   }
   if (block.type === "list") {
+    const ListTag = block.ordered ? "ol" : "ul";
     return (
-      <ul key={index}>
+      <ListTag key={index}>
         {block.items.map((item, itemIndex) => <li key={itemIndex}>{renderInline(item)}</li>)}
-      </ul>
+      </ListTag>
     );
   }
   if (block.type === "code") {
@@ -45,6 +47,7 @@ function parseMarkdown(content: string): Block[] {
   const lines = content.replace(/\r\n/g, "\n").split("\n");
   let paragraph: string[] = [];
   let list: string[] = [];
+  let listOrdered: boolean | null = null;
   let code: string[] = [];
   let inCode = false;
 
@@ -55,8 +58,9 @@ function parseMarkdown(content: string): Block[] {
   };
   const flushList = () => {
     if (!list.length) return;
-    blocks.push({ type: "list", items: list });
+    blocks.push({ type: "list", ordered: listOrdered ?? false, items: list });
     list = [];
+    listOrdered = null;
   };
 
   lines.forEach((rawLine) => {
@@ -91,10 +95,16 @@ function parseMarkdown(content: string): Block[] {
       return;
     }
 
-    const listItem = line.match(/^[-*]\s+(.+)$/);
-    if (listItem) {
+    const unorderedItem = line.match(/^[-*]\s+(.+)$/);
+    const orderedItem = line.match(/^\d+[.)、]\s+(.+)$/);
+    if (unorderedItem || orderedItem) {
       flushParagraph();
-      list.push(listItem[1]);
+      const ordered = Boolean(orderedItem);
+      if (list.length && listOrdered !== ordered) {
+        flushList();
+      }
+      listOrdered = ordered;
+      list.push((orderedItem ?? unorderedItem)?.[1] ?? "");
       return;
     }
 
@@ -112,6 +122,15 @@ function renderInline(text: string): ReactNode[] {
   return text.split(/(`[^`]+`)/g).filter(Boolean).map((part, index) => {
     if (part.startsWith("`") && part.endsWith("`")) {
       return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    return <Fragment key={index}>{renderStrong(part)}</Fragment>;
+  });
+}
+
+function renderStrong(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
     return part;
   });

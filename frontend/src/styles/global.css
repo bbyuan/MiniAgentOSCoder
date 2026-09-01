@@ -20997,6 +20997,7 @@ button > svg {
 .markdownDocument h4,
 .markdownDocument p,
 .markdownDocument ul,
+.markdownDocument ol,
 .markdownDocument pre {
   margin: 0;
 }
@@ -21028,7 +21029,8 @@ button > svg {
   margin-top: 12px;
 }
 
-.markdownDocument ul {
+.markdownDocument ul,
+.markdownDocument ol {
   margin-top: 12px;
   padding-left: 0;
   display: grid;
@@ -21041,7 +21043,7 @@ button > svg {
   padding-left: 18px;
 }
 
-.markdownDocument li::before {
+.markdownDocument ul li::before {
   content: "";
   position: absolute;
   top: 0.72em;
@@ -21050,6 +21052,30 @@ button > svg {
   height: 5px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--accent) 72%, var(--text-tertiary));
+}
+
+.markdownDocument ol {
+  counter-reset: markdown-item;
+}
+
+.markdownDocument ol li {
+  counter-increment: markdown-item;
+  padding-left: 24px;
+}
+
+.markdownDocument ol li::before {
+  content: counter(markdown-item) ".";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: color-mix(in srgb, var(--accent) 72%, var(--text-tertiary));
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.markdownDocument strong {
+  color: var(--text);
+  font-weight: 760;
 }
 
 .markdownDocument code {
@@ -21683,58 +21709,16 @@ button > svg {
   border-bottom: 1px solid var(--hairline);
 }
 
-.completionFullMessage {
+.completionFullMessage.markdownDocument {
+  max-height: 420px;
   padding: 16px 18px 18px;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.68;
 }
 
-.completionFullLead {
-  margin: 0;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 620;
-  line-height: 1.55;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.completionDetailGrid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
-}
-
-.completionDetailGrid article {
-  position: relative;
-  min-width: 0;
-  padding: 12px 12px 12px 34px;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  overflow-wrap: anywhere;
-}
-
-.completionDetailGrid article::before {
-  content: "";
-  position: absolute;
-  top: 14px;
-  left: 12px;
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--accent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface));
-}
-
-.completionDetailGrid article span {
-  display: block;
-  min-width: 0;
-  font-size: 12px;
-  line-height: 1.55;
+.completionFullMessage.markdownDocument > :first-child {
+  margin-top: 0;
 }
 
 .completionEvidenceDisclosure {
@@ -21889,12 +21873,8 @@ button > svg {
   background: color-mix(in srgb, var(--success-soft) 58%, var(--surface));
 }
 
-.completionSummary.tone-completed .completionFullMessage {
+.completionSummary.tone-completed .completionFullMessage.markdownDocument {
   padding: 14px 16px 16px;
-}
-
-.completionSummary.tone-completed .completionDetailGrid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 @media (min-width: 920px) {
@@ -23927,13 +23907,8 @@ summary:focus-visible {
   border-top-color: color-mix(in srgb, var(--border) 54%, transparent);
 }
 
-.completionSummary.tone-completed .completionFullMessage {
+.completionSummary.tone-completed .completionFullMessage.markdownDocument {
   padding: 16px 0 18px;
-}
-
-.completionSummary.tone-completed .completionDetailGrid article {
-  border: 0;
-  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
 }
 
 .completionSummary.tone-completed .completionEvidence.embeddedEvidence ul {

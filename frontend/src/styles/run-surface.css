@@ -113,17 +113,8 @@
   background: color-mix(in srgb, var(--success-soft) 66%, var(--surface));
 }
 
-.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage {
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument {
   padding: 14px 10px 18px;
-}
-
-.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailGrid {
-  gap: 8px;
-}
-
-.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailGrid article {
-  padding: 10px 12px 10px 30px;
-  border-radius: 7px;
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessInline {

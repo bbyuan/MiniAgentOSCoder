@@ -14,6 +14,7 @@ import { usePreferences } from "../preferences";
 import { buildFailureDiagnosis, failureLeadMessage, isTestsNotRun } from "../run/completionDiagnosis";
 import { localizeRuntimeError } from "../run/localizedText";
 import { CompletionEvidence } from "./CompletionEvidence";
+import { MarkdownDocument } from "./MarkdownDocument";
 
 interface CompletionSummaryProps {
   status: string;
@@ -48,7 +49,6 @@ export function CompletionSummary({
   const hasMoreMessage = messagePreview !== completionMessage;
   const showLeadMessage = status !== "completed";
   const showCompletionDetails = status === "completed" ? hasCompletionMessage : hasMoreMessage;
-  const fullMessage = formatCompletionMessage(completionMessage);
   const observationError = typeof lastObservation?.error === "string" ? lastObservation.error : "";
   const displayedObservationError = localizeRuntimeError(observationError, locale);
   const knownReasons: Record<string, string> = {
@@ -169,14 +169,7 @@ export function CompletionSummary({
             </span>
             <ChevronDown size={14} />
           </summary>
-          <div className="completionFullMessage">
-            <p className="completionFullLead">{fullMessage.lead}</p>
-            {fullMessage.items.length ? (
-              <div className="completionDetailGrid">
-                {fullMessage.items.map((item, index) => <article key={`${index}-${item}`}><span>{item}</span></article>)}
-              </div>
-            ) : null}
-          </div>
+          <MarkdownDocument className="completionFullMessage" content={completionMessage} />
         </details>
       ) : null}
       {showEvidence ? (
@@ -210,54 +203,4 @@ function previewCompletionMessage(message: string, limit = 120): string {
   const lastSpace = candidate.lastIndexOf(" ");
   const safeEnd = lastSpace >= Math.floor(limit * 0.65) ? lastSpace : limit;
   return `${candidate.slice(0, safeEnd).trimEnd()}...`;
-}
-
-function formatCompletionMessage(message: string): { lead: string; items: string[] } {
-  const normalized = message.replace(/\s+/g, " ").trim();
-  const parts = splitCompletionMessage(normalized).map(cleanCompletionItem).filter(Boolean);
-  if (parts.length <= 1) return { lead: normalized, items: [] };
-  return { lead: parts[0], items: parts.slice(1, 7) };
-}
-
-function splitCompletionMessage(message: string): string[] {
-  const prepared = message
-    .replace(/\s+[-*]\s+(?=[A-Za-z0-9_.\u4e00-\u9fff])/g, "\n- ")
-    .replace(/\s+(\d+[.、])\s+/g, "\n$1 ");
-  const structuralParts = prepared.split(/\n+/).map((part) => part.trim()).filter(Boolean);
-  if (structuralParts.length > 1) return rebalanceCompletionParts(structuralParts);
-
-  const semicolonParts = message.split(/[;；]/).map((part) => part.trim()).filter(Boolean);
-  if (semicolonParts.length > 1) return rebalanceCompletionParts(semicolonParts);
-
-  const parts: string[] = [];
-  let start = 0;
-  for (let index = 0; index < message.length; index += 1) {
-    if (!"。！？.!?".includes(message[index])) continue;
-    const part = message.slice(start, index + 1).trim();
-    if (part) parts.push(part);
-    start = index + 1;
-  }
-  const rest = message.slice(start).trim();
-  if (rest) parts.push(rest);
-  return rebalanceCompletionParts(parts.length ? parts : [message]);
-}
-
-function rebalanceCompletionParts(parts: string[]): string[] {
-  const balanced: string[] = [];
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    const colonIndex = trimmed.search(/[：:]/);
-    if (trimmed.length > 180 && colonIndex > 12 && colonIndex < 80) {
-      balanced.push(trimmed.slice(0, colonIndex + 1).trim());
-      balanced.push(trimmed.slice(colonIndex + 1).trim());
-    } else {
-      balanced.push(trimmed);
-    }
-  }
-  return balanced;
-}
-
-function cleanCompletionItem(item: string): string {
-  return item.replace(/^[-*]\s+/, "").replace(/^\d+[.、]\s*/, "").trim();
 }
