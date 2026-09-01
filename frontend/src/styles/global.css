@@ -3633,7 +3633,7 @@ button.statusChip:hover {
   height: 16px;
   position: relative;
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface-subtle);
   transition: background 140ms ease, border-color 140ms ease;
 }
@@ -8526,7 +8526,7 @@ button.controlSignal:focus-visible {
   margin: 14px 0 2px 43px;
   padding: 16px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border-strong));
-  border-radius: 14px;
+  border-radius: 8px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface) 96%, transparent)),
     var(--surface-raised);
@@ -8623,7 +8623,7 @@ button.controlSignal:focus-visible {
   justify-content: start;
   gap: 2px 7px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--surface-raised) 76%, var(--surface));
   text-align: left;
@@ -8664,7 +8664,7 @@ button.controlSignal:focus-visible {
   margin-top: 14px;
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-raised) 75%, transparent);
 }
@@ -9637,7 +9637,7 @@ button.controlSignal:focus-visible {
   align-items: center;
   gap: 14px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
-  border-radius: 10px;
+  border-radius: 8px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 82%, var(--accent-soft)), var(--surface));
 }
 
@@ -10754,7 +10754,7 @@ button.controlSignal:focus-visible {
 .taskComposerProduct {
   margin-top: 18px;
   border: 1px solid var(--border-strong);
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--surface-raised);
   box-shadow: 0 2px 4px rgba(18, 23, 31, 0.04), 0 24px 70px rgba(18, 23, 31, 0.09);
   overflow: hidden;
@@ -12044,7 +12044,7 @@ button.controlSignal:focus-visible {
   }
 
   .readinessPill {
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
   .readinessGrid {
@@ -23388,5 +23388,256 @@ summary:focus-visible {
 
   .runSessionHero h1 {
     font-size: 30px;
+  }
+}
+
+/* Frontend quality pass v2: tighten engineering surfaces and remove leftover softness. */
+.extensionToggle,
+.runSteeringComposer,
+.runSteeringComposer .steeringIntentGroup button,
+.steeringInputFrame,
+.agentPackExplainer,
+.taskComposerProduct,
+.readinessPill {
+  border-radius: 8px;
+}
+
+.workspaceFilesBackdrop {
+  padding: clamp(12px, 2vw, 28px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #090c11 48%, transparent), color-mix(in srgb, #090c11 34%, transparent)),
+    color-mix(in srgb, #090c11 42%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.workspaceFilesDialog {
+  width: min(1440px, calc(100vw - 48px));
+  height: min(900px, calc(100dvh - 48px));
+  border-color: color-mix(in srgb, var(--border-strong) 68%, transparent);
+  background: var(--surface-raised);
+  box-shadow: 0 34px 120px rgba(15, 23, 42, 0.34);
+}
+
+.workspaceFilesHeader {
+  min-height: 88px;
+  padding: 20px 24px;
+}
+
+.workspaceFilesHeader h2 {
+  font-size: 24px;
+  line-height: 1.12;
+}
+
+.workspaceFilesToolbar {
+  padding: 12px 24px;
+}
+
+.workspaceChangeRail {
+  border-bottom-color: var(--hairline);
+  background: color-mix(in srgb, var(--accent-soft) 18%, var(--surface));
+}
+
+.workspaceFilesBody {
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+}
+
+.workspaceFilesList {
+  padding: 12px;
+  gap: 5px;
+}
+
+.workspaceFilesList button {
+  min-height: 52px;
+  padding: 8px 9px;
+}
+
+.workspaceFilesList button strong,
+.diffReviewFileList button span {
+  font-weight: 760;
+}
+
+.workspaceFilePreview > header,
+.diffReviewViewerHeader,
+.workspaceDiffPreview > div {
+  background: color-mix(in srgb, var(--surface-raised) 78%, var(--surface));
+}
+
+.workspaceFilePreview pre,
+.workspaceDiffPreview pre,
+.diffReviewViewer pre,
+.codeDiffBlock pre {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--surface-subtle) 72%, transparent) 0 52px, transparent 52px),
+    color-mix(in srgb, var(--text) 3.2%, var(--surface));
+}
+
+.workspaceFilePreview code,
+.workspaceDiffPreview code,
+.diffReviewViewer code,
+.codeDiffBlock code {
+  font-size: 12px;
+  line-height: 1.62;
+}
+
+.workspaceFilePreview code:hover,
+.workspaceDiffPreview code:hover,
+.diffReviewViewer code:hover,
+.codeDiffBlock code:hover {
+  background-color: color-mix(in srgb, var(--accent-soft) 28%, transparent);
+}
+
+.workspaceDiffPreview .line-add,
+.diffReviewViewer .line-add,
+.codeDiffBlock .line-add {
+  background: color-mix(in srgb, var(--success-soft) 54%, transparent);
+}
+
+.workspaceDiffPreview .line-delete,
+.diffReviewViewer .line-delete,
+.codeDiffBlock .line-delete {
+  background: color-mix(in srgb, var(--danger-soft) 58%, transparent);
+}
+
+.diffReview {
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+}
+
+.diffReview > header {
+  min-height: 64px;
+  padding: 14px 16px;
+}
+
+.diffReviewBody {
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+}
+
+.diffReviewFileList {
+  padding: 12px;
+  gap: 6px;
+  background: color-mix(in srgb, var(--surface-subtle) 42%, var(--surface));
+}
+
+.diffReviewFileList button {
+  min-height: 46px;
+}
+
+.diffReviewViewer pre {
+  max-height: 460px;
+}
+
+.diffReviewActions {
+  padding: 12px 16px;
+}
+
+.codeChangePreview,
+.completionSummary,
+.preflightControlDeck,
+.admissionSummary,
+.modelRouteSummary,
+.advancedSetup,
+.runStatusDeck,
+.runProgress,
+.activityPanel,
+.agentProcess,
+.runSteeringComposer,
+.followUpComposer {
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent);
+}
+
+.completionSummary {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
+}
+
+.completionSignals > div,
+.codeChangePreview,
+.diffReview,
+.agentProcess,
+.runStatusDeck {
+  box-shadow: var(--panel-shadow);
+}
+
+.completionSignals > div,
+.metricCard,
+.traceOverviewGrid div,
+.runProgressItem,
+.readinessTile,
+.preflightCheckRow,
+.admissionMetric,
+.modelRoutePhase {
+  border-radius: 8px;
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+}
+
+.taskComposerProduct textarea::placeholder,
+.runSteeringComposer textarea::placeholder,
+.workspaceFilesToolbar input::placeholder {
+  color: color-mix(in srgb, var(--text-tertiary) 78%, transparent);
+}
+
+.taskComposerProduct textarea,
+.runSteeringComposer textarea {
+  caret-color: var(--accent);
+}
+
+.runSteeringComposer,
+.productContent .runSimpleLayout .runSteeringComposer {
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.composerChangePill {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 24%, var(--surface));
+}
+
+.composerChangePill.needsDecision {
+  border-color: color-mix(in srgb, var(--warning) 32%, var(--border-strong));
+  background: color-mix(in srgb, var(--warning-soft) 42%, var(--surface));
+}
+
+.agentProcessInline {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-subtle) 38%, transparent), transparent);
+}
+
+.agentProcessItem > .eventIcon {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.activityChips em {
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--surface-subtle) 74%, transparent);
+}
+
+.activityOutput {
+  background: color-mix(in srgb, var(--surface-subtle) 56%, transparent);
+}
+
+.activityOutput > pre {
+  background: color-mix(in srgb, var(--text) 3.5%, var(--surface));
+}
+
+@media (max-width: 900px) {
+  .workspaceFilesDialog {
+    width: calc(100vw - 20px);
+    height: calc(100dvh - 20px);
+  }
+
+  .workspaceFilesHeader,
+  .workspaceFilesToolbar {
+    padding-inline: 16px;
+  }
+
+  .workspaceFilesBody,
+  .diffReviewBody,
+  .diffReview.compact .diffReviewBody {
+    grid-template-columns: 1fr;
+  }
+
+  .diffReviewFileList {
+    max-height: 180px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
   }
 }
