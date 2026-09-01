@@ -6,8 +6,10 @@ import ts from "typescript";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workItemsSource = readFileSync(resolve(root, "src/activity/workItems.ts"), "utf8");
+const phasesSource = readFileSync(resolve(root, "src/activity/phases.ts"), "utf8");
 const activityFeedSource = readFileSync(resolve(root, "src/components/ActivityFeed.tsx"), "utf8");
 const workspaceFilesSource = readFileSync(resolve(root, "src/components/WorkspaceFilesDialog.tsx"), "utf8");
+const diffHunkNavigatorSource = readFileSync(resolve(root, "src/components/DiffHunkNavigator.tsx"), "utf8");
 const patchFocusSource = readFileSync(resolve(root, "src/run/patchFocus.ts"), "utf8");
 const mainSource = readFileSync(resolve(root, "src/main.tsx"), "utf8");
 const runSurfaceSource = readFileSync(resolve(root, "src/styles/run-surface.css"), "utf8");
@@ -28,6 +30,10 @@ const testableWorkItems = workItemsSource
   .replace(
     'import { focusedChangePath, focusedPatchHunk } from "../run/patchFocus";',
     patchFocusSource.replace(/export /g, ""),
+  )
+  .replace(
+    'import { workPhaseFromTracePayload, type WorkItemPhase } from "./phases";',
+    phasesSource,
   );
 
 const compiled = ts.transpileModule(testableWorkItems, {
@@ -40,8 +46,10 @@ const compiled = ts.transpileModule(testableWorkItems, {
 const module = { exports: {} };
 vm.runInNewContext(compiled.outputText, { module, exports: module.exports, console }, { filename: "workItems.cjs" });
 
-const { buildWorkItems } = module.exports;
+const { buildWorkItems, buildPhaseGroups, uiPhaseFromTracePhase } = module.exports;
 assert(typeof buildWorkItems === "function", "buildWorkItems should be executable in the transcript check.");
+assert(typeof buildPhaseGroups === "function", "Phase grouping should be executable in the transcript check.");
+assert(uiPhaseFromTracePhase("waiting_approval") === "change", "Waiting approval should map to the change phase.");
 
 const t = (key, variables = {}) => {
   const dictionary = {
@@ -121,6 +129,16 @@ const routedItems = buildWorkItems([
 
 assert(routedItems[0].phase === "validate", "Runtime phase metadata should override the frontend action-name fallback.");
 
+const phaseGroups = buildPhaseGroups([
+  { phase: "inspect", time: "2026-09-01T09:21:00.000Z", id: "read-1" },
+  { phase: "inspect", time: "2026-09-01T09:21:01.000Z", id: "read-2" },
+  { phase: "change", time: "2026-09-01T09:21:02.000Z", id: "patch" },
+  { phase: "inspect", time: "2026-09-01T09:21:03.000Z", id: "read-3" },
+]);
+
+assert(phaseGroups.length === 3, "Phase groups should split repeated phases when the timeline leaves and re-enters them.");
+assert(phaseGroups.map((group) => group.phase).join(",") === "inspect,change,inspect", "Phase groups should preserve chronological order.");
+
 const patchItems = buildWorkItems([
   {
     event: "approval.requested",
@@ -150,7 +168,7 @@ assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should ke
 assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
 assert(activityFeedSource.includes("agentPhaseGroup"), "The transcript should render collapsible phase groups.");
 assert(activityFeedSource.includes("buildPhaseGroups(visibleItems)"), "The transcript should group activity by phase.");
-assert(activityFeedSource.includes("current?.phase === item.phase"), "Phase groups should preserve timeline order instead of sorting event types.");
+assert(phasesSource.includes("current?.phase === item.phase"), "Phase groups should preserve timeline order instead of sorting event types.");
 assert(activityFeedSource.includes("agentProcessLink"), "Patch activity items should offer a lightweight link to changed files.");
 assert(activityFeedSource.includes("workBreakdown(workItems, t)"), "The transcript header should summarize activity categories.");
 assert(
@@ -162,7 +180,8 @@ assert(workspaceFilesSource.includes("focusHunk?: string;"), "Workspace change s
 assert(workspaceFilesSource.includes("changeSet?.focusPath ?? firstChanged"), "Workspace file review should open on the requested focused file.");
 assert(workspaceFilesSource.includes("scrollIntoView({ block: \"center\" })"), "Workspace file review should scroll the focused hunk into view.");
 assert(workspaceFilesSource.includes("diffHunkIndexes"), "Workspace file review should index diff hunks for navigation.");
-assert(workspaceFilesSource.includes("workspaceFiles.hunkPosition"), "Workspace file review should show the current diff hunk position.");
+assert(workspaceFilesSource.includes("DiffHunkNavigator"), "Workspace file review should delegate hunk controls to a focused component.");
+assert(diffHunkNavigatorSource.includes("workspaceFiles.hunkPosition"), "Workspace file review should show the current diff hunk position.");
 
 assert(
   mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),

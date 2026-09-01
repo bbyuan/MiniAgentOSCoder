@@ -1,6 +1,7 @@
 import type { TraceEvent } from "../api/client";
 import { type Locale, type TranslationKey, translateKnownText } from "../i18n";
 import { focusedChangePath, focusedPatchHunk } from "../run/patchFocus";
+import { workPhaseFromTracePayload, type WorkItemPhase } from "./phases";
 
 export type WorkItemKind =
   | "action"
@@ -30,13 +31,6 @@ export type WorkItemCategory =
   | "result"
   | "system"
   | "thinking";
-
-export type WorkItemPhase =
-  | "change"
-  | "context"
-  | "inspect"
-  | "summary"
-  | "validate";
 
 export interface ProcessEvent {
   title: string;
@@ -225,18 +219,7 @@ function workPhase(event: TraceEvent): WorkItemPhase {
 }
 
 function tracePhase(event: TraceEvent): WorkItemPhase | undefined {
-  const request = asRecord(event.payload.request);
-  const metadata = asRecord(request?.metadata);
-  const raw = stringValue(event.payload.phase) ?? stringValue(metadata?.capability_phase);
-  if (!raw) return undefined;
-  if (raw === "inspect") return "inspect";
-  if (raw === "work" || raw === "repair") return "change";
-  if (raw === "verify") return "validate";
-  if (raw === "waiting_approval" || raw === "applying_patch") return "change";
-  if (raw === "testing") return "validate";
-  if (raw === "planning" || raw === "created") return "context";
-  if (raw === "completed" || raw === "failed" || raw === "cancelled") return "summary";
-  return undefined;
+  return workPhaseFromTracePayload(event.payload);
 }
 
 function processEvent(event: TraceEvent, locale: Locale, t: Translator): ProcessEvent {

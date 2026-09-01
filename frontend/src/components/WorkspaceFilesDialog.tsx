@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronUp, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import { AlertCircle, Check, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
 import { daemonApi, type ChangeReview, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
 import { localizeErrorMessage, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import { buildDiffFiles } from "./DiffReview";
+import { DiffHunkNavigator } from "./DiffHunkNavigator";
 
 export interface WorkspaceChangeSet {
   title: string;
@@ -283,27 +284,12 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
                       <strong>{selectedDiff.path}</strong>
                       <span>
                         {hunkIndexes.length ? (
-                          <em className="workspaceDiffHunks">
-                            <button
-                              type="button"
-                              disabled={activeHunkPosition <= 0}
-                              onClick={() => moveHunk(-1)}
-                              title={t("workspaceFiles.previousHunk")}
-                              aria-label={t("workspaceFiles.previousHunk")}
-                            >
-                              <ChevronUp size={14} />
-                            </button>
-                            {t("workspaceFiles.hunkPosition", { current: Math.max(1, activeHunkPosition + 1), total: hunkIndexes.length })}
-                            <button
-                              type="button"
-                              disabled={activeHunkPosition < 0 || activeHunkPosition >= hunkIndexes.length - 1}
-                              onClick={() => moveHunk(1)}
-                              title={t("workspaceFiles.nextHunk")}
-                              aria-label={t("workspaceFiles.nextHunk")}
-                            >
-                              <ChevronDown size={14} />
-                            </button>
-                          </em>
+                          <DiffHunkNavigator
+                            current={Math.max(1, activeHunkPosition + 1)}
+                            total={hunkIndexes.length}
+                            onPrevious={() => moveHunk(-1)}
+                            onNext={() => moveHunk(1)}
+                          />
                         ) : null}
                         <b className="positive">+{selectedDiff.additions}</b>
                         <b className="negative">-{selectedDiff.deletions}</b>

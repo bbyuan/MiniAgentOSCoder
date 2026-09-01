@@ -28,8 +28,8 @@ import {
   type WorkItemCategory,
   type WorkItemChangeSet,
   type WorkItemKind,
-  type WorkItemPhase,
 } from "../activity/workItems";
+import { buildPhaseGroups } from "../activity/phases";
 import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
@@ -173,19 +173,6 @@ export function ActivityFeed({ events, status, embedded = false, onInspectChange
       ) : null}
     </section>
   );
-}
-
-function buildPhaseGroups(items: WorkItem[]): Array<{ key: string; phase: WorkItemPhase; items: WorkItem[] }> {
-  const groups: Array<{ key: string; phase: WorkItemPhase; items: WorkItem[] }> = [];
-  for (const item of items) {
-    const current = groups[groups.length - 1];
-    if (current?.phase === item.phase) {
-      current.items.push(item);
-      continue;
-    }
-    groups.push({ key: `${groups.length}-${item.phase}-${item.time}`, phase: item.phase, items: [item] });
-  }
-  return groups;
 }
 
 function phaseTimeRange(items: WorkItem[]): string {
