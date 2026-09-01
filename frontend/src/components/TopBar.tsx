@@ -58,7 +58,7 @@ export function TopBar({ project, status, model, modelConfigured, onOpenHistory,
               aria-pressed={locale === "zh"}
               onClick={() => setLocale("zh")}
             >
-              中
+              {t("top.localeChineseShort")}
             </button>
             <button
               type="button"
@@ -66,7 +66,7 @@ export function TopBar({ project, status, model, modelConfigured, onOpenHistory,
               aria-pressed={locale === "en"}
               onClick={() => setLocale("en")}
             >
-              EN
+              {t("top.localeEnglishShort")}
             </button>
           </div>
           <button

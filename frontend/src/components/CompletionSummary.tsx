@@ -11,9 +11,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
-import type { TranslationKey } from "../i18n";
-import { translateKnownText, translateStatus } from "../i18n";
+import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
+import { buildFailureDiagnosis, failureLeadMessage, isTestsNotRun } from "../run/completionDiagnosis";
+import { localizeRuntimeError } from "../run/localizedText";
 import { CompletionEvidence } from "./CompletionEvidence";
 
 interface CompletionSummaryProps {
@@ -227,98 +228,6 @@ export function CompletionSummary({
       ) : null}
     </section>
   );
-}
-
-function failureLeadMessage(
-  terminationReason: string | undefined,
-  observationError: string,
-  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
-): string {
-  if (terminationReason === "invalid_action_ir" || /unable to recognize|无法识别|action/i.test(observationError)) {
-    return t("completion.failedLead.invalidAction");
-  }
-  if (terminationReason?.startsWith("max_")) return t("completion.failedLead.budget");
-  if (terminationReason === "model_error") return t("completion.failedLead.model");
-  if (terminationReason === "worker_error") return t("completion.failedLead.runtime");
-  return t("completion.failedLead.generic");
-}
-
-function isTestsNotRun(status: string | undefined): boolean {
-  if (!status) return true;
-  const normalized = status.trim().toLowerCase().replace(/[\s-]+/g, "_");
-  return ["", "_", "not_run", "notrun", "未运行", "没有运行", "未执行"].includes(normalized);
-}
-
-interface FailureDiagnosisInput {
-  status: string;
-  terminationReason?: string;
-  observationError: string;
-  completion?: CompletionAssessment | null;
-  testsStatus?: string;
-}
-
-function buildFailureDiagnosis(input: FailureDiagnosisInput): { summary: TranslationKey; actions: TranslationKey[] } | null {
-  if (input.status === "completed") return null;
-  const failedChecks = input.completion?.checks.filter((check) => check.required && !check.passed).map((check) => check.id) ?? [];
-  if (input.status === "cancelled") {
-    return {
-      summary: "diagnosis.summary.cancelled",
-      actions: ["diagnosis.action.reviewTrace", "diagnosis.action.startFollowUp"],
-    };
-  }
-  if (input.terminationReason?.startsWith("max_")) {
-    return {
-      summary: "diagnosis.summary.budget",
-      actions: ["diagnosis.action.narrowTask", "diagnosis.action.reviewBudget"],
-    };
-  }
-  if (input.terminationReason === "invalid_action_ir" || /unable to recognize|无法识别|action/i.test(input.observationError)) {
-    return {
-      summary: "diagnosis.summary.actionIr",
-      actions: ["diagnosis.action.askPlan", "diagnosis.action.simplify"],
-    };
-  }
-  if (input.terminationReason === "model_error") {
-    return {
-      summary: "diagnosis.summary.model",
-      actions: ["diagnosis.action.checkModel", "diagnosis.action.retryFocused"],
-    };
-  }
-  if (input.terminationReason === "worker_error" || /transition|阶段切换/i.test(input.observationError)) {
-    return {
-      summary: "diagnosis.summary.runtime",
-      actions: ["diagnosis.action.reviewTrace", "diagnosis.action.retryBoundary"],
-    };
-  }
-  if (failedChecks.length > 0) {
-    return {
-      summary: failedChecks.includes("tests_after_change") || input.testsStatus === "Failed"
-        ? "diagnosis.summary.tests"
-        : "diagnosis.summary.evidence",
-      actions: ["diagnosis.action.collectEvidence", "diagnosis.action.startFollowUp"],
-    };
-  }
-  return {
-    summary: "diagnosis.summary.generic",
-    actions: ["diagnosis.action.reviewTrace", "diagnosis.action.startFollowUp"],
-  };
-}
-
-function localizeRuntimeError(error: string, locale: "zh" | "en"): string {
-  const knownProviderErrors: Array<[RegExp, string, string]> = [
-    [/Model provider request timed out/i, "模型服务请求超时。", "Model provider request timed out."],
-    [/Model provider network request failed/i, "模型服务网络请求失败。", "Model provider network request failed."],
-    [/Model provider returned invalid JSON/i, "模型服务返回了无效 JSON。", "Model provider returned invalid JSON."],
-    [/Model provider returned HTTP (\d+)/i, "模型服务返回了 HTTP 错误。", "Model provider returned an HTTP error."],
-  ];
-  for (const [pattern, zh, en] of knownProviderErrors) {
-    if (pattern.test(error)) return locale === "zh" ? zh : en;
-  }
-  const transition = error.match(/^Cannot transition run .+ from (\w+) to (\w+)$/);
-  if (!transition) return translateKnownText(locale, error);
-  const from = translateStatus(locale, transition[1]);
-  const to = translateStatus(locale, transition[2]);
-  return locale === "zh" ? `运行阶段切换失败：${from} → ${to}` : `Run phase transition failed: ${from} → ${to}`;
 }
 
 function previewCompletionMessage(message: string, limit = 120): string {

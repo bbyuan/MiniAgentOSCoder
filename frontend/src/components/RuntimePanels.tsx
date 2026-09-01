@@ -20,6 +20,7 @@ import type {
 } from "../api/client";
 import { translateKnownText, translateStatus, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
+import { localizeEvidenceDetail, localizeEvidenceValue } from "../run/localizedText";
 import type { ControlPlaneTarget } from "./AgentOSControlPlane";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { RunReportPanel } from "./RunReportPanel";
@@ -408,41 +409,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function numberValue(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
-}
-
-function localizeEvidenceDetail(detail: string, locale: "zh" | "en"): string {
-  if (locale === "en") return detail;
-  return detail
-    .replace("Context Pack is not available yet", "任务上下文尚未就绪")
-    .replace("No test summary is available yet", "尚无测试摘要")
-    .replace("No structured completion assessment yet", "尚无结构化完成验收")
-    .replace("selected items", "个已选上下文项")
-    .replace("tokens", "词元")
-    .replace("protocol items", "个协议项")
-    .replace("provider requests", "次真实模型请求")
-    .replace("cache hits", "次缓存命中")
-    .replace("responses", "次响应")
-    .replace("tool calls", "次工具调用")
-    .replace("rejected", "拒绝")
-    .replace("policy evaluations", "次策略评估")
-    .replace("approvals", "次审批")
-    .replace("pending", "待处理")
-    .replace("skill activations", "次项目规则激活")
-    .replace("MCP calls", "次外部工具调用")
-    .replace("hook events", "次自动检查事件")
-    .replace("checks passed", "项检查通过")
-    .replace("required checks failed", "项必需检查失败")
-    .replace("Passed", "通过")
-    .replace("Failed", "失败")
-    .replace("Not run", "未运行")
-    .replace("Not selected", "未选择")
-    .replace("failed", "失败");
-}
-
-function localizeEvidenceValue(value: string, locale: "zh" | "en"): string {
-  if (locale === "en") return value;
-  return value
-    .replace("passed", "通过")
-    .replace("missing", "缺失")
-    .replace("unknown", "未知");
 }

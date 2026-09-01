@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, ArrowUp, Check, CheckCircle2, ChevronDown, FileDiff, FolderOpen, RefreshCw, Server, UserRound, WifiOff, X } from "lucide-react";
+import { ChevronDown, UserRound } from "lucide-react";
 import {
   daemonApi,
   type AgentContract,
@@ -43,6 +43,8 @@ import { AgentOSControlPlane, type ControlPlaneTarget } from "../components/Agen
 import { AdvancedSetupPanel } from "../components/AdvancedSetupPanel";
 import { CompletionSummary } from "../components/CompletionSummary";
 import { ConversationHistory } from "../components/ConversationHistory";
+import { ErrorBanner } from "../components/ErrorBanner";
+import { FollowUpComposer } from "../components/FollowUpComposer";
 import { ModelSetupDialog } from "../components/ModelSetupDialog";
 import { ModelRouteSummary } from "../components/ModelRouteSummary";
 import { PreflightControlDeck } from "../components/PreflightControlDeck";
@@ -50,15 +52,19 @@ import { PreflightSummary } from "../components/PreflightSummary";
 import { ProjectLauncher } from "../components/ProjectLauncher";
 import { ProjectSidebar } from "../components/ProjectSidebar";
 import { RunCenter } from "../components/RunCenter";
+import { RunChangeReviewPill } from "../components/RunChangeReviewPill";
 import { RuntimePanels } from "../components/RuntimePanels";
+import { RuntimeConnectionPanel } from "../components/RuntimeConnectionPanel";
 import { RunStatusDeck } from "../components/RunStatusDeck";
 import { RunSteeringComposer } from "../components/RunSteeringComposer";
+import { SplashScreen } from "../components/SplashScreen";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
+import { basename, hasVisibleDiff, isApprovalRequest, isEvidenceEvent, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
 import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -1349,41 +1355,15 @@ export function Workbench() {
           ) : null}
 
           {terminal ? (
-            <section className="followUpComposer">
-              <label htmlFor="follow-up-task">{t("session.followUp")}</label>
-              <div>
-                <textarea
-                  id="follow-up-task"
-                  ref={followUpInputRef}
-                  rows={2}
-                  value={followUpTask}
-                  placeholder={t("session.followUpPlaceholder")}
-                  onChange={(event) => setFollowUpTask(event.target.value)}
-                  onKeyDown={(event) => {
-                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && followUpTask.trim()) {
-                      event.preventDefault();
-                      void startFollowUp();
-                    }
-                  }}
-                />
-                <button type="button" disabled={!followUpTask.trim() || busy} onClick={() => void startFollowUp()} title={t("session.sendFollowUp")} aria-label={t("session.sendFollowUp")}>
-                  <ArrowUp size={17} />
-                </button>
-              </div>
-              <div className="followUpTemplates" aria-label={t("session.templates")}>
-                <span>{t("session.templatesShort")}</span>
-                {visibleFollowUpTemplates.map((template) => (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => useFollowUpSuggestion(t(template))}
-                    key={template}
-                  >
-                    {t(template)}
-                  </button>
-                ))}
-              </div>
-            </section>
+            <FollowUpComposer
+              value={followUpTask}
+              busy={busy}
+              templates={visibleFollowUpTemplates}
+              inputRef={followUpInputRef}
+              onChange={setFollowUpTask}
+              onSubmit={() => void startFollowUp()}
+              onUseTemplate={(template) => useFollowUpSuggestion(t(template))}
+            />
           ) : null}
 
           {error ? <ErrorBanner message={error} /> : null}
@@ -1479,168 +1459,4 @@ export function Workbench() {
       />
     </main>
   );
-}
-
-function RunChangeReviewPill({
-  title,
-  meta,
-  inspectLabel,
-  decisionRequired = false,
-  busy = false,
-  onInspect,
-  onAccept,
-  onReject,
-}: {
-  title: string;
-  meta: string;
-  inspectLabel?: string;
-  decisionRequired?: boolean;
-  busy?: boolean;
-  onInspect: () => void;
-  onAccept?: () => void;
-  onReject?: () => void;
-}) {
-  const { t } = usePreferences();
-  return (
-    <div className={`composerChangePill ${decisionRequired ? "needsDecision" : ""}`}>
-      <div>
-        <FileDiff size={15} />
-        <span>
-          <strong>{title}</strong>
-          <small>{meta}</small>
-        </span>
-      </div>
-      <div>
-        <button type="button" className="inspect" onClick={onInspect}>
-          {inspectLabel ?? t("approval.inspectChanges")}
-        </button>
-        {decisionRequired && onReject ? (
-          <button type="button" className="reject" disabled={busy} onClick={onReject} aria-label={t("approval.rejectPatch")}>
-            <X size={14} />
-          </button>
-        ) : null}
-        {decisionRequired && onAccept ? (
-          <button type="button" className="accept" disabled={busy} onClick={onAccept} aria-label={t("approval.acceptPatch")}>
-            <Check size={14} />
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function SplashScreen({ onEnter }: { onEnter: () => void }) {
-  const { t } = usePreferences();
-  return (
-    <div className="splashScreen" role="dialog" aria-label={t("splash.title")}>
-      <div className="splashHello">
-        <svg viewBox="0 0 1060 210" aria-hidden="true">
-          <text x="50%" y="128" textAnchor="middle">{t("splash.title")}</text>
-        </svg>
-        <span>{t("splash.subtitle")}</span>
-        <button type="button" onClick={onEnter}>{t("splash.enter")}</button>
-      </div>
-    </div>
-  );
-}
-
-function RuntimeConnectionPanel({
-  status,
-  onRetry,
-}: {
-  status: "checking" | "connected" | "offline";
-  onRetry: () => void;
-}) {
-  const { t } = usePreferences();
-  const checking = status === "checking";
-  return (
-    <section className={`runtimeConnectionPanel tone-${status}`} aria-live="polite">
-      <div className="runtimeConnectionMark">
-        {checking ? <RefreshCw className="spin" size={24} /> : <WifiOff size={24} />}
-      </div>
-      <span className="stageEyebrow">{t("runtimeGate.eyebrow")}</span>
-      <h1>{t(checking ? "runtimeGate.checkingTitle" : "runtimeGate.offlineTitle")}</h1>
-      <p>{t(checking ? "runtimeGate.checkingDescription" : "runtimeGate.offlineDescription")}</p>
-
-      <div className="runtimeConnectionChecks">
-        <article className="ready">
-          <CheckCircle2 size={16} />
-          <div><strong>{t("runtimeGate.frontendReady")}</strong><span>{t("runtimeGate.frontendReadyHint")}</span></div>
-        </article>
-        <article className={checking ? "checking" : "blocked"}>
-          {checking ? <RefreshCw className="spin" size={16} /> : <Server size={16} />}
-          <div><strong>{t(checking ? "runtimeGate.daemonChecking" : "runtimeGate.daemonOffline")}</strong><span>{t("runtimeGate.daemonEndpoint")}</span></div>
-        </article>
-        <article className="pending">
-          <FolderOpen size={16} />
-          <div><strong>{t("runtimeGate.projectPending")}</strong><span>{t("runtimeGate.projectPendingHint")}</span></div>
-        </article>
-      </div>
-
-      <div className="runtimeConnectionActions">
-        <button type="button" onClick={onRetry} disabled={checking}>
-          <RefreshCw className={checking ? "spin" : ""} size={16} />
-          {t(checking ? "runtimeGate.retrying" : "runtimeGate.retry")}
-        </button>
-        <code>http://127.0.0.1:8000/health</code>
-      </div>
-      <small>{t("runtimeGate.devHint")}</small>
-    </section>
-  );
-}
-
-function isEvidenceEvent(eventName: string): boolean {
-  return eventName.startsWith("context.")
-    || eventName.startsWith("model.")
-    || eventName.startsWith("tool.")
-    || eventName.startsWith("policy.")
-    || eventName.startsWith("approval.")
-    || eventName.startsWith("skill.")
-    || eventName.startsWith("mcp.")
-    || eventName.startsWith("hook.")
-    || eventName.startsWith("completion.")
-    || eventName.startsWith("repair.");
-}
-
-function isRuntimeConnectionError(message: string): boolean {
-  return /failed to fetch|load failed|networkerror|network request failed/i.test(message);
-}
-
-function ErrorBanner({ message }: { message: string }) {
-  const { t } = usePreferences();
-  const displayMessage = isRuntimeConnectionError(message)
-    ? t("error.daemonUnavailable")
-    : message;
-
-  return (
-    <div className="errorBanner" role="alert">
-      <AlertCircle size={17} />
-      <span>{displayMessage}</span>
-    </div>
-  );
-}
-
-function basename(path: string): string {
-  return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path;
-}
-
-function hasVisibleDiff(artifacts: RunArtifacts | undefined): boolean {
-  const diff = artifacts?.diff_summary;
-  return Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
-}
-
-function latestRestorableCheckpoint(recovery: RecoveryResponse | undefined): string | undefined {
-  return recovery?.checkpoints
-    .filter((point) => point.can_rollback && point.snapshot_available)
-    .sort((left, right) => right.trace_offset - left.trace_offset)[0]?.checkpoint_id;
-}
-
-function isApprovalRequest(value: unknown): value is ApprovalRequest {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<ApprovalRequest>;
-  return typeof candidate.approval_id === "string"
-    && typeof candidate.run_id === "string"
-    && typeof candidate.reason === "string"
-    && typeof candidate.target === "object"
-    && candidate.target !== null;
 }
