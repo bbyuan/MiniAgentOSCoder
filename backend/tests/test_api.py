@@ -1243,6 +1243,7 @@ def test_patch_approval_api_resumes_run_and_updates_artifacts(
         "insertions": 1,
         "deletions": 1,
     }
+    assert artifacts["change_review"]["status"] == "pending"
     assert artifacts["test_summary"]["status"] == "Passed"
     report = client.get(f"/runs/{run['run_id']}/report").json()
     assert report["available"] is True
@@ -1251,6 +1252,15 @@ def test_patch_approval_api_resumes_run_and_updates_artifacts(
     assert "Applied patches: 1" in report["content"]
     assert any(event["event"] == "approval.requested" for event in events)
     assert any(event["event"] == "patch.snapshot.created" for event in events)
+    accepted = client.post(f"/runs/{run['run_id']}/changes/accept", json={"reason": "looks good"})
+    accepted_artifacts = client.get(f"/runs/{run['run_id']}/artifacts").json()
+    accepted_history = client.get(f"/history/runs/{run['run_id']}").json()["run"]
+
+    assert accepted.status_code == 200
+    assert accepted.json()["change_review"]["status"] == "accepted"
+    assert accepted.json()["change_review"]["reason"] == "looks good"
+    assert accepted_artifacts["change_review"]["status"] == "accepted"
+    assert accepted_history["change_review"]["status"] == "accepted"
 
     checkpoints = client.get(f"/runs/{run['run_id']}/checkpoints").json()
     recovery_point = next(item for item in checkpoints["checkpoints"] if item["snapshot_available"])
@@ -1265,7 +1275,11 @@ def test_patch_approval_api_resumes_run_and_updates_artifacts(
     assert rollback.json()["restored"] == 1
     assert (tmp_path / "app.py").read_text(encoding="utf-8") == "old\n"
     assert client.get(f"/runs/{run['run_id']}").json()["rolled_back_to"] == recovery_point["checkpoint_id"]
-    assert client.get(f"/runs/{run['run_id']}/artifacts").json()["diff_summary"]["status"] == "Rolled back"
+    rolled_back_artifacts = client.get(f"/runs/{run['run_id']}/artifacts").json()
+    assert rolled_back_artifacts["diff_summary"]["status"] == "Rolled back"
+    assert rolled_back_artifacts["change_review"]["status"] == "reverted"
+    assert rolled_back_artifacts["change_review"]["checkpoint_id"] == recovery_point["checkpoint_id"]
+    assert client.get(f"/history/runs/{run['run_id']}").json()["run"]["change_review"]["status"] == "reverted"
     rollback_events = client.get(f"/runs/{run['run_id']}/events").json()["events"]
     assert [event["event"] for event in rollback_events][-3:] == [
         "rollback.started",

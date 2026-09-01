@@ -70,6 +70,9 @@ def test_run_summary_updates_and_supports_filters_and_archive(tmp_path: Path) ->
     assert saved["test_status"] == "Passed"
     assert saved["completion"]["verdict"] == "passed"
     assert saved["completion"]["checks"][0]["id"] == "tests_after_change"
+    assert saved["change_review"]["status"] == "pending"
+    assert store.update_change_review(run.run_id, {"status": "accepted", "reason": "reviewed"})
+    assert store.get_run(run.run_id)["change_review"] == {"status": "accepted", "reason": "reviewed"}
     assert saved["completed_at"] is not None
     assert store.set_archived(run.run_id, True)
     assert store.list_runs()[1] == 0

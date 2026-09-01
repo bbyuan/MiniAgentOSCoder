@@ -58,6 +58,10 @@ class ResumeRunRequest(BaseModel):
     restore_workspace: bool = False
 
 
+class ChangeReviewRequest(BaseModel):
+    reason: str = Field(default="", max_length=1000)
+
+
 @router.post("")
 def create_run(request: CreateRunRequest) -> dict[str, object]:
     project = store.projects.get(request.project_id)
@@ -216,6 +220,7 @@ def get_run(run_id: str) -> dict[str, object]:
         "last_checkpoint_id": run.last_checkpoint_id,
         "rolled_back_to": run.rolled_back_to,
         "applied_patches": run.applied_patches,
+        "change_review": artifacts.change_review.to_dict() if artifacts else {"status": "pending"},
         "memory_refs": run.memory_refs,
         "admission": store.admissions.get(run_id).to_dict() if run_id in store.admissions else None,
         "model_route": store.model_routes.get(run_id).to_dict() if run_id in store.model_routes else None,
@@ -325,6 +330,40 @@ def get_run_artifacts(run_id: str) -> dict[str, object]:
     payload = artifacts.to_dict()
     payload["diff_preview"] = _read_patch_preview(run_id)
     return payload
+
+
+@router.post("/{run_id}/changes/accept")
+def accept_run_changes(run_id: str, request: ChangeReviewRequest | None = None) -> dict[str, object]:
+    run = store.runs.get(run_id)
+    project = _project_for_run(run_id)
+    artifacts = store.artifacts.get(run_id)
+    if run is None or project is None or artifacts is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if store.worker.is_active(run_id):
+        raise HTTPException(status_code=409, detail="Cannot accept changes while the run is active")
+    if artifacts.diff_summary.files <= 0:
+        raise HTTPException(status_code=409, detail="No file changes are available to accept")
+    if artifacts.change_review.status == "reverted" or run.rolled_back_to:
+        raise HTTPException(status_code=409, detail="Reverted changes cannot be accepted")
+
+    review = _set_change_review(
+        run_id,
+        "accepted",
+        reason=request.reason if request is not None else "",
+    )
+    tracer = TraceWriter(project.path / "runs")
+    tracer.event(
+        run_id,
+        "change_review.accepted",
+        {
+            "status": review["status"],
+            "files": run.changed_files,
+            "reason": review["reason"],
+        },
+        role="user",
+    )
+    _regenerate_report(run_id, tracer)
+    return {"run_id": run_id, "change_review": review}
 
 
 @router.get("/{run_id}/report")
@@ -590,6 +629,7 @@ def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
         artifacts.diff_summary.files = len(summary.files)
         artifacts.diff_summary.insertions = 0
         artifacts.diff_summary.deletions = 0
+    review = _set_change_review(run_id, "reverted", checkpoint_id=request.checkpoint_id)
     tracer.event(
         run_id,
         "rollback.completed",
@@ -599,6 +639,7 @@ def rollback_run(run_id: str, request: RollbackRequest) -> dict[str, object]:
             "restored": summary.restored,
             "removed": summary.removed,
             "status": run.status.value,
+            "change_review": review,
         },
     )
     _persist_run_snapshot(run, store.run_results.get(run_id))
@@ -940,6 +981,25 @@ def _regenerate_report(run_id: str, tracer: TraceWriter) -> None:
         _persist_run_snapshot(run, result)
     except (OSError, ValueError) as exc:
         tracer.event(run_id, "report.failed", {"error": redact_secrets(str(exc))})
+
+
+def _set_change_review(
+    run_id: str,
+    status: str,
+    *,
+    reason: str = "",
+    checkpoint_id: str | None = None,
+) -> dict[str, object]:
+    artifacts = store.artifacts.get(run_id)
+    if artifacts is None:
+        raise HTTPException(status_code=404, detail="Run artifacts not found")
+    artifacts.change_review.status = status
+    artifacts.change_review.decided_at = datetime.now(timezone.utc).isoformat()
+    artifacts.change_review.checkpoint_id = checkpoint_id
+    artifacts.change_review.reason = redact_secrets(reason.strip())[:1000]
+    review = artifacts.change_review.to_dict()
+    store.history.update_change_review(run_id, review)
+    return review
 
 
 def _consolidate_terminal_memory(run_id: str, tracer: TraceWriter) -> None:

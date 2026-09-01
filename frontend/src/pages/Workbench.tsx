@@ -128,7 +128,6 @@ export function Workbench() {
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
   const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
   const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
-  const [changeDecision, setChangeDecision] = useState<"pending" | "accepted" | "reverted">("pending");
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
   const agentPackState = useAgentPackState({ project, mode, locale, t });
 
@@ -230,7 +229,6 @@ export function Workbench() {
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
     setWorkspaceChangeSet(undefined);
-    setChangeDecision("pending");
   }
 
   async function refreshConnection() {
@@ -588,7 +586,6 @@ export function Workbench() {
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
     setWorkspaceChangeSet(undefined);
-    setChangeDecision("pending");
     setError(null);
     if (clearTask) setTask("");
   }
@@ -650,6 +647,7 @@ export function Workbench() {
       changedFiles: [],
       insertions: diff.insertions,
       deletions: diff.deletions,
+      kind: "applied",
     });
     setWorkspaceFilesOpen(true);
   }
@@ -681,7 +679,31 @@ export function Workbench() {
     const checkpointId = latestRestorableCheckpoint(recovery);
     if (!checkpointId) return;
     await rollbackToCheckpoint(checkpointId);
-    setChangeDecision("reverted");
+    if (runId) {
+      daemonApi.getArtifacts(runId).then(setArtifacts).catch(() => undefined);
+    }
+  }
+
+  async function acceptLatestChanges() {
+    if (!runId) return;
+    setRollbackBusy("accept");
+    setError(null);
+    try {
+      const response = await daemonApi.acceptRunChanges(runId);
+      const latestArtifacts = await daemonApi.getArtifacts(runId);
+      setArtifacts({
+        ...latestArtifacts,
+        change_review: response.change_review,
+      });
+      const latestTrace = await daemonApi.getTrace(runId);
+      setTraceEvents(latestTrace.events);
+      daemonApi.getReport(runId).then(setReport).catch(() => undefined);
+      void loadProjectRuns();
+    } catch (caught) {
+      setError(localizeErrorMessage(locale, caught, t("error.acceptChanges")));
+    } finally {
+      setRollbackBusy(undefined);
+    }
   }
 
   async function compactContext(targetRatio: number, confirmed: boolean): Promise<ContextCompactionResponse> {
@@ -1039,11 +1061,7 @@ export function Workbench() {
               artifacts={artifacts}
               completion={completion}
               onInspectChanges={hasVisibleDiff(artifacts) ? openArtifactChanges : undefined}
-              changeDecision={changeDecision}
-              changeReviewBusy={Boolean(rollbackBusy)}
-              canRejectChanges={Boolean(latestRestorableCheckpoint(recovery))}
-              onAcceptChanges={hasVisibleDiff(artifacts) ? () => setChangeDecision("accepted") : undefined}
-              onRejectChanges={hasVisibleDiff(artifacts) ? () => void rejectLatestChanges() : undefined}
+              changeDecision={artifacts?.change_review?.status as "pending" | "accepted" | "reverted" | undefined}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);
@@ -1076,11 +1094,10 @@ export function Workbench() {
                         changedFiles: approval.target.files ?? [],
                         insertions: approval.target.additions,
                         deletions: approval.target.deletions,
+                        kind: "pending",
                       });
                       setWorkspaceFilesOpen(true);
                     }}
-                    onAccept={approveAction}
-                    onReject={() => denyAction(t("approval.defaultDenyReason"))}
                   />
                 ) : approval ? (
                   <RunChangeReviewPill
@@ -1180,6 +1197,26 @@ export function Workbench() {
         open={workspaceFilesOpen}
         project={project}
         changeSet={workspaceChangeSet}
+        reviewActions={
+          workspaceChangeSet?.kind === "pending" && approval?.target.tool === "apply_patch"
+            ? {
+                busy: approvalBusy,
+                canAccept: true,
+                canReject: true,
+                onAccept: approveAction,
+                onReject: () => denyAction(t("approval.defaultDenyReason")),
+              }
+            : workspaceChangeSet?.kind === "applied" && hasVisibleDiff(artifacts)
+              ? {
+                  review: artifacts?.change_review,
+                  busy: Boolean(rollbackBusy),
+                  canAccept: true,
+                  canReject: Boolean(latestRestorableCheckpoint(recovery)),
+                  onAccept: () => void acceptLatestChanges(),
+                  onReject: () => void rejectLatestChanges(),
+                }
+              : undefined
+        }
         onClose={() => {
           setWorkspaceFilesOpen(false);
           setWorkspaceChangeSet(undefined);

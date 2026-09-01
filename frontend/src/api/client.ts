@@ -543,6 +543,14 @@ export interface RunArtifacts {
     failed: number;
   };
   trace_summary: string[];
+  change_review: ChangeReview;
+}
+
+export interface ChangeReview {
+  status: "pending" | "accepted" | "reverted" | string;
+  decided_at?: string | null;
+  checkpoint_id?: string | null;
+  reason?: string;
 }
 
 export interface ModelProviderStatus {
@@ -775,6 +783,12 @@ export interface RollbackResponse {
   files: string[];
   restored: number;
   removed: number;
+  change_review?: ChangeReview;
+}
+
+export interface ChangeReviewResponse {
+  run_id: string;
+  change_review: ChangeReview;
 }
 
 export interface RunReportResponse {
@@ -1054,6 +1068,11 @@ export const daemonApi = {
     request<RollbackResponse>(`/runs/${runId}/rollback`, {
       method: "POST",
       body: JSON.stringify({ checkpoint_id: checkpointId }),
+    }),
+  acceptRunChanges: (runId: string, reason = "") =>
+    request<ChangeReviewResponse>(`/runs/${runId}/changes/accept`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
     }),
   approveAction: (runId: string, approvalId: string) =>
     request<{ status: string }>(`/runs/${runId}/approve`, {

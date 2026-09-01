@@ -92,8 +92,8 @@ class HistoryStore:
                     termination_reason, final_message, budget_json, changed_files_json,
                     applied_patches, repair_attempts, steps, model_calls, tool_calls,
                     input_tokens, output_tokens, total_tokens, test_status,
-                    report_path, trace_path, patch_path, archived, completion_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    report_path, trace_path, patch_path, archived, completion_json, change_review_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(run_id) DO NOTHING
                 """,
                 (
@@ -126,6 +126,7 @@ class HistoryStore:
                     str(run_dir / "patch.diff"),
                     0,
                     "{}",
+                    values["change_review_json"],
                 ),
             )
 
@@ -139,13 +140,21 @@ class HistoryStore:
         values = _run_values(run, result=result, artifacts=artifacts)
         completed_at = _now() if run.status.value in TERMINAL_STATUSES else None
         with self._transaction() as connection:
+            change_review_json = values["change_review_json"]
+            if artifacts is None:
+                existing = connection.execute(
+                    "SELECT change_review_json FROM runs WHERE run_id=?",
+                    (run.run_id,),
+                ).fetchone()
+                if existing is not None:
+                    change_review_json = existing["change_review_json"]
             connection.execute(
                 """
                 UPDATE runs SET
                     status=?, phase=?, updated_at=?, completed_at=COALESCE(?, completed_at),
                     termination_reason=?, final_message=?, budget_json=?, changed_files_json=?,
                     applied_patches=?, repair_attempts=?, steps=?, model_calls=?, tool_calls=?,
-                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json=?
+                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json=?, change_review_json=?
                 WHERE run_id=?
                 """,
                 (
@@ -167,6 +176,7 @@ class HistoryStore:
                     values["total_tokens"],
                     values["test_status"],
                     values["completion_json"],
+                    change_review_json,
                     run.run_id,
                 ),
             )
@@ -192,7 +202,7 @@ class HistoryStore:
                     status=?, phase=?, updated_at=?, completed_at=NULL,
                     termination_reason='', final_message='', budget_json=?, changed_files_json=?,
                     applied_patches=?, repair_attempts=?, steps=?, model_calls=?, tool_calls=?,
-                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json='{}'
+                    input_tokens=?, output_tokens=?, total_tokens=?, test_status=?, completion_json='{}', change_review_json=?
                 WHERE run_id=? AND status IN ('interrupted', 'failed', 'cancelled')
                 """,
                 (
@@ -210,8 +220,17 @@ class HistoryStore:
                     values["output_tokens"],
                     values["total_tokens"],
                     values["test_status"],
+                    values["change_review_json"],
                     run.run_id,
                 ),
+            )
+            return cursor.rowcount > 0
+
+    def update_change_review(self, run_id: str, review: dict[str, Any]) -> bool:
+        with self._transaction() as connection:
+            cursor = connection.execute(
+                "UPDATE runs SET change_review_json=?, updated_at=? WHERE run_id=?",
+                (_json(review), _now(), run_id),
             )
             return cursor.rowcount > 0
 
@@ -400,7 +419,8 @@ class HistoryStore:
                     trace_path TEXT NOT NULL,
                     patch_path TEXT NOT NULL,
                     archived INTEGER NOT NULL DEFAULT 0,
-                    completion_json TEXT NOT NULL DEFAULT '{}'
+                    completion_json TEXT NOT NULL DEFAULT '{}',
+                    change_review_json TEXT NOT NULL DEFAULT '{"status":"pending"}'
                 );
                 CREATE INDEX IF NOT EXISTS idx_runs_project_updated ON runs(project_id, updated_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_runs_status_updated ON runs(status, updated_at DESC);
@@ -418,6 +438,8 @@ class HistoryStore:
                 connection.execute("ALTER TABLE runs ADD COLUMN parent_run_id TEXT")
             if "turn_index" not in columns:
                 connection.execute("ALTER TABLE runs ADD COLUMN turn_index INTEGER NOT NULL DEFAULT 0")
+            if "change_review_json" not in columns:
+                connection.execute("ALTER TABLE runs ADD COLUMN change_review_json TEXT NOT NULL DEFAULT '{\"status\":\"pending\"}'")
             connection.execute("UPDATE runs SET conversation_id=run_id WHERE conversation_id='' OR conversation_id IS NULL")
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_runs_conversation_turn ON runs(conversation_id, turn_index ASC)"
@@ -464,6 +486,7 @@ def _run_values(
         "total_tokens": int(token_usage.get("total_tokens", budget.get("total_tokens", 0))),
         "test_status": artifacts.test_summary.status if artifacts is not None else (run.test_status or "Not run"),
         "completion_json": _json(result.completion.to_dict()) if result is not None and result.completion is not None else "{}",
+        "change_review_json": _json(artifacts.change_review.to_dict()) if artifacts is not None else '{"status":"pending"}',
     }
 
 
@@ -511,6 +534,7 @@ def _run_row(row: sqlite3.Row) -> dict[str, Any]:
         "total_tokens": int(row["total_tokens"]),
         "test_status": row["test_status"],
         "completion": (_loads(row["completion_json"], {}) or None) if "completion_json" in keys else None,
+        "change_review": _loads(row["change_review_json"], {"status": "pending"}) if "change_review_json" in keys else {"status": "pending"},
         "report_path": row["report_path"],
         "trace_path": row["trace_path"],
         "patch_path": row["patch_path"],

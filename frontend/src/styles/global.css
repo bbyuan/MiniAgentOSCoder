@@ -17677,7 +17677,7 @@ button.controlSignal.active {
 }
 
 .workspaceFilesDialog.withChanges {
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
 }
 
 .workspaceChangeRail {
@@ -17751,6 +17751,88 @@ button.controlSignal.active {
 
 .workspaceFilesList button {
   min-height: 62px;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar {
+  min-width: 0;
+  padding: 14px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border-top: 1px solid var(--hairline);
+  color: var(--text);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface) 96%, transparent));
+}
+
+.workspaceFilesDialog > .workspaceReviewBar > div:first-child {
+  min-width: 0;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar strong,
+.workspaceFilesDialog > .workspaceReviewBar span {
+  min-width: 0;
+  overflow: hidden;
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar span {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button {
+  min-height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button.ghost {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 64%, transparent);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button.ghost.danger {
+  color: var(--danger);
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button.primary {
+  border: 1px solid color-mix(in srgb, var(--success) 72%, transparent);
+  color: white;
+  background: var(--success);
+}
+
+.workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.workspaceFilesDialog > .workspaceReviewBar.state-accepted .workspaceReviewActions button,
+.workspaceFilesDialog > .workspaceReviewBar.state-reverted .workspaceReviewActions button {
+  display: none;
 }
 
 .workspaceFilePreview > header {
@@ -21458,30 +21540,24 @@ button > svg {
 .finalChangeReview {
   order: 1;
   min-width: 0;
-  padding: 14px;
+  padding: 12px 2px 2px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 48%, transparent), transparent 70%),
-    var(--surface-raised);
+  gap: 14px;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  background: transparent;
 }
 
 .finalChangeReview.state-accepted {
-  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--success-soft) 50%, transparent), transparent 70%),
-    var(--surface-raised);
+  border-color: var(--hairline);
+  background: transparent;
 }
 
 .finalChangeReview.state-reverted {
-  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--warning-soft) 56%, transparent), transparent 70%),
-    var(--surface-raised);
+  border-color: var(--hairline);
+  background: transparent;
 }
 
 .finalChangeReview > header {
@@ -21493,25 +21569,23 @@ button > svg {
 }
 
 .finalChangeReview > header > svg {
-  width: 34px;
-  height: 34px;
-  padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border: 0;
   border-radius: 8px;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
 }
 
 .finalChangeReview.state-accepted > header > svg {
   color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
-  background: color-mix(in srgb, var(--success-soft) 52%, var(--surface));
+  background: color-mix(in srgb, var(--success-soft) 56%, var(--surface));
 }
 
 .finalChangeReview.state-reverted > header > svg {
   color: var(--warning);
-  border-color: color-mix(in srgb, var(--warning) 32%, var(--border));
-  background: color-mix(in srgb, var(--warning-soft) 58%, var(--surface));
+  background: color-mix(in srgb, var(--warning-soft) 60%, var(--surface));
 }
 
 .finalChangeReview strong,
@@ -21551,30 +21625,19 @@ button > svg {
 }
 
 .finalChangeActions button {
-  min-height: 36px;
-  padding: 0 12px;
+  min-height: 34px;
+  padding: 0 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
   border-radius: 8px;
-  background: var(--surface);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 36%, var(--surface));
   font-size: 12px;
   font-weight: 780;
   white-space: nowrap;
-}
-
-.finalChangeActions button.primary {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 32%, var(--border));
-  background: color-mix(in srgb, var(--success-soft) 58%, var(--surface));
-}
-
-.finalChangeActions button.danger {
-  color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
-  background: color-mix(in srgb, var(--danger-soft) 58%, var(--surface));
 }
 
 .finalChangeActions button:disabled {
@@ -23743,6 +23806,19 @@ summary:focus-visible {
   .workspaceFilesHeader,
   .workspaceFilesToolbar {
     padding-inline: 16px;
+  }
+
+  .workspaceFilesDialog > .workspaceReviewBar {
+    grid-template-columns: 1fr;
+    padding-inline: 16px;
+  }
+
+  .workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions {
+    width: 100%;
+  }
+
+  .workspaceFilesDialog > .workspaceReviewBar .workspaceReviewActions button {
+    flex: 1;
   }
 
   .workspaceFilesBody,

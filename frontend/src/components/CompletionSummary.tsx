@@ -1,13 +1,11 @@
 import {
   Ban,
-  Check,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
   FileDiff,
   FlaskConical,
   ListChecks,
-  RotateCcw,
   ShieldCheck,
 } from "lucide-react";
 import type { CompletionAssessment, RunArtifacts } from "../api/client";
@@ -27,10 +25,6 @@ interface CompletionSummaryProps {
   onInspectRun?: () => void;
   onInspectChanges?: () => void;
   changeDecision?: "pending" | "accepted" | "reverted";
-  changeReviewBusy?: boolean;
-  canRejectChanges?: boolean;
-  onAcceptChanges?: () => void;
-  onRejectChanges?: () => void;
 }
 
 export function CompletionSummary({
@@ -43,10 +37,6 @@ export function CompletionSummary({
   onInspectRun,
   onInspectChanges,
   changeDecision = "pending",
-  changeReviewBusy = false,
-  canRejectChanges = false,
-  onAcceptChanges,
-  onRejectChanges,
 }: CompletionSummaryProps) {
   const { locale, t } = usePreferences();
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
@@ -88,7 +78,7 @@ export function CompletionSummary({
   const leadMessage = status === "failed"
     ? failureLeadMessage(terminationReason, displayedObservationError, t)
     : messagePreview;
-  const showFinalChangeReview = hasCodeDiff && Boolean(onInspectChanges || onAcceptChanges || onRejectChanges);
+  const showFinalChangeReview = hasCodeDiff && Boolean(onInspectChanges);
 
   return (
     <section className={`completionSummary tone-${status}`}>
@@ -158,30 +148,7 @@ export function CompletionSummary({
                 {t("completion.changeReview.inspect")}
               </button>
             ) : null}
-            {onRejectChanges ? (
-              <button
-                type="button"
-                className="secondary danger"
-                disabled={changeReviewBusy || !canRejectChanges || changeDecision === "accepted" || changeDecision === "reverted"}
-                onClick={onRejectChanges}
-              >
-                <RotateCcw size={15} className={changeReviewBusy ? "spin" : ""} />
-                {t("completion.changeReview.reject")}
-              </button>
-            ) : null}
-            {onAcceptChanges ? (
-              <button
-                type="button"
-                className="primary"
-                disabled={changeReviewBusy || changeDecision === "accepted" || changeDecision === "reverted"}
-                onClick={onAcceptChanges}
-              >
-                <Check size={15} />
-                {t("completion.changeReview.accept")}
-              </button>
-            ) : null}
           </div>
-          {!canRejectChanges && changeDecision === "pending" ? <small>{t("completion.changeReview.noSnapshot")}</small> : null}
         </section>
       ) : null}
       {showSignals ? (

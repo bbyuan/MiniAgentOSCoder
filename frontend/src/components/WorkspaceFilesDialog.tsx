@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
-import { daemonApi, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
+import { AlertCircle, Check, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import { daemonApi, type ChangeReview, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
 import { localizeErrorMessage, type TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 import { buildDiffFiles } from "./DiffReview";
@@ -11,16 +11,27 @@ export interface WorkspaceChangeSet {
   changedFiles: string[];
   insertions: number;
   deletions: number;
+  kind?: "pending" | "applied";
+}
+
+export interface WorkspaceChangeReviewActions {
+  review?: ChangeReview;
+  busy?: boolean;
+  canAccept?: boolean;
+  canReject?: boolean;
+  onAccept?: () => void;
+  onReject?: () => void;
 }
 
 interface WorkspaceFilesDialogProps {
   open: boolean;
   project?: OpenProjectResponse;
   changeSet?: WorkspaceChangeSet;
+  reviewActions?: WorkspaceChangeReviewActions;
   onClose: () => void;
 }
 
-export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: WorkspaceFilesDialogProps) {
+export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, onClose }: WorkspaceFilesDialogProps) {
   const { locale, t } = usePreferences();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<WorkspaceFileItem[]>([]);
@@ -62,6 +73,11 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
   }, [changedByPath, displayFiles, fileScope, hasChanges]);
   const selectedItem = displayFiles.find((item) => item.path === selectedPath);
   const selectedDiff = changedByPath.get(selectedPath);
+  const reviewStatus = normalizeReviewStatus(reviewActions?.review?.status);
+  const canReview = hasChanges && Boolean(reviewActions?.onAccept || reviewActions?.onReject);
+  const isPendingPatch = changeSet?.kind === "pending";
+  const acceptLabel = t(isPendingPatch ? "workspaceFiles.applyPatch" : "workspaceFiles.keepChanges");
+  const rejectLabel = t(isPendingPatch ? "workspaceFiles.rejectPatch" : "workspaceFiles.revertChanges");
 
   useEffect(() => {
     if (!open || !project) return;
@@ -279,6 +295,39 @@ export function WorkspaceFilesDialog({ open, project, changeSet, onClose }: Work
           </article>
         </div>
 
+        {canReview ? (
+          <footer className={`workspaceReviewBar state-${reviewStatus}`}>
+            <div>
+              <strong>{t(reviewStatus === "accepted" ? "workspaceFiles.reviewAccepted" : reviewStatus === "reverted" ? "workspaceFiles.reviewReverted" : isPendingPatch ? "workspaceFiles.reviewPatchReady" : "workspaceFiles.reviewReady")}</strong>
+              <span>{t(isPendingPatch ? "workspaceFiles.reviewPatchHint" : "workspaceFiles.reviewHint")}</span>
+            </div>
+            <div className="workspaceReviewActions">
+              {reviewActions?.onReject ? (
+                <button
+                  type="button"
+                  className="ghost danger"
+                  disabled={reviewActions.busy || reviewStatus !== "pending" || reviewActions.canReject === false}
+                  onClick={reviewActions.onReject}
+                >
+                  <RotateCcw size={15} className={reviewActions.busy ? "spin" : ""} />
+                  {rejectLabel}
+                </button>
+              ) : null}
+              {reviewActions?.onAccept ? (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={reviewActions.busy || reviewStatus !== "pending" || reviewActions.canAccept === false}
+                  onClick={reviewActions.onAccept}
+                >
+                  <Check size={15} />
+                  {acceptLabel}
+                </button>
+              ) : null}
+            </div>
+          </footer>
+        ) : null}
+
         {truncated ? <footer>{t("workspaceFiles.truncatedList")}</footer> : null}
       </section>
     </div>
@@ -308,4 +357,9 @@ function classifyDiffLine(line: string): "add" | "delete" | "meta" | "context" {
   if (line.startsWith("+")) return "add";
   if (line.startsWith("-")) return "delete";
   return "context";
+}
+
+function normalizeReviewStatus(status: string | undefined): "pending" | "accepted" | "reverted" {
+  if (status === "accepted" || status === "reverted") return status;
+  return "pending";
 }

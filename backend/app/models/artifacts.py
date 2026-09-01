@@ -30,6 +30,14 @@ class TestSummary(Serializable):
 
 
 @dataclass(slots=True)
+class ChangeReview(Serializable):
+    status: str = "pending"
+    decided_at: str | None = None
+    checkpoint_id: str | None = None
+    reason: str = ""
+
+
+@dataclass(slots=True)
 class RunArtifacts(Serializable):
     run_id: str
     plan: list[PlanStep] = field(default_factory=list)
@@ -37,4 +45,4 @@ class RunArtifacts(Serializable):
     diff_summary: DiffSummary = field(default_factory=DiffSummary)
     test_summary: TestSummary = field(default_factory=TestSummary)
     trace_summary: list[str] = field(default_factory=list)
-
+    change_review: ChangeReview = field(default_factory=ChangeReview)

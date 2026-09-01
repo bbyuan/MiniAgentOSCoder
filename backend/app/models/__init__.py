@@ -1,6 +1,6 @@
 from app.models.action import ActionIR, ActionObservation
 from app.models.admission import AdmissionCheck, CostForecast, ResourceForecast, RunAdmission
-from app.models.artifacts import DiffSummary, PlanStep, RunArtifacts, TestSummary
+from app.models.artifacts import ChangeReview, DiffSummary, PlanStep, RunArtifacts, TestSummary
 from app.models.contract import AgentContract, CostEnvelope, EffectSet, PolicySet, ProgramSpec
 from app.models.context import ContextItem, ContextPack, ContextPackBudget
 from app.models.extensions import (
@@ -47,6 +47,7 @@ __all__ = [
     "ApprovalPolicy",
     "ApprovalRequest",
     "Checkpoint",
+    "ChangeReview",
     "CompletionAssessment",
     "CompletionCheck",
     "ContextItem",
