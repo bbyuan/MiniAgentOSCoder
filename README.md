@@ -61,6 +61,19 @@ npm run check
 npm run build
 ```
 
+Full local verification:
+
+```text
+make verify
+```
+
+The root verification target runs the backend pytest suite from `backend/`,
+the frontend checks, the Tauri desktop compile check, the invoice Skill fixture
+tests, and the deterministic P0 demo. Run backend tests from `backend/` or use
+`make backend-test`; running pytest from the repository root also discovers
+fixture and run-snapshot tests that are intentionally not part of the backend
+suite.
+
 Connected workbench:
 
 ```text
