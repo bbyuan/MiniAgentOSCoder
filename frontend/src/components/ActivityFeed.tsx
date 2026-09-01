@@ -25,14 +25,18 @@ import {
   buildWorkItems,
   eventTime,
   type WorkItem,
+  type WorkItemCategory,
+  type WorkItemChangeSet,
   type WorkItemKind,
 } from "../activity/workItems";
+import type { TranslationKey } from "../i18n";
 import { usePreferences } from "../preferences";
 
 interface ActivityFeedProps {
   events: TraceEvent[];
   status: string;
   embedded?: boolean;
+  onInspectChangeSet?: (changeSet: WorkItemChangeSet) => void;
 }
 
 const ITEM_ICONS: Record<WorkItemKind, LucideIcon> = {
@@ -55,7 +59,7 @@ const ITEM_ICONS: Record<WorkItemKind, LucideIcon> = {
   user: UserRound,
 };
 
-function ActivityItem({ item }: { item: WorkItem }) {
+function ActivityItem({ item, onInspectChangeSet }: { item: WorkItem; onInspectChangeSet?: (changeSet: WorkItemChangeSet) => void }) {
   const { t } = usePreferences();
   const Icon = ITEM_ICONS[item.kind] ?? Activity;
 
@@ -74,6 +78,12 @@ function ActivityItem({ item }: { item: WorkItem }) {
           <div className="activityChips">
             {item.chips.slice(0, 3).map((chip) => <MetadataChip chip={chip} key={chip} />)}
           </div>
+        ) : null}
+        {item.changeSet && onInspectChangeSet ? (
+          <button type="button" className="agentProcessLink" onClick={() => onInspectChangeSet(item.changeSet!)}>
+            <FileDiff size={14} />
+            {t("activity.inspectChanges")}
+          </button>
         ) : null}
         {item.output ? (
           <details className="activityOutput">
@@ -98,7 +108,7 @@ function MetadataChip({ chip }: { chip: string }) {
   );
 }
 
-export function ActivityFeed({ events, status, embedded = false }: ActivityFeedProps) {
+export function ActivityFeed({ events, status, embedded = false, onInspectChangeSet }: ActivityFeedProps) {
   const { locale, t } = usePreferences();
   const [expanded, setExpanded] = useState(true);
   const workItems = buildWorkItems(events, locale, t);
@@ -107,6 +117,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
   const latestItem = workItems[workItems.length - 1];
   const LatestIcon = latestItem ? ITEM_ICONS[latestItem.kind] ?? Activity : Activity;
   const duration = workDuration(workItems, t);
+  const summary = workBreakdown(workItems, t);
 
   if (embedded && workItems.length === 0) return null;
 
@@ -117,7 +128,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
           <span>
             <strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong>
-            <small>{duration ? t("activity.workLogDescriptionTimed", { duration, count: workItems.length }) : t("activity.workLogDescription", { count: workItems.length })}</small>
+            <small>{duration ? t("activity.workLogBreakdownTimed", { duration, summary }) : summary}</small>
           </span>
         </button>
         {!embedded ? (
@@ -145,7 +156,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
       ) : expanded ? (
         <ol className="agentProcessList">
           {visibleItems.map((item, index) => (
-            <ActivityItem item={item} key={`${item.time}-${item.title}-${index}`} />
+            <ActivityItem item={item} onInspectChangeSet={onInspectChangeSet} key={`${item.time}-${item.title}-${index}`} />
           ))}
         </ol>
       ) : null}
@@ -166,4 +177,22 @@ function workDuration(
   const rest = seconds % 60;
   if (minutes > 0) return t("activity.durationMinutes", { minutes, seconds: rest });
   return t("activity.durationSeconds", { seconds });
+}
+
+function workBreakdown(
+  items: WorkItem[],
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  if (!items.length) return t("activity.workLogDescription", { count: 0 });
+  const priority: WorkItemCategory[] = ["thinking", "file", "command", "change", "approval", "result", "guidance", "system"];
+  const counts = new Map<WorkItemCategory, number>();
+  items.forEach((item) => counts.set(item.category, (counts.get(item.category) ?? 0) + 1));
+  const parts = priority
+    .filter((category) => counts.has(category))
+    .slice(0, 3)
+    .map((category) => t("activity.categoryCount", {
+      label: t(`activity.category.${category}` as TranslationKey),
+      count: counts.get(category) ?? 0,
+    }));
+  return parts.join(" · ");
 }

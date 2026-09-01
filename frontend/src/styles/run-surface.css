@@ -392,6 +392,27 @@
   font-weight: 680;
 }
 
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLink {
+  width: max-content;
+  min-height: 28px;
+  margin-top: 9px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 7px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLink:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 56%, transparent);
+}
+
 .productContent .runSimpleLayout .runStatusDeck .activityOutput {
   margin-top: 9px;
   border: 0;
@@ -439,6 +460,53 @@
 
 .productContent .runSimpleLayout .followUpComposer textarea {
   min-height: 50px;
+}
+
+.productContent .runSimpleLayout .steeringChangeReview {
+  margin: 10px 0 8px;
+}
+
+.productContent .runSimpleLayout .composerChangePill {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 58%, transparent);
+}
+
+.productContent .runSimpleLayout .composerChangePill.needsDecision {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--warning-soft) 72%, transparent), transparent 72%),
+    color-mix(in srgb, var(--surface-subtle) 70%, transparent);
+  box-shadow: inset 3px 0 0 var(--warning), inset 0 0 0 1px color-mix(in srgb, var(--warning) 22%, var(--border));
+}
+
+.productContent .runSimpleLayout .composerChangePill > div:first-child > svg {
+  width: 26px;
+  height: 26px;
+  padding: 6px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.productContent .runSimpleLayout .composerChangePill button.inspect {
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .composerChangePill button.inspect:hover {
+  background: color-mix(in srgb, var(--accent-soft) 52%, transparent);
+}
+
+.productContent .runSimpleLayout .composerChangePill button.reject,
+.productContent .runSimpleLayout .composerChangePill button.accept {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 7px;
 }
 
 .productContent .runSimpleLayout .followUpTemplates {

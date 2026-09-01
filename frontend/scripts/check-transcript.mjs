@@ -40,11 +40,21 @@ assert(typeof buildWorkItems === "function", "buildWorkItems should be executabl
 const t = (key, variables = {}) => {
   const dictionary = {
     "activity.actionDetail.readFile": "先读取相关文件，再决定下一步怎么改。",
+    "activity.category.approval": "审批",
+    "activity.category.change": "变更",
+    "activity.category.command": "命令",
+    "activity.category.file": "文件",
+    "activity.category.guidance": "指令",
+    "activity.category.result": "结果",
+    "activity.category.system": "系统",
+    "activity.category.thinking": "思考",
+    "activity.categoryCount": "{label} {count}",
     "activity.detail.modelRequested": "正在让模型给出受约束的下一步动作。",
     "activity.fileLabel": "文件：",
     "activity.modelLabel": "模型：",
     "activity.title.modelRequested": "请求模型判断下一步",
     "activity.title.readFile": "读取 {path}",
+    "workspaceFiles.pendingChanges": "待确认变更",
   };
   return (dictionary[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => String(variables[name] ?? ""));
 };
@@ -85,19 +95,30 @@ assert(pendingItems[0].chips.includes("模型：deepseek-v4-flash"), "Model meta
 
 const patchItems = buildWorkItems([
   {
-    event: "tool.executed",
+    event: "approval.requested",
     time: "2026-09-01T09:22:10.000Z",
     payload: {
-      action: { action_id: "a2", type: "apply_patch", params: {} },
-      result: { metadata: { files: ["calculator.py"], additions: 4, deletions: 2 } },
+      approval: {
+        target: {
+          tool: "apply_patch",
+          patch: "--- a/calculator.py\n+++ b/calculator.py\n@@ -1 +1 @@\n-return 1\n+return 2\n",
+          files: ["calculator.py"],
+          additions: 1,
+          deletions: 1,
+        },
+      },
     },
   },
 ], "zh", t);
 
 assert(patchItems[0].category === "change", "Patch operations should be categorized as change activity.");
+assert(patchItems[0].changeSet?.kind === "pending", "Patch approval events should carry a pending workspace change set.");
+assert(patchItems[0].changeSet?.changedFiles[0] === "calculator.py", "Patch change sets should preserve changed file names.");
 
 assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should keep transcript metadata chips as a dedicated component.");
 assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
+assert(activityFeedSource.includes("agentProcessLink"), "Patch activity items should offer a lightweight link to changed files.");
+assert(activityFeedSource.includes("workBreakdown(workItems, t)"), "The transcript header should summarize activity categories.");
 assert(
   activityFeedSource.includes("const match = chip.match(/^([^:：]+[:：])\\s*(.+)$/);"),
   "Metadata chips should split localized labels from values.",
@@ -111,6 +132,7 @@ assert(runSurfaceSource.includes("Run surface v6"), "Run surface overrides shoul
 assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should align with the visible icon column.");
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
 assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
+assert(runSurfaceSource.includes(".agentProcessLink"), "Changed-file links should be styled inside the transcript.");
 assert(runSurfaceSource.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
 
 console.log("transcript check passed");

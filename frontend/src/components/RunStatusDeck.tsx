@@ -5,6 +5,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { PlanStep, TraceEvent } from "../api/client";
+import type { WorkItemChangeSet } from "../activity/workItems";
 import type { TranslationKey } from "../i18n";
 import { translateKnownText } from "../i18n";
 import { usePreferences } from "../preferences";
@@ -15,6 +16,7 @@ interface RunStatusDeckProps {
   plan: PlanStep[];
   trace: TraceEvent[];
   onOpenControlPlane: () => void;
+  onInspectChangeSet?: (changeSet: WorkItemChangeSet) => void;
 }
 
 const statusLabels: Record<string, TranslationKey> = {
@@ -30,7 +32,7 @@ const statusLabels: Record<string, TranslationKey> = {
   planning: "status.planning",
 };
 
-export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunStatusDeckProps) {
+export function RunStatusDeck({ status, plan, trace, onOpenControlPlane, onInspectChangeSet }: RunStatusDeckProps) {
   const { locale, t } = usePreferences();
   const currentStep = plan.find((item) => item.state === "active") ?? plan.find((item) => item.state === "failed");
   const completedSteps = plan.filter((item) => item.state === "done").length;
@@ -90,7 +92,7 @@ export function RunStatusDeck({ status, plan, trace, onOpenControlPlane }: RunSt
         </div>
       ) : null}
 
-      <ActivityFeed events={trace} status={status} embedded />
+      <ActivityFeed events={trace} status={status} embedded onInspectChangeSet={onInspectChangeSet} />
     </section>
   );
 }

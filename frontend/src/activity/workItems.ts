@@ -34,8 +34,18 @@ export interface ProcessEvent {
   title: string;
   detail: string;
   chips: string[];
+  changeSet?: WorkItemChangeSet;
   output?: string;
   outputLabel?: string;
+}
+
+export interface WorkItemChangeSet {
+  title: string;
+  patch: string;
+  changedFiles: string[];
+  insertions: number;
+  deletions: number;
+  kind: "pending" | "applied";
 }
 
 export interface WorkItem extends ProcessEvent {
@@ -181,11 +191,11 @@ function workCategory(event: TraceEvent): WorkItemCategory {
   const name = actionName(event);
   if (event.event.startsWith("model.")) return "thinking";
   if (event.event.startsWith("user.guidance.")) return "guidance";
+  if (name === "apply_patch" || name === "git_status" || name === "git_diff" || event.event.startsWith("patch.") || event.event.startsWith("rollback.")) return "change";
   if (event.event.startsWith("approval.") || event.event === "policy.evaluated" || event.event === "action.rejected") return "approval";
   if (event.event === "completion.passed" || event.event === "completion.rejected" || event.event === "report.generated" || event.event.startsWith("run.")) return "result";
   if (name === "read_file" || name === "search_code" || name === "list_files") return "file";
   if (name === "run_command" || name === "run_test" || name === "run_lint") return "command";
-  if (name === "apply_patch" || name === "git_status" || name === "git_diff" || event.event.startsWith("patch.") || event.event.startsWith("rollback.")) return "change";
   if (name === "finish") return "result";
   return "system";
 }
@@ -232,6 +242,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
   const result = resultFrom(event);
   const rationale = stringValue(action?.rationale);
   const chips = activityChips(locale, event, t);
+  const changeSet = activityChangeSet(event, t);
   const params = actionParams(event);
   const step = numberValue(event.payload.step);
   const modelCalls = numberValue(event.payload.model_calls);
@@ -281,7 +292,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
       outputLabel: t("activity.outputError"),
     };
   }
-  if (event.event === "approval.requested") return { title: actionName(event) === "apply_patch" ? t("activity.title.patchApprovalRequested") : t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips };
+  if (event.event === "approval.requested") return { title: actionName(event) === "apply_patch" ? t("activity.title.patchApprovalRequested") : t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips, changeSet };
   if (event.event === "approval.resolved") {
     const decision = stringValue(event.payload.decision);
     const title = decision === "approve_once" ? t("activity.title.approvalApproved") : t("activity.title.approvalDenied");
@@ -393,6 +404,22 @@ function activityChips(locale: Locale, event: TraceEvent, t: Translator): string
   return chips;
 }
 
+function activityChangeSet(event: TraceEvent, t: Translator): WorkItemChangeSet | undefined {
+  if (event.event !== "approval.requested" || actionName(event) !== "apply_patch") return undefined;
+  const approval = approvalFrom(event);
+  const target = asRecord(approval?.target);
+  const patch = stringValue(target?.patch);
+  if (!patch) return undefined;
+  return {
+    title: t("workspaceFiles.pendingChanges"),
+    patch,
+    changedFiles: arrayOfStrings(target?.files),
+    insertions: Number(numberValue(target?.additions) ?? 0),
+    deletions: Number(numberValue(target?.deletions) ?? 0),
+    kind: "pending",
+  };
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -405,6 +432,10 @@ function stringValue(value: unknown): string | undefined {
 
 function numberValue(value: unknown): string | undefined {
   return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
+}
+
+function arrayOfStrings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function compactText(value: string, max = 128): string {

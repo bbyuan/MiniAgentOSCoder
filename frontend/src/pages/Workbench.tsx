@@ -201,6 +201,16 @@ export function Workbench() {
     setError,
     loadProjectRuns,
   });
+  const pendingPatchChangeSet = approval?.target.tool === "apply_patch"
+    ? {
+        title: t("workspaceFiles.pendingChanges"),
+        patch: approval.target.patch,
+        changedFiles: approval.target.files ?? [],
+        insertions: approval.target.additions,
+        deletions: approval.target.deletions,
+        kind: "pending" as const,
+      }
+    : undefined;
 
   function applyLoadedRun(
     run: LoadedRunHeader,
@@ -975,6 +985,7 @@ export function Workbench() {
               status={runStatus}
               plan={displayPlan}
               trace={traceEvents}
+              onInspectChangeSet={workspaceReview.openPendingChanges}
               onOpenControlPlane={() => {
                 setRuntimePanelTarget("overview");
                 setRuntimeDetailsOpen(true);
@@ -1018,26 +1029,17 @@ export function Workbench() {
               queuedCount={steeringMessages.filter((guidance) => !guidance.applied).length}
               appliedCount={steeringMessages.filter((guidance) => guidance.applied).length}
               changeReview={
-                approval?.target.tool === "apply_patch" ? (
+                pendingPatchChangeSet ? (
                   <RunChangeReviewPill
                     title={t("approval.patchNeedsReview")}
                     meta={t("approval.compactPatchSummary", {
-                      count: approval.target.files?.length ?? 0,
-                      additions: approval.target.additions,
-                      deletions: approval.target.deletions,
+                      count: pendingPatchChangeSet.changedFiles.length,
+                      additions: pendingPatchChangeSet.insertions,
+                      deletions: pendingPatchChangeSet.deletions,
                     })}
                     decisionRequired
                     busy={approvalBusy}
-                    onInspect={() => {
-                      workspaceReview.openPendingChanges({
-                        title: t("workspaceFiles.pendingChanges"),
-                        patch: approval.target.patch,
-                        changedFiles: approval.target.files ?? [],
-                        insertions: approval.target.additions,
-                        deletions: approval.target.deletions,
-                        kind: "pending",
-                      });
-                    }}
+                    onInspect={() => workspaceReview.openPendingChanges(pendingPatchChangeSet)}
                   />
                 ) : approval ? (
                   <RunChangeReviewPill
