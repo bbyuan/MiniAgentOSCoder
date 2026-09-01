@@ -51,9 +51,12 @@ export function CompletionSummary({
   const StatusIcon = status === "completed" ? CheckCircle2 : status === "cancelled" ? Ban : CircleAlert;
   const diff = artifacts?.diff_summary;
   const tests = artifacts?.test_summary;
-  const completionMessage = message.trim() || t("completion.noMessage");
+  const hasCompletionMessage = Boolean(message.trim());
+  const completionMessage = hasCompletionMessage ? message.trim() : t("completion.noMessage");
   const messagePreview = previewCompletionMessage(completionMessage);
   const hasMoreMessage = messagePreview !== completionMessage;
+  const showLeadMessage = status !== "completed";
+  const showCompletionDetails = status === "completed" ? hasCompletionMessage : hasMoreMessage;
   const fullMessage = formatCompletionMessage(completionMessage);
   const observationError = typeof lastObservation?.error === "string" ? lastObservation.error : "";
   const displayedObservationError = localizeRuntimeError(observationError, locale);
@@ -91,7 +94,7 @@ export function CompletionSummary({
         <StatusIcon size={22} />
         <div>
           <strong>{t(status === "completed" ? "completion.done" : status === "cancelled" ? "completion.cancelled" : "completion.failed")}</strong>
-          <p>{leadMessage}</p>
+          {showLeadMessage ? <p>{leadMessage}</p> : null}
         </div>
       </div>
       {status === "failed" && (reason || observationError) ? (
@@ -184,7 +187,7 @@ export function CompletionSummary({
           <div><FlaskConical size={16} /><span>{t("tests.title")}</span><strong>{tests ? translateKnownText(locale, tests.status) : t("history.notAvailable")}</strong></div>
         </div>
       ) : null}
-      {hasMoreMessage ? (
+      {showCompletionDetails ? (
         <details className="completionDetails">
           <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>
           <div className="completionFullMessage">
