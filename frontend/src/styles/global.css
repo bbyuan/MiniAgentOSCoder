@@ -23877,7 +23877,7 @@ summary:focus-visible {
   }
 }
 
-/* Completion disclosures: keep the card quiet, but make the clickable rows unmistakable. */
+/* Completion disclosures: quiet rows with clear but lightweight affordance. */
 .completionDetails summary,
 .completionEvidenceDisclosure > summary {
   cursor: pointer;
@@ -23908,22 +23908,16 @@ summary:focus-visible {
 }
 
 .completionDisclosureCue {
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
-  border-radius: 8px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 54%, transparent);
+  color: var(--text-tertiary);
   font-size: 12px;
-  font-weight: 780;
+  font-weight: 720;
   line-height: 1;
   white-space: nowrap;
   transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
     color 160ms ease;
 }
 
@@ -23951,14 +23945,12 @@ summary:focus-visible {
 
 .completionDetails summary:hover,
 .completionEvidenceDisclosure > summary:hover {
-  background: color-mix(in srgb, var(--accent-soft) 26%, transparent);
+  background: color-mix(in srgb, var(--surface-subtle) 76%, transparent);
 }
 
 .completionDetails summary:hover .completionDisclosureCue,
 .completionEvidenceDisclosure > summary:hover .completionDisclosureCue {
-  border-color: var(--accent);
-  color: #fff;
-  background: var(--accent);
+  color: var(--accent);
 }
 
 .completionDetails summary:hover > svg,
@@ -23974,9 +23966,7 @@ summary:focus-visible {
 
 .completionDetails[open] .completionDisclosureCue,
 .completionEvidenceDisclosure[open] .completionDisclosureCue {
-  border-color: color-mix(in srgb, var(--border) 76%, transparent);
   color: var(--text-secondary);
-  background: color-mix(in srgb, var(--surface-subtle) 82%, transparent);
 }
 
 .completionSummary.tone-completed .completionDetails summary,
