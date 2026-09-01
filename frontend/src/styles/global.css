@@ -24868,22 +24868,26 @@ summary:focus-visible {
 .productContent .runSimpleLayout .runStatusDeck .agentProcessList {
   max-height: 320px;
   margin: 8px clamp(20px, 3vw, 30px) 24px;
-  padding: 0 0 0 22px;
-  border-left: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding: 0;
+  border-left: 0;
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessList::before {
-  content: none;
+  content: "";
+  top: 15px;
+  bottom: 24px;
+  left: 15px;
+  background: color-mix(in srgb, var(--border-strong) 34%, transparent);
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessItem {
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   gap: 12px;
   padding: 9px 0 11px;
 }
 
 .productContent .runSimpleLayout .runStatusDeck .agentProcessItem > .eventIcon {
-  margin-left: -37px;
+  margin-left: 0;
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.045);
 }
