@@ -24912,6 +24912,46 @@ summary:focus-visible {
   margin-top: 1px;
 }
 
+.productContent .runSimpleLayout .runStatusDeck .activityChips {
+  margin-top: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips em {
+  max-width: min(100%, 680px);
+  min-height: 24px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--surface-subtle));
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips em span {
+  color: var(--text-tertiary);
+  font-weight: 680;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips em code {
+  color: var(--text-secondary);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 680;
+}
+
 @media (max-width: 760px) {
   .historyDetailContent > .diffReview,
   .historyMetricGrid,

@@ -72,7 +72,7 @@ function ActivityItem({ item }: { item: WorkItem }) {
         <p>{item.detail}</p>
         {item.chips.length ? (
           <div className="activityChips">
-            {item.chips.slice(0, 3).map((chip) => <em key={chip}>{chip}</em>)}
+            {item.chips.slice(0, 3).map((chip) => <MetadataChip chip={chip} key={chip} />)}
           </div>
         ) : null}
         {item.output ? (
@@ -83,6 +83,18 @@ function ActivityItem({ item }: { item: WorkItem }) {
         ) : null}
       </div>
     </li>
+  );
+}
+
+function MetadataChip({ chip }: { chip: string }) {
+  const match = chip.match(/^([^:：]+[:：])\s*(.+)$/);
+  if (!match) return <em>{chip}</em>;
+
+  return (
+    <em>
+      <span>{match[1]}</span>
+      <code>{match[2]}</code>
+    </em>
   );
 }
 
