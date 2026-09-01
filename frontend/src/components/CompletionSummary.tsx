@@ -81,7 +81,7 @@ export function CompletionSummary({
   });
   const showEvidence = status === "completed" || completion?.verdict === "passed";
   const hasCodeDiff = Boolean(diff && (diff.files > 0 || artifacts?.diff_preview?.available));
-  const testsWereRun = Boolean(tests && !["Not run", "Not Run", "not_run", "not run", "-"].includes(tests.status));
+  const testsWereRun = Boolean(tests && !isTestsNotRun(tests.status));
   const failedWithOnlyPassedTests = status !== "completed" && tests?.status === "Passed" && !hasCodeDiff;
   const showSignals = testsWereRun && !failedWithOnlyPassedTests;
   const leadMessage = status === "failed"
@@ -191,7 +191,10 @@ export function CompletionSummary({
       {showCompletionDetails ? (
         <details className="completionDetails">
           <summary>
-            <span className="completionDisclosureTitle">{t("completion.showDetails")}</span>
+            <span className="completionDisclosureCopy">
+              <span className="completionDisclosureTitle">{t("completion.showDetails")}</span>
+              <small>{t("completion.summaryHint")}</small>
+            </span>
             <span className="completionDisclosureCue">
               <span className="completionDisclosureCueOpen">{t("completion.openDisclosure")}</span>
               <span className="completionDisclosureCueClose">{t("completion.closeDisclosure")}</span>
@@ -238,6 +241,12 @@ function failureLeadMessage(
   if (terminationReason === "model_error") return t("completion.failedLead.model");
   if (terminationReason === "worker_error") return t("completion.failedLead.runtime");
   return t("completion.failedLead.generic");
+}
+
+function isTestsNotRun(status: string | undefined): boolean {
+  if (!status) return true;
+  const normalized = status.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return ["", "_", "not_run", "notrun", "未运行", "没有运行", "未执行"].includes(normalized);
 }
 
 interface FailureDiagnosisInput {

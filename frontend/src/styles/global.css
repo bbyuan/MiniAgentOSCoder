@@ -24625,3 +24625,309 @@ summary:focus-visible {
     white-space: normal;
   }
 }
+
+/* Run surface v5: fewer boxes, clearer places to act. */
+.productContent .runSimpleLayout .completionSummary.tone-completed {
+  border: 0;
+  border-left: 3px solid var(--success);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 24%, transparent), transparent 118px),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 24px 70px rgba(15, 23, 42, 0.07);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed::before {
+  display: none;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionLead {
+  min-height: 94px;
+  padding: 24px 28px 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionLead > svg {
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--success-soft) 66%, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--success) 18%, transparent),
+    0 8px 22px color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionLead strong {
+  font-size: clamp(24px, 2vw, 31px);
+  letter-spacing: 0;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionSignals,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure {
+  margin-inline: 28px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionSignals {
+  border-top: 0;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionSignals > div {
+  min-height: 46px;
+  padding-block: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 42%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure {
+  border-top: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 42%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure:last-child,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails:last-child {
+  margin-bottom: 18px;
+}
+
+.completionDisclosureCopy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.completionDisclosureCopy small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 520;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails summary,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  min-height: 64px;
+  padding: 0 10px;
+  border-radius: 7px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails summary {
+  grid-template-columns: minmax(0, 1fr) max-content 18px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  grid-template-columns: 30px minmax(0, 1fr) max-content 18px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails summary:hover,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure > summary:hover {
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDisclosureCue {
+  min-width: 48px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails summary:hover .completionDisclosureCue,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure > summary:hover .completionDisclosureCue {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 66%, var(--surface));
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage {
+  padding: 14px 10px 18px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailGrid {
+  gap: 8px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailGrid article {
+  padding: 10px 12px 10px 30px;
+  border-radius: 7px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessInline {
+  margin-top: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 34%, transparent);
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessHeader {
+  min-height: auto;
+  padding: 14px 24px 4px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle {
+  min-height: 28px;
+  gap: 7px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle span {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle strong {
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle small {
+  font-size: 11px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+  max-height: 320px;
+  padding: 4px 24px 22px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList::before {
+  left: 38px;
+  background: color-mix(in srgb, var(--border-strong) 24%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem {
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding-block: 7px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem > .eventIcon {
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  border-radius: 7px;
+  background: color-mix(in srgb, currentColor 8%, var(--surface));
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessBody {
+  padding-bottom: 13px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessBody > p {
+  margin-top: 3px;
+  font-size: 12.5px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips em {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+}
+
+.productContent .runSimpleLayout .followUpComposer {
+  margin-top: 18px;
+}
+
+.productContent .runSimpleLayout .followUpComposer > label {
+  padding-bottom: 9px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 780;
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type {
+  min-height: 74px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 64%, transparent),
+    0 12px 34px rgba(15, 23, 42, 0.045);
+}
+
+.productContent .runSimpleLayout .followUpComposer > div:first-of-type:focus-within {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, var(--border-strong)),
+    0 14px 38px rgba(15, 23, 42, 0.06);
+}
+
+.productContent .runSimpleLayout .followUpComposer textarea {
+  min-height: 50px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates {
+  margin-top: 8px;
+  padding-left: 2px;
+  gap: 4px 8px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates > span {
+  margin-right: 2px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button {
+  min-height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.productContent .runSimpleLayout .followUpTemplates button + button::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-tertiary) 54%, transparent);
+}
+
+.productContent .runSimpleLayout .followUpTemplates button:hover:not(:disabled) {
+  color: var(--accent);
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionLead {
+    padding: 20px 20px 18px;
+  }
+
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionSignals,
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails,
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure {
+    margin-inline: 20px;
+  }
+
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionDetails summary {
+    grid-template-columns: minmax(0, 1fr) 18px;
+  }
+
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+    grid-template-columns: 30px minmax(0, 1fr) 18px;
+  }
+
+  .completionDisclosureCopy small,
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionDisclosureCue {
+    display: none;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessHeader,
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+    padding-inline: 20px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessToggle span {
+    display: grid;
+    gap: 2px;
+  }
+
+  .productContent .runSimpleLayout .followUpTemplates {
+    display: flex;
+  }
+}
