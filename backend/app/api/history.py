@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 from pathlib import Path
+import shutil
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -128,6 +129,13 @@ def delete_history_run(run_id: str) -> dict[str, object]:
     active_run = store.runs.get(run_id)
     if store.worker.is_active(run_id) or (active_run is not None and active_run.status.value not in TERMINAL_STATUSES):
         raise HTTPException(status_code=409, detail="Active runs cannot be deleted")
+    run = _history_run(run_id)
+    run_dir = _run_artifact_dir(run)
+    if run_dir.exists():
+        try:
+            shutil.rmtree(run_dir)
+        except OSError as exc:
+            raise HTTPException(status_code=409, detail=f"Unable to delete run artifacts: {exc}") from exc
     if not store.history.delete_run(run_id):
         raise HTTPException(status_code=404, detail="Run not found")
     return {"run_id": run_id, "deleted": True}
@@ -148,6 +156,15 @@ def _artifact_path(run: dict[str, Any], key: str) -> Path:
     if not candidate.is_relative_to(expected_root):
         raise HTTPException(status_code=409, detail=f"Stored {key} is outside the run directory")
     return candidate
+
+
+def _run_artifact_dir(run: dict[str, Any]) -> Path:
+    workspace = Path(str(run["project_path"])).resolve()
+    runs_root = (workspace / "runs").resolve()
+    run_dir = (runs_root / str(run["run_id"])).resolve()
+    if run_dir.parent != runs_root:
+        raise HTTPException(status_code=409, detail="Stored run artifact directory is outside the runs directory")
+    return run_dir
 
 
 def _read_report(run: dict[str, Any]) -> dict[str, object]:

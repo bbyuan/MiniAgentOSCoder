@@ -1396,6 +1396,9 @@ def test_history_run_can_be_deleted_after_terminal_state(tmp_path: Path) -> None
         json={"project_id": project["project_id"], "task": "temporary history", "mode": "Chat"},
     ).json()
     run = store.runs[created["run_id"]]
+    run_dir = tmp_path / "runs" / run.run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "report.md").write_text("# temporary\n", encoding="utf-8")
 
     active_delete = client.delete(f"/history/runs/{run.run_id}")
     run.status = RunPhase.CANCELLED
@@ -1407,6 +1410,7 @@ def test_history_run_can_be_deleted_after_terminal_state(tmp_path: Path) -> None
     assert deleted.status_code == 200
     assert deleted.json()["deleted"] is True
     assert missing.status_code == 404
+    assert not run_dir.exists()
 
 
 def test_resume_rejects_workspace_restore_without_snapshot(tmp_path: Path) -> None:
