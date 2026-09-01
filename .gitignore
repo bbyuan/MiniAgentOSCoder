@@ -22,6 +22,7 @@ frontend/desktop-build/
 
 # Runtime outputs
 runs/
+.tmp-*/
 .agent/index/
 .agent/project-profile.json
 .agent/sandboxes/

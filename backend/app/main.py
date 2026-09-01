@@ -27,6 +27,7 @@ def create_app(history_path: str | Path | None = ":memory:") -> FastAPI:
             "http://tauri.localhost",
             "tauri://localhost",
         ],
+        allow_origin_regex=r"^https?://(127\.0\.0\.1|localhost):\d+$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
