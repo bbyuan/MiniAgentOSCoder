@@ -148,7 +148,7 @@ function workDuration(
   if (items.length < 2) return "";
   const start = new Date(items[0].time).getTime();
   const end = new Date(items[items.length - 1].time).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return "";
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return "";
   const seconds = Math.max(1, Math.round((end - start) / 1000));
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
