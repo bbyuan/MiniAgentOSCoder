@@ -24799,3 +24799,132 @@ summary:focus-visible {
     white-space: normal;
   }
 }
+
+/* Round 4 polish: keep run history readable without horizontal panning. */
+.historyDetailContent {
+  overflow-x: hidden;
+}
+
+.historyDetailContent > .diffReview,
+.historyMetricGrid,
+.historyDetailSection,
+.historyTechnicalMetrics,
+.historyChangeSummary {
+  width: auto;
+  max-width: none;
+  margin-right: clamp(18px, 3vw, 34px);
+  margin-left: clamp(18px, 3vw, 34px);
+  box-sizing: border-box;
+}
+
+.historyMetricGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 156px), 1fr));
+}
+
+.historyMetricGrid > div {
+  min-width: 0;
+}
+
+.historyMetricGrid strong,
+.historyMetricGrid span,
+.historyChangedFileGrid code,
+.historyReport {
+  overflow-wrap: anywhere;
+}
+
+.historyContinueBand,
+.historyResumeBand {
+  min-width: 0;
+  margin-right: clamp(18px, 3vw, 34px);
+  margin-left: clamp(18px, 3vw, 34px);
+}
+
+/* Round 4 polish: make the embedded agent transcript feel like one timeline. */
+.productContent .runSimpleLayout .runStatusDeck .agentProcessInline {
+  margin-top: 18px;
+  border-top: 0;
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessHeader {
+  min-height: 36px;
+  padding: 0 clamp(20px, 3vw, 30px);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle {
+  width: auto;
+  min-height: 32px;
+  padding: 0;
+  gap: 8px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+  max-height: 320px;
+  margin: 8px clamp(20px, 3vw, 30px) 24px;
+  padding: 0 0 0 22px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList::before {
+  content: none;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem {
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0 11px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem > .eventIcon {
+  margin-left: -37px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.045);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessBody {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead strong {
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .historyDetailContent > .diffReview,
+  .historyMetricGrid,
+  .historyDetailSection,
+  .historyTechnicalMetrics,
+  .historyChangeSummary,
+  .historyContinueBand,
+  .historyResumeBand {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessHeader {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+    margin-right: 18px;
+    margin-left: 18px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessLead {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
