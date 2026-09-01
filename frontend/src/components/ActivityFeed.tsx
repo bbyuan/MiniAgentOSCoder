@@ -60,7 +60,7 @@ function ActivityItem({ item }: { item: WorkItem }) {
   const Icon = ITEM_ICONS[item.kind] ?? Activity;
 
   return (
-    <li className="agentProcessItem">
+    <li className={`agentProcessItem category-${item.category}`}>
       <div className={`eventIcon tone-${item.tone}`}>
         <Icon size={15} aria-hidden="true" />
       </div>

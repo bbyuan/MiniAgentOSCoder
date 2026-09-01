@@ -20,6 +20,16 @@ export type WorkItemKind =
   | "terminal"
   | "user";
 
+export type WorkItemCategory =
+  | "approval"
+  | "change"
+  | "command"
+  | "file"
+  | "guidance"
+  | "result"
+  | "system"
+  | "thinking";
+
 export interface ProcessEvent {
   title: string;
   detail: string;
@@ -29,6 +39,7 @@ export interface ProcessEvent {
 }
 
 export interface WorkItem extends ProcessEvent {
+  category: WorkItemCategory;
   kind: WorkItemKind;
   tone: string;
   time: string;
@@ -59,6 +70,7 @@ export function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translat
     const presentation = workPresentation(event);
     return {
       ...processEvent(event, locale, t),
+      category: workCategory(event),
       kind: presentation.kind,
       tone: presentation.tone,
       time: event.time,
@@ -163,6 +175,19 @@ function workPresentation(event: TraceEvent): { kind: WorkItemKind; tone: string
   if (name === "finish" || event.event === "report.generated") return { kind: "success", tone: "success" };
   if (event.event.startsWith("user.guidance.")) return { kind: "user", tone: "action" };
   return eventPresentation(event.event);
+}
+
+function workCategory(event: TraceEvent): WorkItemCategory {
+  const name = actionName(event);
+  if (event.event.startsWith("model.")) return "thinking";
+  if (event.event.startsWith("user.guidance.")) return "guidance";
+  if (event.event.startsWith("approval.") || event.event === "policy.evaluated" || event.event === "action.rejected") return "approval";
+  if (event.event === "completion.passed" || event.event === "completion.rejected" || event.event === "report.generated" || event.event.startsWith("run.")) return "result";
+  if (name === "read_file" || name === "search_code" || name === "list_files") return "file";
+  if (name === "run_command" || name === "run_test" || name === "run_lint") return "command";
+  if (name === "apply_patch" || name === "git_status" || name === "git_diff" || event.event.startsWith("patch.") || event.event.startsWith("rollback.")) return "change";
+  if (name === "finish") return "result";
+  return "system";
 }
 
 function processEvent(event: TraceEvent, locale: Locale, t: Translator): ProcessEvent {

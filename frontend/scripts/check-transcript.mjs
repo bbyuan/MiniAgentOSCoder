@@ -7,7 +7,8 @@ import ts from "typescript";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workItemsSource = readFileSync(resolve(root, "src/activity/workItems.ts"), "utf8");
 const activityFeedSource = readFileSync(resolve(root, "src/components/ActivityFeed.tsx"), "utf8");
-const stylesSource = readFileSync(resolve(root, "src/styles/global.css"), "utf8");
+const mainSource = readFileSync(resolve(root, "src/main.tsx"), "utf8");
+const runSurfaceSource = readFileSync(resolve(root, "src/styles/run-surface.css"), "utf8");
 
 const testableWorkItems = workItemsSource
   .replace(
@@ -66,6 +67,7 @@ const resolvedItems = buildWorkItems([
 
 assert(resolvedItems.length === 1, "A resolved model request should collapse into the following concrete action.");
 assert(resolvedItems[0].title === "读取 calculator.py", "The transcript should lead with the concrete file read.");
+assert(resolvedItems[0].category === "file", "File reads should be categorized as file activity.");
 assert(resolvedItems[0].chips.includes("文件：calculator.py"), "File metadata should remain visible after model request cleanup.");
 
 const pendingItems = buildWorkItems([
@@ -78,18 +80,38 @@ const pendingItems = buildWorkItems([
 
 assert(pendingItems.length === 1, "An unresolved model request should still be shown while the agent is thinking.");
 assert(pendingItems[0].title === "请求模型判断下一步", "The active thinking state should stay visible.");
+assert(pendingItems[0].category === "thinking", "Active model requests should be categorized as thinking activity.");
 assert(pendingItems[0].chips.includes("模型：deepseek-v4-flash"), "Model metadata should stay attached to active thinking events.");
 
+const patchItems = buildWorkItems([
+  {
+    event: "tool.executed",
+    time: "2026-09-01T09:22:10.000Z",
+    payload: {
+      action: { action_id: "a2", type: "apply_patch", params: {} },
+      result: { metadata: { files: ["calculator.py"], additions: 4, deletions: 2 } },
+    },
+  },
+], "zh", t);
+
+assert(patchItems[0].category === "change", "Patch operations should be categorized as change activity.");
+
 assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should keep transcript metadata chips as a dedicated component.");
+assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
 assert(
   activityFeedSource.includes("const match = chip.match(/^([^:：]+[:：])\\s*(.+)$/);"),
   "Metadata chips should split localized labels from values.",
 );
 
-const finalTranscriptStyles = stylesSource.slice(stylesSource.lastIndexOf("/* Round 4 polish: make the embedded agent transcript feel like one timeline. */"));
-assert(finalTranscriptStyles.includes("left: 15px;"), "The transcript rail should align with the visible icon column.");
-assert(!finalTranscriptStyles.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
-assert(finalTranscriptStyles.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
+assert(
+  mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),
+  "Run surface styles should load after global styles.",
+);
+assert(runSurfaceSource.includes("Run surface v6"), "Run surface overrides should be consolidated in the dedicated run surface stylesheet.");
+assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should align with the visible icon column.");
+assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
+assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
+assert(runSurfaceSource.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
 
 console.log("transcript check passed");
 
