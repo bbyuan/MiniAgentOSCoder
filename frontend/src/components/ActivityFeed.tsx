@@ -77,7 +77,7 @@ function ActivityItem({ item }: { item: WorkItem }) {
         ) : null}
         {item.output ? (
           <details className="activityOutput">
-            <summary>{t("activity.outputSummary")}</summary>
+            <summary>{item.outputLabel ?? t("activity.outputSummary")}</summary>
             <pre>{item.output}</pre>
           </details>
         ) : null}

@@ -25,6 +25,7 @@ export interface ProcessEvent {
   detail: string;
   chips: string[];
   output?: string;
+  outputLabel?: string;
 }
 
 export interface WorkItem extends ProcessEvent {
@@ -132,7 +133,9 @@ function workPresentation(event: TraceEvent): { kind: WorkItemKind; tone: string
   if (name === "read_file") return { kind: "fileRead", tone: "tool" };
   if (name === "search_code") return { kind: "fileSearch", tone: "tool" };
   if (name === "list_files") return { kind: "fileTree", tone: "tool" };
-  if (name === "run_command") return { kind: "terminal", tone: "action" };
+  if (name === "run_command" || name === "run_test" || name === "run_lint") return { kind: "terminal", tone: "action" };
+  if (name === "git_status" || name === "git_diff") return { kind: "fileDiff", tone: "tool" };
+  if (name === "use_skill" || name === "mcp_call") return { kind: "model", tone: "model" };
   if (name === "apply_patch") return { kind: "fileEdit", tone: "patch" };
   if (name === "finish" || event.event === "report.generated") return { kind: "success", tone: "success" };
   if (event.event.startsWith("user.guidance.")) return { kind: "user", tone: "action" };
@@ -218,6 +221,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
       detail: rationaleDetail(locale, rationale, command ? t("activity.detail.commandExecuted") : actionDetail(event, t), t),
       chips,
       output: outputPreview(locale, event),
+      outputLabel: outputLabel(event, t),
     };
   }
   if (event.event === "tool.failed") {
@@ -226,6 +230,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
       detail: resultError ? translateKnownText(locale, resultError) : t("activity.detail.failed"),
       chips,
       output: outputPreview(locale, event),
+      outputLabel: t("activity.outputError"),
     };
   }
   if (event.event === "approval.requested") return { title: actionName(event) === "apply_patch" ? t("activity.title.patchApprovalRequested") : t("activity.title.approvalRequested"), detail: t("activity.detail.approvalRequested"), chips };
@@ -256,6 +261,12 @@ function actionLabel(event: TraceEvent, t: Translator): string {
   if (name === "search_code") return t("activity.work.searchCode");
   if (name === "list_files") return t("activity.work.listFiles");
   if (name === "run_command") return t("activity.work.runCommand");
+  if (name === "run_test") return t("activity.work.runTest");
+  if (name === "run_lint") return t("activity.work.runLint");
+  if (name === "git_status") return t("activity.work.gitStatus");
+  if (name === "git_diff") return t("activity.work.gitDiff");
+  if (name === "use_skill") return t("activity.work.useSkill");
+  if (name === "mcp_call") return t("activity.work.mcpCall");
   if (name === "apply_patch" && metadata?.preflight === true) return t("activity.work.checkPatch");
   if (name === "apply_patch") return t("activity.work.applyPatch");
   if (name === "finish") return t("activity.work.finish");
@@ -275,6 +286,12 @@ function executedTitle(event: TraceEvent, t: Translator): string {
   if (name === "search_code" && query) return t("activity.title.searchCode", { query: compactText(query, 56) });
   if (name === "list_files") return t("activity.title.listFiles");
   if (name === "run_command" && command) return t("activity.title.runCommand", { command: compactText(command, 64) });
+  if (name === "run_test") return command ? t("activity.title.runTests", { command: compactText(command, 64) }) : t("activity.work.runTest");
+  if (name === "run_lint") return command ? t("activity.title.runLint", { command: compactText(command, 64) }) : t("activity.work.runLint");
+  if (name === "git_status") return t("activity.title.gitStatus");
+  if (name === "git_diff") return t("activity.title.gitDiff");
+  if (name === "use_skill") return t("activity.title.useSkill");
+  if (name === "mcp_call") return t("activity.title.mcpCall");
   if (name === "apply_patch") return t("activity.title.editFiles", { count: files ?? 1 });
   return actionLabel(event, t);
 }
@@ -286,6 +303,12 @@ function actionDetail(event: TraceEvent, t: Translator): string {
   if (name === "search_code") return t("activity.actionDetail.searchCode");
   if (name === "list_files") return t("activity.actionDetail.listFiles");
   if (name === "run_command") return t("activity.actionDetail.runCommand");
+  if (name === "run_test") return t("activity.actionDetail.runTest");
+  if (name === "run_lint") return t("activity.actionDetail.runLint");
+  if (name === "git_status") return t("activity.actionDetail.gitStatus");
+  if (name === "git_diff") return t("activity.actionDetail.gitDiff");
+  if (name === "use_skill") return t("activity.actionDetail.useSkill");
+  if (name === "mcp_call") return t("activity.actionDetail.mcpCall");
   if (name === "apply_patch" && metadata?.preflight === true) return t("activity.actionDetail.checkPatch");
   if (name === "apply_patch") return t("activity.actionDetail.applyPatch");
   if (name === "finish") return t("activity.actionDetail.finish");
@@ -413,7 +436,28 @@ function labelValue(label: string, value: string): string {
 }
 
 function isBuiltInAction(name: string): boolean {
-  return ["read_file", "search_code", "list_files", "run_command", "apply_patch", "finish"].includes(name);
+  return [
+    "read_file",
+    "search_code",
+    "list_files",
+    "run_command",
+    "run_test",
+    "run_lint",
+    "git_status",
+    "git_diff",
+    "use_skill",
+    "mcp_call",
+    "apply_patch",
+    "finish",
+  ].includes(name);
+}
+
+function outputLabel(event: TraceEvent, t: Translator): string {
+  const name = actionName(event);
+  if (name === "run_command" || name === "run_test" || name === "run_lint") return t("activity.outputCommand");
+  if (name === "git_status" || name === "git_diff" || name === "apply_patch") return t("activity.outputChanges");
+  if (name === "search_code" || name === "list_files") return t("activity.outputResults");
+  return t("activity.outputSummary");
 }
 
 function localizedRationale(locale: Locale, rationale: string): string | undefined {

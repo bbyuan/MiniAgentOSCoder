@@ -56,14 +56,15 @@ import { RunSteeringComposer } from "../components/RunSteeringComposer";
 import { SplashScreen } from "../components/SplashScreen";
 import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
-import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/WorkspaceFilesDialog";
+import { WorkspaceFilesDialog } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
-import { basename, hasVisibleDiff, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
+import { basename, hasVisibleDiff, isRuntimeConnectionError } from "../run/helpers";
 import { useAgentPackState } from "../run/useAgentPackState";
 import { loadRunResources, type RunResources } from "../run/resources";
 import { useRunSubscription } from "../run/useRunSubscription";
+import { useWorkspaceReview } from "../run/useWorkspaceReview";
 import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -117,7 +118,6 @@ export function Workbench() {
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [recovery, setRecovery] = useState<RecoveryResponse>();
   const [evidence, setEvidence] = useState<RunEvidenceLedger>();
-  const [rollbackBusy, setRollbackBusy] = useState<string>();
   const [report, setReport] = useState<RunReportResponse>();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRunId, setHistoryRunId] = useState<string>();
@@ -126,8 +126,6 @@ export function Workbench() {
   const [modelSetupError, setModelSetupError] = useState<string>();
   const [runtimeDetailsOpen, setRuntimeDetailsOpen] = useState(false);
   const [runtimePanelTarget, setRuntimePanelTarget] = useState<ControlPlaneTarget>("overview");
-  const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
-  const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
   const agentPackState = useAgentPackState({ project, mode, locale, t });
 
@@ -188,6 +186,22 @@ export function Workbench() {
     t,
   });
 
+  const workspaceReview = useWorkspaceReview({
+    runId,
+    project,
+    artifacts,
+    recovery,
+    locale,
+    t,
+    setArtifacts,
+    setRecovery,
+    setTraceEvents,
+    setReport,
+    setEvidence,
+    setError,
+    loadProjectRuns,
+  });
+
   function applyLoadedRun(
     run: LoadedRunHeader,
     taskValue: string,
@@ -225,10 +239,9 @@ export function Workbench() {
     setLastObservation({});
     setCompletion(undefined);
     setApproval(null);
-    setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
-    setWorkspaceChangeSet(undefined);
+    workspaceReview.closeWorkspaceFiles();
   }
 
   async function refreshConnection() {
@@ -582,10 +595,9 @@ export function Workbench() {
     setRecovery(undefined);
     setReport(undefined);
     setEvidence(undefined);
-    setRollbackBusy(undefined);
     setRuntimeDetailsOpen(false);
     setRuntimePanelTarget("overview");
-    setWorkspaceChangeSet(undefined);
+    workspaceReview.closeWorkspaceFiles();
     setError(null);
     if (clearTask) setTask("");
   }
@@ -635,74 +647,6 @@ export function Workbench() {
       setError(localizeErrorMessage(locale, caught, t("error.denyAction")));
     } finally {
       setApprovalBusy(false);
-    }
-  }
-
-  function openArtifactChanges() {
-    const diff = artifacts?.diff_summary;
-    if (!diff) return;
-    setWorkspaceChangeSet({
-      title: t("workspaceFiles.appliedChanges"),
-      patch: artifacts?.diff_preview?.content ?? "",
-      changedFiles: [],
-      insertions: diff.insertions,
-      deletions: diff.deletions,
-      kind: "applied",
-    });
-    setWorkspaceFilesOpen(true);
-  }
-
-  async function rollbackToCheckpoint(checkpointId: string) {
-    if (!runId) return;
-    setRollbackBusy(checkpointId);
-    setError(null);
-    try {
-      await daemonApi.rollbackRun(runId, checkpointId);
-      const [latestRecovery, latestArtifacts, latestTrace, latestReport] = await Promise.all([
-        daemonApi.getCheckpoints(runId),
-        daemonApi.getArtifacts(runId),
-        daemonApi.getTrace(runId),
-        daemonApi.getReport(runId),
-      ]);
-      setRecovery(latestRecovery);
-      setArtifacts(latestArtifacts);
-      setTraceEvents(latestTrace.events);
-      setReport(latestReport);
-    } catch (caught) {
-      setError(localizeErrorMessage(locale, caught, t("error.rollback")));
-    } finally {
-      setRollbackBusy(undefined);
-    }
-  }
-
-  async function rejectLatestChanges() {
-    const checkpointId = latestRestorableCheckpoint(recovery);
-    if (!checkpointId) return;
-    await rollbackToCheckpoint(checkpointId);
-    if (runId) {
-      daemonApi.getArtifacts(runId).then(setArtifacts).catch(() => undefined);
-    }
-  }
-
-  async function acceptLatestChanges() {
-    if (!runId) return;
-    setRollbackBusy("accept");
-    setError(null);
-    try {
-      const response = await daemonApi.acceptRunChanges(runId);
-      const latestArtifacts = await daemonApi.getArtifacts(runId);
-      setArtifacts({
-        ...latestArtifacts,
-        change_review: response.change_review,
-      });
-      const latestTrace = await daemonApi.getTrace(runId);
-      setTraceEvents(latestTrace.events);
-      daemonApi.getReport(runId).then(setReport).catch(() => undefined);
-      void loadProjectRuns();
-    } catch (caught) {
-      setError(localizeErrorMessage(locale, caught, t("error.acceptChanges")));
-    } finally {
-      setRollbackBusy(undefined);
     }
   }
 
@@ -938,10 +882,7 @@ export function Workbench() {
             onChangeProject={changeProject}
             onOpenRun={(selectedRunId) => openHistory(selectedRunId)}
             onOpenHistory={() => openHistory()}
-            onOpenFiles={() => {
-              setWorkspaceChangeSet(undefined);
-              setWorkspaceFilesOpen(true);
-            }}
+            onOpenFiles={workspaceReview.openWorkspaceFiles}
             onRefresh={() => void loadProjectRuns()}
           />
           <div className="productContent">
@@ -1060,7 +1001,7 @@ export function Workbench() {
               lastObservation={lastObservation}
               artifacts={artifacts}
               completion={completion}
-              onInspectChanges={hasVisibleDiff(artifacts) ? openArtifactChanges : undefined}
+              onInspectChanges={hasVisibleDiff(artifacts) ? workspaceReview.openArtifactChanges : undefined}
               changeDecision={artifacts?.change_review?.status as "pending" | "accepted" | "reverted" | undefined}
               onInspectRun={() => {
                 setRuntimePanelTarget("overview");
@@ -1088,7 +1029,7 @@ export function Workbench() {
                     decisionRequired
                     busy={approvalBusy}
                     onInspect={() => {
-                      setWorkspaceChangeSet({
+                      workspaceReview.openPendingChanges({
                         title: t("workspaceFiles.pendingChanges"),
                         patch: approval.target.patch,
                         changedFiles: approval.target.files ?? [],
@@ -1096,7 +1037,6 @@ export function Workbench() {
                         deletions: approval.target.deletions,
                         kind: "pending",
                       });
-                      setWorkspaceFilesOpen(true);
                     }}
                   />
                 ) : approval ? (
@@ -1117,7 +1057,7 @@ export function Workbench() {
                   <RunChangeReviewPill
                     title={t("run.changeShortcutLabel")}
                     meta={t("run.changeShortcut", { count: displayDiff.files })}
-                    onInspect={openArtifactChanges}
+                    onInspect={workspaceReview.openArtifactChanges}
                   />
                 ) : undefined
               }
@@ -1163,8 +1103,8 @@ export function Workbench() {
           runStatus={runStatus}
           recovery={recovery}
           report={report}
-          rollbackBusy={rollbackBusy}
-          onRollback={rollbackToCheckpoint}
+          rollbackBusy={workspaceReview.rollbackBusy}
+          onRollback={workspaceReview.rollbackToCheckpoint}
           onCompactContext={compactContext}
           onCreateMemory={createMemory}
           onUpdateMemory={updateMemory}
@@ -1194,11 +1134,11 @@ export function Workbench() {
         }}
       />
       <WorkspaceFilesDialog
-        open={workspaceFilesOpen}
+        open={workspaceReview.workspaceFilesOpen}
         project={project}
-        changeSet={workspaceChangeSet}
+        changeSet={workspaceReview.workspaceChangeSet}
         reviewActions={
-          workspaceChangeSet?.kind === "pending" && approval?.target.tool === "apply_patch"
+          workspaceReview.workspaceChangeSet?.kind === "pending" && approval?.target.tool === "apply_patch"
             ? {
                 busy: approvalBusy,
                 canAccept: true,
@@ -1206,21 +1146,9 @@ export function Workbench() {
                 onAccept: approveAction,
                 onReject: () => denyAction(t("approval.defaultDenyReason")),
               }
-            : workspaceChangeSet?.kind === "applied" && hasVisibleDiff(artifacts)
-              ? {
-                  review: artifacts?.change_review,
-                  busy: Boolean(rollbackBusy),
-                  canAccept: true,
-                  canReject: Boolean(latestRestorableCheckpoint(recovery)),
-                  onAccept: () => void acceptLatestChanges(),
-                  onReject: () => void rejectLatestChanges(),
-                }
-              : undefined
+            : workspaceReview.appliedReviewActions
         }
-        onClose={() => {
-          setWorkspaceFilesOpen(false);
-          setWorkspaceChangeSet(undefined);
-        }}
+        onClose={workspaceReview.closeWorkspaceFiles}
       />
       <ModelSetupDialog
         open={modelSetupOpen}
