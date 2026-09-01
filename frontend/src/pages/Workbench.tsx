@@ -64,10 +64,19 @@ import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/Wor
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
 import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
-import { basename, hasVisibleDiff, isApprovalRequest, isEvidenceEvent, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
-import { loadRunResources } from "../run/resources";
+import { basename, hasVisibleDiff, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
+import { loadRunResources, type RunResources } from "../run/resources";
+import { useRunSubscription } from "../run/useRunSubscription";
 import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
+
+interface LoadedRunHeader {
+  run_id: string;
+  status: string;
+  contract?: AgentContract;
+  admission?: RunAdmission;
+  model_route?: ModelRoutePlan;
+}
 
 export function Workbench() {
   const { locale, t } = usePreferences();
@@ -131,12 +140,36 @@ export function Workbench() {
   const [workspaceFilesOpen, setWorkspaceFilesOpen] = useState(false);
   const [workspaceChangeSet, setWorkspaceChangeSet] = useState<WorkspaceChangeSet>();
   const [changeDecision, setChangeDecision] = useState<"pending" | "accepted" | "reverted">("pending");
-  const streamCleanup = useRef<(() => void) | null>(null);
   const followUpInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const { subscribeToRun, stopRunStream } = useRunSubscription({
+    t,
+    onProjectRunsRefresh: () => void loadProjectRuns(),
+    onGovernanceApproval: () => {
+      setRuntimePanelTarget("governance");
+      setRuntimeDetailsOpen(true);
+    },
+    setError,
+    setTraceEvents,
+    setApproval,
+    setRunStatus,
+    setArtifacts,
+    setRecovery,
+    setReport,
+    setEvidence,
+    setContextPack,
+    setMemory,
+    setGovernance,
+    setExtensions,
+    setConversation,
+    setFinalMessage,
+    setTerminationReason,
+    setLastObservation,
+    setCompletion,
+  });
 
   useEffect(() => {
     void refreshConnection();
-    return () => streamCleanup.current?.();
   }, []);
 
   useEffect(() => {
@@ -188,6 +221,50 @@ export function Workbench() {
     traceEvents,
     t,
   });
+
+  function applyLoadedRun(
+    run: LoadedRunHeader,
+    taskValue: string,
+    modeValue: RunMode,
+    resources: RunResources,
+    artifactsOverride?: RunArtifacts,
+  ) {
+    setTask(taskValue);
+    setMode(modeValue);
+    setRunId(run.run_id);
+    setRunStatus(run.status);
+    setContract(run.contract);
+    setAdmission(run.admission);
+    setModelRoute(run.model_route);
+    applyRunResources(resources, artifactsOverride);
+    clearTerminalState();
+  }
+
+  function applyRunResources(resources: RunResources, artifactsOverride?: RunArtifacts) {
+    setContextPack(resources.context);
+    setArtifacts(artifactsOverride ?? resources.artifacts);
+    setRecovery(resources.recovery);
+    setReport(resources.report);
+    setEvidence(resources.evidence);
+    setMemory(resources.memory);
+    setGovernance(resources.governance);
+    setExtensions(resources.extensions);
+    setConversation(resources.conversation);
+    setTraceEvents(resources.trace.events);
+  }
+
+  function clearTerminalState() {
+    setFinalMessage("");
+    setTerminationReason("");
+    setLastObservation({});
+    setCompletion(undefined);
+    setApproval(null);
+    setRollbackBusy(undefined);
+    setRuntimeDetailsOpen(false);
+    setRuntimePanelTarget("overview");
+    setWorkspaceChangeSet(undefined);
+    setChangeDecision("pending");
+  }
 
   async function refreshConnection() {
     setConnection("checking");
@@ -253,8 +330,7 @@ export function Workbench() {
   async function resumeHistoricalRun(historicalRunId: string) {
     setBusy(true);
     setError(null);
-    streamCleanup.current?.();
-    streamCleanup.current = null;
+    stopRunStream();
     try {
       const resumed = await daemonApi.resumeRun(historicalRunId);
       const [
@@ -269,33 +345,9 @@ export function Workbench() {
 
       setProject(resumed.project);
       setWorkspacePath(resumed.project.path);
-      setTask(resumed.task);
-      setMode(resumed.mode);
-      setRunId(resumed.run_id);
-      setRunStatus(resumed.status);
-      setContract(resumed.contract);
-      setAdmission(resumed.admission);
-      setModelRoute(resumed.model_route);
-      setContextPack(resources.context);
-      setArtifacts(resumed.artifacts);
-      setRecovery(resources.recovery);
-      setReport(resources.report);
-      setEvidence(resources.evidence);
-      setMemory(resources.memory);
-      setGovernance(resources.governance);
-      setExtensions(resources.extensions);
-      setTraceEvents(resources.trace.events);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
-      setFinalMessage("");
-      setTerminationReason("");
-      setLastObservation({});
-      setCompletion(undefined);
-      setConversation(resources.conversation);
-      setApproval(null);
-      setRollbackBusy(undefined);
-      setRuntimeDetailsOpen(false);
-      setRuntimePanelTarget("overview");
+      applyLoadedRun(resumed, resumed.task, resumed.mode, resources, resumed.artifacts);
       setConnection("connected");
       setHistoryOpen(false);
       setHistoryRunId(undefined);
@@ -314,8 +366,7 @@ export function Workbench() {
     setBusy(true);
     setError(null);
     setHistoryOpen(false);
-    streamCleanup.current?.();
-    streamCleanup.current = null;
+    stopRunStream();
     try {
       const opened = project?.path === detail.run.project_path
         ? project
@@ -349,33 +400,9 @@ export function Workbench() {
 
       setProject(opened);
       setWorkspacePath(opened.path);
-      setTask(parsedTask.task);
-      setMode(parsedTask.mode);
-      setRunId(run.run_id);
-      setRunStatus(run.status);
-      setContract(run.contract);
-      setAdmission(run.admission);
-      setModelRoute(run.model_route);
-      setContextPack(resources.context);
-      setArtifacts(resources.artifacts);
-      setRecovery(resources.recovery);
-      setReport(resources.report);
-      setEvidence(resources.evidence);
-      setMemory(resources.memory);
-      setGovernance(resources.governance);
-      setExtensions(resources.extensions);
-      setConversation(resources.conversation);
-      setTraceEvents(resources.trace.events);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
-      setFinalMessage("");
-      setTerminationReason("");
-      setLastObservation({});
-      setCompletion(undefined);
-      setApproval(null);
-      setRollbackBusy(undefined);
-      setRuntimeDetailsOpen(false);
-      setRuntimePanelTarget("overview");
+      applyLoadedRun(run, parsedTask.task, parsedTask.mode, resources);
       setConnection("connected");
 
       if (run.admission?.can_start === false) {
@@ -434,23 +461,15 @@ export function Workbench() {
     }
     setBusy(true);
     setError(null);
-    setFinalMessage("");
-    setTerminationReason("");
-    setLastObservation({});
-    setCompletion(undefined);
+    clearTerminalState();
     setConversation(undefined);
-    setApproval(null);
     setRecovery(undefined);
     setReport(undefined);
     setEvidence(undefined);
     setMemory(undefined);
     setGovernance(undefined);
     setExtensions(undefined);
-    setRollbackBusy(undefined);
-    setRuntimeDetailsOpen(false);
-    setRuntimePanelTarget("overview");
-    streamCleanup.current?.();
-    streamCleanup.current = null;
+    stopRunStream();
     try {
       const [run, providerStatus] = await Promise.all([
         daemonApi.createRun({
@@ -462,23 +481,7 @@ export function Workbench() {
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
       const resources = await loadRunResources(run.run_id);
-      setRunId(run.run_id);
-      setTask(parsedTask.task);
-      setMode(parsedTask.mode);
-      setRunStatus(run.status);
-      setContract(run.contract);
-      setAdmission(run.admission);
-      setModelRoute(run.model_route);
-      setContextPack(resources.context);
-      setArtifacts(resources.artifacts);
-      setRecovery(resources.recovery);
-      setReport(resources.report);
-      setEvidence(resources.evidence);
-      setMemory(resources.memory);
-      setGovernance(resources.governance);
-      setExtensions(resources.extensions);
-      setConversation(resources.conversation);
-      setTraceEvents(resources.trace.events);
+      applyLoadedRun(run, parsedTask.task, parsedTask.mode, resources);
       setModelStatus(providerStatus);
       setConnection("connected");
       void loadProjectRuns(project.project_id);
@@ -534,92 +537,6 @@ export function Workbench() {
     } finally {
       setBusy(false);
     }
-  }
-
-  function subscribeToRun(activeRunId: string, after: number) {
-    streamCleanup.current?.();
-    streamCleanup.current = daemonApi.streamRunEvents(
-      activeRunId,
-      after,
-      (event) => {
-        setTraceEvents((current) => [...current, event]);
-        if (event.event === "approval.requested" && isApprovalRequest(event.payload.approval)) {
-          setApproval(event.payload.approval);
-          setRunStatus("waiting_approval");
-          setRuntimePanelTarget("governance");
-          setRuntimeDetailsOpen(true);
-        } else if (["approval.resolved", "approval.cancelled"].includes(event.event)) {
-          setApproval(null);
-        }
-        if (["checkpoint.saved", "patch.snapshot.created", "repair.started", "repair.completed"].includes(event.event)) {
-          daemonApi.getCheckpoints(activeRunId).then(setRecovery).catch(() => undefined);
-        }
-        if (event.event === "report.generated") {
-          daemonApi.getReport(activeRunId).then(setReport).catch(() => undefined);
-        }
-        if (event.event.startsWith("context.")) {
-          daemonApi.getContext(activeRunId).then(setContextPack).catch(() => undefined);
-        }
-        if (event.event.startsWith("memory.")) {
-          daemonApi.getMemory(activeRunId).then(setMemory).catch(() => undefined);
-        }
-        if (["policy.evaluated", "sandbox.started", "sandbox.finished", "governance.updated"].includes(event.event)) {
-          daemonApi.getGovernance(activeRunId).then(setGovernance).catch(() => undefined);
-        }
-        if (["policy.evaluated", "tool.executed", "tool.failed"].includes(event.event)) {
-          daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
-        }
-        if (event.event === "extension.updated" || event.event.startsWith("skill.")
-          || event.event.startsWith("mcp.")
-          || event.event.startsWith("hook.")) {
-          daemonApi.getExtensions(activeRunId).then(setExtensions).catch(() => undefined);
-        }
-        if (isEvidenceEvent(event.event)) {
-          daemonApi.getEvidence(activeRunId).then(setEvidence).catch(() => undefined);
-        }
-        const transitionedStatus = event.payload.status;
-        if (event.event === "run.transitioned" && typeof transitionedStatus === "string") {
-          setRunStatus(transitionedStatus);
-          daemonApi.getArtifacts(activeRunId).then(setArtifacts).catch(() => undefined);
-          void loadProjectRuns();
-        }
-        if (event.event === "run.budget_exceeded" && typeof event.payload.termination_reason === "string") {
-          setTerminationReason(event.payload.termination_reason);
-        }
-        if (
-          event.event === "run.transitioned" &&
-          typeof transitionedStatus === "string" &&
-          ["completed", "failed", "cancelled"].includes(transitionedStatus)
-        ) {
-          streamCleanup.current?.();
-          streamCleanup.current = null;
-          Promise.all([
-            daemonApi.getRun(activeRunId),
-            loadRunResources(activeRunId),
-          ]).then(([
-            summary,
-            resources,
-          ]) => {
-            setRunStatus(summary.status);
-            setFinalMessage(summary.final_message || "");
-            setTerminationReason(summary.termination_reason || "");
-            setLastObservation(summary.last_observation || {});
-            setCompletion(summary.completion);
-            setArtifacts(resources.artifacts);
-            setRecovery(resources.recovery);
-            setReport(resources.report);
-            setEvidence(resources.evidence);
-            setContextPack(resources.context);
-            setMemory(resources.memory);
-            setGovernance(resources.governance);
-            setExtensions(resources.extensions);
-            setConversation(resources.conversation);
-            void loadProjectRuns();
-          }).catch(() => undefined);
-        }
-      },
-      () => setError(t("error.streamDisconnected")),
-    );
   }
 
   async function cancelRun() {
@@ -682,8 +599,7 @@ export function Workbench() {
   }
 
   function resetRunState(clearTask = false) {
-    streamCleanup.current?.();
-    streamCleanup.current = null;
+    stopRunStream();
     setRunId(undefined);
     setRunStatus("idle");
     setContract(undefined);
