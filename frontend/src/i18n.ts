@@ -2932,7 +2932,10 @@ export function translate(
 
 export function translateKnownText(locale: Locale, value: string): string {
   const exact = knownText[locale][value];
-  if (exact || locale !== "zh") return exact ?? value;
+  if (exact) return exact;
+  const normalized = normalizeKnownText(value);
+  const normalizedMatch = Object.entries(knownText[locale]).find(([key]) => normalizeKnownText(key) === normalized)?.[1];
+  if (normalizedMatch || locale !== "zh") return normalizedMatch ?? value;
   if (value.startsWith("available ") && value.endsWith(" memory")) {
     const scope = value.slice("available ".length, -" memory".length);
     return `可用的${scope === "long_term" ? "长期" : scope === "project" ? "项目" : scope}记忆`;
@@ -2947,6 +2950,15 @@ export function translateKnownText(locale: Locale, value: string): string {
     return `命令已通过${translateKnownText(locale, value.slice(27, -16))}沙箱配置检查`;
   }
   return value;
+}
+
+function normalizeKnownText(value: string): string {
+  return value
+    .replace(/[，、]/g, ",")
+    .replace(/[。]/g, ".")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 export function translateExtensionDiagnostic(locale: Locale, value: string): string {
