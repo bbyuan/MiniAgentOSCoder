@@ -53,7 +53,9 @@ export function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translat
       .map(actionIdFrom)
       .filter((id): id is string => Boolean(id)),
   );
-  return events.filter((event) => isProcessEvent(event, completedActionIds)).map((event) => {
+  return events.filter((event, index) => (
+    isProcessEvent(event, completedActionIds) && !isResolvedModelRequest(events, index)
+  )).map((event) => {
     const presentation = workPresentation(event);
     return {
       ...processEvent(event, locale, t),
@@ -62,6 +64,27 @@ export function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translat
       time: event.time,
     };
   });
+}
+
+function isResolvedModelRequest(events: TraceEvent[], index: number): boolean {
+  const event = events[index];
+  if (event.event !== "model.requested") return false;
+  const step = event.payload.step;
+  for (const next of events.slice(index + 1)) {
+    if (next.event === "model.requested") return true;
+    if (step !== undefined && next.payload.step !== undefined && next.payload.step !== step) return false;
+    if ([
+      "action.parsed",
+      "tool.executed",
+      "tool.failed",
+      "approval.requested",
+      "action.rejected",
+      "model.failed",
+    ].includes(next.event)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function activityState(status: string): {
