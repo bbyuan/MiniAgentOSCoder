@@ -59,9 +59,11 @@ function eventPresentation(event: string): { icon: LucideIcon; tone: string } {
 
 function isProcessEvent(event: TraceEvent): boolean {
   const name = event.event;
+  if (name === "model.requested") return true;
+  if (name === "action.parsed") return true;
   if (name === "tool.executed" || name === "tool.failed") return true;
   if (name === "approval.requested" || name === "approval.resolved" || name === "approval.cancelled") return true;
-  if (name === "action.rejected") return false;
+  if (name === "action.rejected") return true;
   if (name === "action.superseded") return false;
   if (name === "completion.passed" || name === "completion.rejected") return true;
   if (name === "model.failed" || name === "run.failed" || name === "run.budget_exceeded" || name === "run.cancelled") return true;
@@ -72,7 +74,6 @@ function isProcessEvent(event: TraceEvent): boolean {
     const outcome = stringValue(evaluation?.outcome);
     return outcome === "denied" || outcome === "approval_denied";
   }
-  if (name === "action.parsed") return actionName(event) === "finish";
   return false;
 }
 
@@ -150,6 +151,14 @@ function metadataFrom(event: TraceEvent): Record<string, unknown> | undefined {
   return asRecord(resultFrom(event)?.metadata) ?? asRecord(approvalFrom(event)?.target);
 }
 
+function requestFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(event.payload.request);
+}
+
+function responseFrom(event: TraceEvent): Record<string, unknown> | undefined {
+  return asRecord(event.payload.response);
+}
+
 function actionName(event: TraceEvent): string | undefined {
   const action = actionFrom(event);
   const result = resultFrom(event);
@@ -185,8 +194,13 @@ function activityChips(locale: Locale, event: TraceEvent, t: Translator): string
   const metadata = metadataFrom(event);
   const approval = approvalFrom(event);
   const target = asRecord(approval?.target);
+  const request = requestFrom(event);
+  const response = responseFrom(event);
+  const usage = asRecord(response?.usage);
   const chips: string[] = [];
   const name = actionName(event);
+  const model = stringValue(request?.model) ?? stringValue(response?.model);
+  const tokens = numberValue(usage?.total_tokens);
   const command = firstPresent(params, ["command", "cmd"]) ?? stringValue(metadata?.command) ?? stringValue(target?.command);
   const path = firstPresent(params, ["path", "file", "file_path", "target"]);
   const query = firstPresent(params, ["query", "pattern", "symbol"]);
@@ -194,6 +208,8 @@ function activityChips(locale: Locale, event: TraceEvent, t: Translator): string
   const additions = numberValue(metadata?.additions) ?? numberValue(target?.additions);
   const deletions = numberValue(metadata?.deletions) ?? numberValue(target?.deletions);
 
+  if (model) chips.push(labelValue(t("activity.modelLabel"), translateKnownText(locale, model)));
+  if (tokens) chips.push(t("activity.tokenCount", { count: tokens }));
   if (name && !isBuiltInAction(name)) chips.push(labelValue(t("activity.toolLabel"), translateKnownText(locale, name)));
   if (command) chips.push(labelValue(t("activity.commandLabel"), compactText(command, 72)));
   if (path) chips.push(labelValue(t("activity.fileLabel"), compactText(path, 64)));
@@ -249,6 +265,7 @@ function actionDetail(event: TraceEvent, t: Translator): string {
 function localizedRationale(locale: Locale, rationale: string): string | undefined {
   const translated = translateKnownText(locale, rationale);
   if (locale === "zh" && translated === rationale && !containsCjk(rationale)) return undefined;
+  if (locale === "en" && translated === rationale && containsCjk(rationale)) return undefined;
   return translated;
 }
 
@@ -355,8 +372,16 @@ function processEvent(
   if (event.event === "model.responded") return { title: t("activity.title.modelResponded"), detail: t("activity.detail.modelResponded"), chips };
   if (event.event === "model.failed") return { title: t("activity.title.failed"), detail: resultError ?? t("activity.detail.failed"), chips };
   if (event.event === "action.parsed") {
+    const label = actionLabel(event, t);
+    if (actionName(event) !== "finish") {
+      return {
+        title: t("activity.title.nextAction", { action: label }),
+        detail: rationaleDetail(locale, rationale, actionDetail(event, t), t),
+        chips,
+      };
+    }
     return {
-      title: actionLabel(event, t),
+      title: label,
       detail: rationaleDetail(locale, rationale, actionDetail(event, t), t),
       chips,
     };
