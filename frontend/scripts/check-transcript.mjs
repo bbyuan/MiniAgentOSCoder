@@ -12,6 +12,7 @@ const workspaceFilesSource = readFileSync(resolve(root, "src/components/Workspac
 const diffHunkNavigatorSource = readFileSync(resolve(root, "src/components/DiffHunkNavigator.tsx"), "utf8");
 const patchFocusSource = readFileSync(resolve(root, "src/run/patchFocus.ts"), "utf8");
 const mainSource = readFileSync(resolve(root, "src/main.tsx"), "utf8");
+const globalStylesSource = readFileSync(resolve(root, "src/styles/global.css"), "utf8");
 const runSurfaceSource = readFileSync(resolve(root, "src/styles/run-surface.css"), "utf8");
 
 const testableWorkItems = workItemsSource
@@ -182,11 +183,16 @@ assert(workspaceFilesSource.includes("scrollIntoView({ block: \"center\" })"), "
 assert(workspaceFilesSource.includes("diffHunkIndexes"), "Workspace file review should index diff hunks for navigation.");
 assert(workspaceFilesSource.includes("DiffHunkNavigator"), "Workspace file review should delegate hunk controls to a focused component.");
 assert(diffHunkNavigatorSource.includes("workspaceFiles.hunkPosition"), "Workspace file review should show the current diff hunk position.");
+assert(workspaceFilesSource.includes("setListError("), "Workspace file list errors should stay separate from file preview errors.");
+assert(workspaceFilesSource.includes("setContentError("), "Workspace file preview errors should stay separate from list loading.");
+assert(workspaceFilesSource.includes("setItems([])"), "Workspace file list failures should clear stale file rows.");
 
 assert(
   mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),
   "Run surface styles should load after global styles.",
 );
+assert(globalStylesSource.includes("overflow-wrap: anywhere;"), "Markdown summaries should wrap long inline code and file names.");
+assert(globalStylesSource.includes("overflow-x: hidden;"), "Completion summaries should avoid horizontal overflow.");
 assert(runSurfaceSource.includes("Run surface v6"), "Run surface overrides should be consolidated in the dedicated run surface stylesheet.");
 assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should align with the visible icon column.");
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");

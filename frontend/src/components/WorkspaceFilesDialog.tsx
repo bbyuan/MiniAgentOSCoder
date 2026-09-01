@@ -45,7 +45,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   const [fileScope, setFileScope] = useState<"changes" | "all">("all");
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
-  const [error, setError] = useState("");
+  const [listError, setListError] = useState("");
+  const [contentError, setContentError] = useState("");
   const hunkRefs = useRef(new Map<number, HTMLElement>());
   const [activeHunkIndex, setActiveHunkIndex] = useState(-1);
 
@@ -95,6 +96,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
     setPreviewMode(changeSet ? "diff" : "source");
     setFileScope(changeSet ? "changes" : "all");
     setContent(undefined);
+    setListError("");
+    setContentError("");
     void loadFiles("");
   }, [open, project?.project_id, changeSet?.title, changeSet?.patch, changeSet?.focusPath, changeSet?.focusHunk]);
 
@@ -113,13 +116,16 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
     }
     let cancelled = false;
     setLoadingContent(true);
-    setError("");
+    setContentError("");
     daemonApi.getProjectFileContent(project.project_id, selectedPath)
       .then((next) => {
         if (!cancelled) setContent(next);
       })
       .catch((caught) => {
-        if (!cancelled) setError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadContentFailed")));
+        if (!cancelled) {
+          setContent(undefined);
+          setContentError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadContentFailed")));
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingContent(false);
@@ -156,7 +162,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   async function loadFiles(nextQuery = query) {
     if (!project) return;
     setLoadingFiles(true);
-    setError("");
+    setListError("");
     try {
       const response = await daemonApi.getProjectFiles(project.project_id, nextQuery);
       setItems(response.items);
@@ -168,7 +174,11 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
         return changeSet?.focusPath ?? changedPath ?? nextFiles[0]?.path ?? "";
       });
     } catch (caught) {
-      setError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadFailed")));
+      setItems([]);
+      setSelectedPath("");
+      setContent(undefined);
+      setTruncated(false);
+      setListError(localizeErrorMessage(locale, caught, t("workspaceFiles.loadFailed")));
     } finally {
       setLoadingFiles(false);
     }
@@ -227,8 +237,8 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
           </div>
         ) : null}
 
-        {error ? (
-          <div className="workspaceFilesError"><AlertCircle size={16} />{error}</div>
+        {listError ? (
+          <div className="workspaceFilesError"><AlertCircle size={16} />{listError}</div>
         ) : null}
 
         <div className="workspaceFilesBody">
@@ -314,6 +324,12 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
                   </div>
                 ) : loadingContent ? (
                   <div className="workspaceFilesLoading preview"><LoaderCircle className="spin" size={16} />{t("workspaceFiles.loadingContent")}</div>
+                ) : contentError ? (
+                  <div className="workspaceFileUnavailable">
+                    <AlertCircle size={18} />
+                    <strong>{t("workspaceFiles.loadContentFailed")}</strong>
+                    <span>{contentError}</span>
+                  </div>
                 ) : content?.available ? (
                   <>
                     <pre tabIndex={0}>

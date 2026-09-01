@@ -3084,6 +3084,12 @@ export function localizeErrorMessage(locale: Locale, caught: unknown, fallback: 
   if (/timeout|timed out/i.test(message)) {
     return "请求超时，请稍后重试。";
   }
+  if (/project not found/i.test(message)) {
+    return "项目未找到。请重新打开项目后再查看文件。";
+  }
+  if (/file not found/i.test(message)) {
+    return "文件未找到，可能已被移动或删除。请刷新文件列表后重试。";
+  }
   const incompatibleSkill = message.match(/^Skill (.+) is not compatible with mode (.+)$/);
   if (incompatibleSkill) {
     return `“${incompatibleSkill[1]}”不适合“${translateMode(locale, incompatibleSkill[2])}”任务。请关闭这条项目规则，或切换到适合的任务类型。`;

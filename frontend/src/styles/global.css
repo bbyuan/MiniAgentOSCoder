@@ -21020,6 +21020,7 @@ button > svg {
 }
 
 .markdownDocument {
+  min-width: 0;
   max-height: 360px;
   overflow: auto;
   color: var(--text-secondary);
@@ -21027,6 +21028,7 @@ button > svg {
   font-size: 13px;
   line-height: 1.68;
   white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .reportDocument.markdownDocument,
@@ -21043,6 +21045,7 @@ button > svg {
 .markdownDocument ul,
 .markdownDocument ol,
 .markdownDocument pre {
+  max-width: 100%;
   margin: 0;
 }
 
@@ -21083,8 +21086,10 @@ button > svg {
 }
 
 .markdownDocument li {
+  min-width: 0;
   position: relative;
   padding-left: 18px;
+  overflow-wrap: anywhere;
 }
 
 .markdownDocument ul li::before {
@@ -21123,6 +21128,8 @@ button > svg {
 }
 
 .markdownDocument code {
+  display: inline;
+  max-width: 100%;
   padding: 1px 5px;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   border-radius: 5px;
@@ -21130,6 +21137,9 @@ button > svg {
   background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.9em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .markdownDocument pre {
@@ -21142,6 +21152,7 @@ button > svg {
 }
 
 .markdownDocument pre code {
+  display: block;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -21150,6 +21161,8 @@ button > svg {
   font-size: 11px;
   line-height: 1.6;
   white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .comparisonHeader {
@@ -21739,6 +21752,7 @@ button > svg {
 
 .completionFullMessage.markdownDocument {
   max-height: 420px;
+  overflow-x: hidden;
   padding: 16px 18px 18px;
   color: var(--text-secondary);
   font-size: 13px;
