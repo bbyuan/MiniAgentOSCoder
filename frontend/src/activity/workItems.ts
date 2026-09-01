@@ -46,7 +46,13 @@ export function eventTime(value: string): string {
 }
 
 export function buildWorkItems(events: TraceEvent[], locale: Locale, t: Translator): WorkItem[] {
-  return events.filter(isProcessEvent).map((event) => {
+  const completedActionIds = new Set(
+    events
+      .filter((event) => ["tool.executed", "tool.failed", "approval.requested", "action.rejected"].includes(event.event))
+      .map(actionIdFrom)
+      .filter((id): id is string => Boolean(id)),
+  );
+  return events.filter((event) => isProcessEvent(event, completedActionIds)).map((event) => {
     const presentation = workPresentation(event);
     return {
       ...processEvent(event, locale, t),
@@ -93,10 +99,13 @@ function eventPresentation(event: string): { kind: WorkItemKind; tone: string } 
   return { kind: "runtime", tone: "runtime" };
 }
 
-function isProcessEvent(event: TraceEvent): boolean {
+function isProcessEvent(event: TraceEvent, completedActionIds: Set<string>): boolean {
   const name = event.event;
   if (name === "model.requested") return true;
-  if (name === "action.parsed") return true;
+  if (name === "action.parsed") {
+    const actionId = actionIdFrom(event);
+    return actionName(event) === "finish" || !actionId || !completedActionIds.has(actionId);
+  }
   if (name === "tool.executed" || name === "tool.failed") return true;
   if (name === "approval.requested" || name === "approval.resolved" || name === "approval.cancelled") return true;
   if (name === "action.rejected") return true;
@@ -205,7 +214,7 @@ function processEvent(event: TraceEvent, locale: Locale, t: Translator): Process
   if (event.event === "tool.executed") {
     const command = firstPresent(params, ["command", "cmd"]);
     return {
-      title: actionLabel(event, t),
+      title: executedTitle(event, t),
       detail: rationaleDetail(locale, rationale, command ? t("activity.detail.commandExecuted") : actionDetail(event, t), t),
       chips,
       output: outputPreview(locale, event),
@@ -251,6 +260,23 @@ function actionLabel(event: TraceEvent, t: Translator): string {
   if (name === "apply_patch") return t("activity.work.applyPatch");
   if (name === "finish") return t("activity.work.finish");
   return t("activity.work.generic");
+}
+
+function executedTitle(event: TraceEvent, t: Translator): string {
+  const name = actionName(event);
+  const params = actionParams(event);
+  const metadata = metadataFrom(event);
+  const path = firstPresent(params, ["path", "file", "file_path", "target"]);
+  const query = firstPresent(params, ["query", "pattern", "symbol"]);
+  const command = firstPresent(params, ["command", "cmd"]) ?? stringValue(metadata?.command);
+  const files = Array.isArray(metadata?.files) ? metadata.files.length : undefined;
+
+  if (name === "read_file" && path) return t("activity.title.readFile", { path: compactText(path, 56) });
+  if (name === "search_code" && query) return t("activity.title.searchCode", { query: compactText(query, 56) });
+  if (name === "list_files") return t("activity.title.listFiles");
+  if (name === "run_command" && command) return t("activity.title.runCommand", { command: compactText(command, 64) });
+  if (name === "apply_patch") return t("activity.title.editFiles", { count: files ?? 1 });
+  return actionLabel(event, t);
 }
 
 function actionDetail(event: TraceEvent, t: Translator): string {
@@ -363,6 +389,10 @@ function actionName(event: TraceEvent): string | undefined {
   const name = stringValue(action?.type) ?? stringValue(result?.tool) ?? stringValue(target?.tool);
   if (!name || name === "action" || name === "unknown") return undefined;
   return name;
+}
+
+function actionIdFrom(event: TraceEvent): string | undefined {
+  return stringValue(actionFrom(event)?.action_id);
 }
 
 function actionParams(event: TraceEvent): Record<string, unknown> | undefined {
