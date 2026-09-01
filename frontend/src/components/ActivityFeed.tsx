@@ -94,6 +94,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
   const state = activityState(status);
   const latestItem = workItems[workItems.length - 1];
   const LatestIcon = latestItem ? ITEM_ICONS[latestItem.kind] ?? Activity : Activity;
+  const duration = workDuration(workItems, t);
 
   if (embedded && workItems.length === 0) return null;
 
@@ -104,7 +105,7 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
           <ChevronDown className={expanded ? "expanded" : ""} size={15} />
           <span>
             <strong>{embedded ? t("activity.workLogTitle") : t("activity.title")}</strong>
-            <small>{t("activity.workLogDescription", { count: workItems.length })}</small>
+            <small>{duration ? t("activity.workLogDescriptionTimed", { duration, count: workItems.length }) : t("activity.workLogDescription", { count: workItems.length })}</small>
           </span>
         </button>
         {!embedded ? (
@@ -138,4 +139,19 @@ export function ActivityFeed({ events, status, embedded = false }: ActivityFeedP
       ) : null}
     </section>
   );
+}
+
+function workDuration(
+  items: WorkItem[],
+  t: (key: "activity.durationSeconds" | "activity.durationMinutes", variables?: Record<string, string | number>) => string,
+): string {
+  if (items.length < 2) return "";
+  const start = new Date(items[0].time).getTime();
+  const end = new Date(items[items.length - 1].time).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return "";
+  const seconds = Math.max(1, Math.round((end - start) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  if (minutes > 0) return t("activity.durationMinutes", { minutes, seconds: rest });
+  return t("activity.durationSeconds", { seconds });
 }
