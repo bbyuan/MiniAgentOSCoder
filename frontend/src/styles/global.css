@@ -23876,3 +23876,125 @@ summary:focus-visible {
     margin-inline: 18px;
   }
 }
+
+/* Completion disclosures: keep the card quiet, but make the clickable rows unmistakable. */
+.completionDetails summary,
+.completionEvidenceDisclosure > summary {
+  cursor: pointer;
+  border-radius: 8px;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.completionDetails summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+}
+
+.completionEvidenceDisclosure > summary {
+  grid-template-columns: 28px minmax(0, 1fr) auto 18px;
+  gap: 10px;
+}
+
+.completionDisclosureTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.completionDisclosureCue {
+  min-height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 54%, transparent);
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.completionDisclosureCueClose {
+  display: none;
+}
+
+.completionDetails[open] .completionDisclosureCueOpen,
+.completionEvidenceDisclosure[open] .completionDisclosureCueOpen {
+  display: none;
+}
+
+.completionDetails[open] .completionDisclosureCueClose,
+.completionEvidenceDisclosure[open] .completionDisclosureCueClose {
+  display: inline;
+}
+
+.completionDetails summary > svg,
+.completionEvidenceDisclosure > summary > svg:last-child {
+  color: var(--text-tertiary);
+  transition:
+    color 160ms ease,
+    transform 180ms ease;
+}
+
+.completionDetails summary:hover,
+.completionEvidenceDisclosure > summary:hover {
+  background: color-mix(in srgb, var(--accent-soft) 26%, transparent);
+}
+
+.completionDetails summary:hover .completionDisclosureCue,
+.completionEvidenceDisclosure > summary:hover .completionDisclosureCue {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+}
+
+.completionDetails summary:hover > svg,
+.completionEvidenceDisclosure > summary:hover > svg:last-child {
+  color: var(--accent);
+}
+
+.completionDetails summary:focus-visible,
+.completionEvidenceDisclosure > summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.completionDetails[open] .completionDisclosureCue,
+.completionEvidenceDisclosure[open] .completionDisclosureCue {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-subtle) 82%, transparent);
+}
+
+.completionSummary.tone-completed .completionDetails summary,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  margin-inline: -10px;
+  padding-inline: 10px;
+}
+
+@media (max-width: 560px) {
+  .completionDisclosureCue {
+    display: none;
+  }
+
+  .completionDetails summary {
+    grid-template-columns: minmax(0, 1fr) 18px;
+  }
+
+  .completionEvidenceDisclosure > summary {
+    grid-template-columns: 28px minmax(0, 1fr) 18px;
+  }
+}

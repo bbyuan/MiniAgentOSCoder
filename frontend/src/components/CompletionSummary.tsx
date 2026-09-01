@@ -190,7 +190,14 @@ export function CompletionSummary({
       ) : null}
       {showCompletionDetails ? (
         <details className="completionDetails">
-          <summary>{t("completion.showDetails")}<ChevronDown size={14} /></summary>
+          <summary>
+            <span className="completionDisclosureTitle">{t("completion.showDetails")}</span>
+            <span className="completionDisclosureCue">
+              <span className="completionDisclosureCueOpen">{t("completion.openDisclosure")}</span>
+              <span className="completionDisclosureCueClose">{t("completion.closeDisclosure")}</span>
+            </span>
+            <ChevronDown size={14} />
+          </summary>
           <div className="completionFullMessage">
             <p className="completionFullLead">{fullMessage.lead}</p>
             {fullMessage.items.length ? (
@@ -206,6 +213,10 @@ export function CompletionSummary({
           <summary>
             <ListChecks size={16} />
             <span><strong>{t("completion.evidenceTitle")}</strong><small>{completion?.verdict === "passed" ? t("completion.passed") : t("completion.notPassed")}</small></span>
+            <span className="completionDisclosureCue">
+              <span className="completionDisclosureCueOpen">{t("completion.openDisclosure")}</span>
+              <span className="completionDisclosureCueClose">{t("completion.closeDisclosure")}</span>
+            </span>
             <ChevronDown size={15} />
           </summary>
           <div><CompletionEvidence assessment={completion} embedded /></div>
