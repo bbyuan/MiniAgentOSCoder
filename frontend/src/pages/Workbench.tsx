@@ -65,6 +65,7 @@ import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } fro
 import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
 import { basename, hasVisibleDiff, isApprovalRequest, isEvidenceEvent, isRuntimeConnectionError, latestRestorableCheckpoint } from "../run/helpers";
+import { loadRunResources } from "../run/resources";
 import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -257,29 +258,13 @@ export function Workbench() {
     try {
       const resumed = await daemonApi.resumeRun(historicalRunId);
       const [
-        contextResponse,
-        traceResponse,
-        recoveryResponse,
-        reportResponse,
-        evidenceResponse,
-        memoryResponse,
-        governanceResponse,
-        extensionResponse,
+        resources,
         providerStatus,
         configurationSnapshot,
-        conversationResponse,
       ] = await Promise.all([
-        daemonApi.getContext(resumed.run_id),
-        daemonApi.getTrace(resumed.run_id),
-        daemonApi.getCheckpoints(resumed.run_id),
-        daemonApi.getReport(resumed.run_id),
-        daemonApi.getEvidence(resumed.run_id),
-        daemonApi.getMemory(resumed.run_id),
-        daemonApi.getGovernance(resumed.run_id),
-        daemonApi.getExtensions(resumed.run_id),
+        loadRunResources(resumed.run_id),
         daemonApi.getModelStatus(resumed.project.project_id).catch(() => undefined),
         daemonApi.getModelConfig(resumed.project.project_id).catch(() => undefined),
-        daemonApi.getConversation(resumed.run_id),
       ]);
 
       setProject(resumed.project);
@@ -291,22 +276,22 @@ export function Workbench() {
       setContract(resumed.contract);
       setAdmission(resumed.admission);
       setModelRoute(resumed.model_route);
-      setContextPack(contextResponse);
+      setContextPack(resources.context);
       setArtifacts(resumed.artifacts);
-      setRecovery(recoveryResponse);
-      setReport(reportResponse);
-      setEvidence(evidenceResponse);
-      setMemory(memoryResponse);
-      setGovernance(governanceResponse);
-      setExtensions(extensionResponse);
-      setTraceEvents(traceResponse.events);
+      setRecovery(resources.recovery);
+      setReport(resources.report);
+      setEvidence(resources.evidence);
+      setMemory(resources.memory);
+      setGovernance(resources.governance);
+      setExtensions(resources.extensions);
+      setTraceEvents(resources.trace.events);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
       setFinalMessage("");
       setTerminationReason("");
       setLastObservation({});
       setCompletion(undefined);
-      setConversation(conversationResponse);
+      setConversation(resources.conversation);
       setApproval(null);
       setRollbackBusy(undefined);
       setRuntimeDetailsOpen(false);
@@ -360,29 +345,7 @@ export function Workbench() {
         mode: parsedTask.mode,
         parent_run_id: detail.run.run_id,
       });
-      const [
-        contextResponse,
-        traceResponse,
-        artifactResponse,
-        recoveryResponse,
-        reportResponse,
-        evidenceResponse,
-        memoryResponse,
-        governanceResponse,
-        extensionResponse,
-        conversationResponse,
-      ] = await Promise.all([
-        daemonApi.getContext(run.run_id),
-        daemonApi.getTrace(run.run_id),
-        daemonApi.getArtifacts(run.run_id),
-        daemonApi.getCheckpoints(run.run_id),
-        daemonApi.getReport(run.run_id),
-        daemonApi.getEvidence(run.run_id),
-        daemonApi.getMemory(run.run_id),
-        daemonApi.getGovernance(run.run_id),
-        daemonApi.getExtensions(run.run_id),
-        daemonApi.getConversation(run.run_id),
-      ]);
+      const resources = await loadRunResources(run.run_id);
 
       setProject(opened);
       setWorkspacePath(opened.path);
@@ -393,16 +356,16 @@ export function Workbench() {
       setContract(run.contract);
       setAdmission(run.admission);
       setModelRoute(run.model_route);
-      setContextPack(contextResponse);
-      setArtifacts(artifactResponse);
-      setRecovery(recoveryResponse);
-      setReport(reportResponse);
-      setEvidence(evidenceResponse);
-      setMemory(memoryResponse);
-      setGovernance(governanceResponse);
-      setExtensions(extensionResponse);
-      setConversation(conversationResponse);
-      setTraceEvents(traceResponse.events);
+      setContextPack(resources.context);
+      setArtifacts(resources.artifacts);
+      setRecovery(resources.recovery);
+      setReport(resources.report);
+      setEvidence(resources.evidence);
+      setMemory(resources.memory);
+      setGovernance(resources.governance);
+      setExtensions(resources.extensions);
+      setConversation(resources.conversation);
+      setTraceEvents(resources.trace.events);
       setModelStatus(providerStatus);
       setModelConfig(configurationSnapshot);
       setFinalMessage("");
@@ -421,7 +384,7 @@ export function Workbench() {
       const started = await daemonApi.startRun(run.run_id);
       setRunStatus(started.status);
       void loadProjectRuns(opened.project_id);
-      subscribeToRun(run.run_id, traceResponse.events.length);
+      subscribeToRun(run.run_id, resources.trace.events.length);
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("history.resumeError")));
       throw caught;
@@ -498,29 +461,7 @@ export function Workbench() {
         }),
         daemonApi.getModelStatus(project.project_id).catch(() => undefined),
       ]);
-      const [
-        contextResponse,
-        traceResponse,
-        artifactResponse,
-        recoveryResponse,
-        reportResponse,
-        evidenceResponse,
-        memoryResponse,
-        governanceResponse,
-        extensionResponse,
-        conversationResponse,
-      ] = await Promise.all([
-        daemonApi.getContext(run.run_id),
-        daemonApi.getTrace(run.run_id),
-        daemonApi.getArtifacts(run.run_id),
-        daemonApi.getCheckpoints(run.run_id),
-        daemonApi.getReport(run.run_id),
-        daemonApi.getEvidence(run.run_id),
-        daemonApi.getMemory(run.run_id),
-        daemonApi.getGovernance(run.run_id),
-        daemonApi.getExtensions(run.run_id),
-        daemonApi.getConversation(run.run_id),
-      ]);
+      const resources = await loadRunResources(run.run_id);
       setRunId(run.run_id);
       setTask(parsedTask.task);
       setMode(parsedTask.mode);
@@ -528,16 +469,16 @@ export function Workbench() {
       setContract(run.contract);
       setAdmission(run.admission);
       setModelRoute(run.model_route);
-      setContextPack(contextResponse);
-      setArtifacts(artifactResponse);
-      setRecovery(recoveryResponse);
-      setReport(reportResponse);
-      setEvidence(evidenceResponse);
-      setMemory(memoryResponse);
-      setGovernance(governanceResponse);
-      setExtensions(extensionResponse);
-      setConversation(conversationResponse);
-      setTraceEvents(traceResponse.events);
+      setContextPack(resources.context);
+      setArtifacts(resources.artifacts);
+      setRecovery(resources.recovery);
+      setReport(resources.report);
+      setEvidence(resources.evidence);
+      setMemory(resources.memory);
+      setGovernance(resources.governance);
+      setExtensions(resources.extensions);
+      setConversation(resources.conversation);
+      setTraceEvents(resources.trace.events);
       setModelStatus(providerStatus);
       setConnection("connected");
       void loadProjectRuns(project.project_id);
@@ -552,7 +493,7 @@ export function Workbench() {
         const started = await daemonApi.startRun(run.run_id);
         setRunStatus(started.status);
         void loadProjectRuns(project.project_id);
-        subscribeToRun(run.run_id, traceResponse.events.length);
+        subscribeToRun(run.run_id, resources.trace.events.length);
       }
     } catch (caught) {
       setError(localizeErrorMessage(locale, caught, t("error.prepareRun")));
@@ -654,41 +595,25 @@ export function Workbench() {
           streamCleanup.current = null;
           Promise.all([
             daemonApi.getRun(activeRunId),
-            daemonApi.getArtifacts(activeRunId),
-            daemonApi.getCheckpoints(activeRunId),
-            daemonApi.getReport(activeRunId),
-            daemonApi.getEvidence(activeRunId),
-            daemonApi.getContext(activeRunId),
-            daemonApi.getMemory(activeRunId),
-            daemonApi.getGovernance(activeRunId),
-            daemonApi.getExtensions(activeRunId),
-            daemonApi.getConversation(activeRunId),
+            loadRunResources(activeRunId),
           ]).then(([
             summary,
-            latestArtifacts,
-            latestRecovery,
-            latestReport,
-            latestEvidence,
-            latestContext,
-            latestMemory,
-            latestGovernance,
-            latestExtensions,
-            latestConversation,
+            resources,
           ]) => {
             setRunStatus(summary.status);
             setFinalMessage(summary.final_message || "");
             setTerminationReason(summary.termination_reason || "");
             setLastObservation(summary.last_observation || {});
             setCompletion(summary.completion);
-            setArtifacts(latestArtifacts);
-            setRecovery(latestRecovery);
-            setReport(latestReport);
-            setEvidence(latestEvidence);
-            setContextPack(latestContext);
-            setMemory(latestMemory);
-            setGovernance(latestGovernance);
-            setExtensions(latestExtensions);
-            setConversation(latestConversation);
+            setArtifacts(resources.artifacts);
+            setRecovery(resources.recovery);
+            setReport(resources.report);
+            setEvidence(resources.evidence);
+            setContextPack(resources.context);
+            setMemory(resources.memory);
+            setGovernance(resources.governance);
+            setExtensions(resources.extensions);
+            setConversation(resources.conversation);
             void loadProjectRuns();
           }).catch(() => undefined);
         }
