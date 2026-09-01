@@ -20659,6 +20659,20 @@ button > svg {
   background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
 }
 
+.historySearch:focus-within,
+.workspaceFilesToolbar label:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.historySearch input:focus,
+.historySearch input:focus-visible,
+.workspaceFilesToolbar input:focus,
+.workspaceFilesToolbar input:focus-visible {
+  outline: none;
+}
+
 .historySearch input,
 .historyFilters select,
 .historyCheckbox {
