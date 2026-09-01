@@ -13,7 +13,8 @@
     "desktop:sidecar": "node scripts/build-daemon-sidecar.mjs",
     "desktop:build": "npm run desktop:sidecar && tauri build --config src-tauri/tauri.prod.conf.json",
     "check:i18n": "node scripts/check-i18n.mjs",
-    "check": "npm run check:i18n && npm run build"
+    "check:transcript": "node scripts/check-transcript.mjs",
+    "check": "npm run check:i18n && npm run check:transcript && npm run build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
