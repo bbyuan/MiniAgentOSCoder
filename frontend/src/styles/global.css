@@ -23988,3 +23988,359 @@ summary:focus-visible {
     grid-template-columns: 28px minmax(0, 1fr) 18px;
   }
 }
+
+/* Run surface v4: one calm progress card, with audit details tucked inside it. */
+.productContent .runSimpleLayout .runStatusDeck {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 64%, transparent);
+  border-left: 3px solid var(--accent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 24%, var(--surface)) 0, var(--surface-raised) 96px),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 24px 68px rgba(15, 23, 42, 0.065);
+}
+
+.productContent .runSimpleLayout .runStatusDeck > header {
+  min-height: 58px;
+  padding: 14px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusIdentity > span {
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 74%, var(--surface));
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .runStatusIdentity h2 {
+  font-size: 18px;
+  font-weight: 780;
+}
+
+.productContent .runSimpleLayout .runStatusDeck > header button {
+  min-height: 34px;
+  padding-inline: 12px;
+  border-color: color-mix(in srgb, var(--border) 68%, transparent);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  box-shadow: none;
+}
+
+.productContent .runSimpleLayout .runStatusDeck > header button:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+}
+
+.productContent .runSimpleLayout .runStatusCurrent {
+  padding: 22px 22px 12px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus {
+  max-width: none;
+  padding-left: 16px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus::before {
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--success) 78%, var(--accent)));
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus small {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus strong {
+  margin-top: 3px;
+  font-size: 20px;
+  font-weight: 790;
+}
+
+.productContent .runSimpleLayout .runStatusCurrentFocus span {
+  max-width: 720px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.productContent .runSimpleLayout .runStatusTimeline {
+  padding: 0 22px 18px;
+}
+
+.productContent .runSimpleLayout .runStatusStepSummary {
+  margin-bottom: 8px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 14px;
+}
+
+.productContent .runSimpleLayout .runStatusStepSummary span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.productContent .runSimpleLayout .runStatusStepSummary i {
+  height: 5px;
+  background: color-mix(in srgb, var(--border) 64%, transparent);
+}
+
+.productContent .runSimpleLayout .runStepDetails > summary {
+  width: fit-content;
+  min-height: 30px;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.productContent .runSimpleLayout .runStepDetails > summary:hover {
+  color: var(--accent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessInline {
+  margin-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-subtle) 34%, transparent), transparent 80px);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessHeader {
+  min-height: 54px;
+  padding: 0 22px;
+  background: transparent;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle:hover {
+  color: var(--accent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle > svg {
+  order: 2;
+  margin-left: 2px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle span {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle strong {
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessToggle small {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+  max-height: 270px;
+  padding: 0 22px 20px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessList::before {
+  top: 12px;
+  bottom: 24px;
+  left: 36px;
+  background: color-mix(in srgb, var(--border-strong) 38%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem {
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessItem > .eventIcon {
+  width: 30px;
+  height: 30px;
+  margin-top: 2px;
+  border-color: color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessBody {
+  padding: 0 0 12px;
+  border-bottom-color: color-mix(in srgb, var(--border) 48%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead {
+  align-items: center;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead strong {
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessLead time {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .agentProcessBody > p {
+  max-width: 820px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips {
+  margin-top: 8px;
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityChips em {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityOutput {
+  border: 0;
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+}
+
+.productContent .runSimpleLayout .runStatusDeck .activityOutput > summary {
+  min-height: 28px;
+  padding-inline: 9px;
+}
+
+/* Completed result v4: compact result summary with lightweight follow-up disclosures. */
+.completionSummary.tone-completed {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-left: 3px solid var(--success);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--success-soft) 32%, var(--surface)) 0, var(--surface-raised) 104px),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 22px 62px rgba(15, 23, 42, 0.06);
+}
+
+.completionSummary.tone-completed .completionLead {
+  min-height: 84px;
+  padding: 20px 22px 18px;
+  gap: 16px;
+}
+
+.completionSummary.tone-completed .completionLead > svg {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+}
+
+.completionSummary.tone-completed .completionLead strong {
+  font-size: clamp(22px, 1.8vw, 28px);
+  font-weight: 790;
+}
+
+.completionSummary.tone-completed .completionSignals,
+.completionSummary.tone-completed .completionDetails,
+.completionSummary.tone-completed .completionEvidenceDisclosure {
+  margin: 0 22px;
+}
+
+.completionSummary.tone-completed .completionSignals > div {
+  min-height: 48px;
+  padding-block: 8px;
+}
+
+.completionSummary.tone-completed .completionDetails,
+.completionSummary.tone-completed .completionEvidenceDisclosure {
+  border-top-color: color-mix(in srgb, var(--border) 48%, transparent);
+}
+
+.completionSummary.tone-completed .completionDetails summary,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  min-height: 56px;
+  margin-inline: -8px;
+  padding-inline: 8px;
+}
+
+.completionSummary.tone-completed .completionDetails summary {
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+}
+
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary {
+  grid-template-columns: 30px minmax(0, 1fr) auto 16px;
+}
+
+.completionSummary.tone-completed .completionDetails summary:hover,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary:hover {
+  background: color-mix(in srgb, var(--success-soft) 44%, transparent);
+}
+
+.completionSummary.tone-completed .completionDisclosureTitle,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary strong {
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.completionSummary.tone-completed .completionDisclosureCue {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.completionSummary.tone-completed .completionDetails summary:hover .completionDisclosureCue,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary:hover .completionDisclosureCue,
+.completionSummary.tone-completed .completionDetails summary:hover > svg,
+.completionSummary.tone-completed .completionEvidenceDisclosure > summary:hover > svg:last-child {
+  color: var(--success);
+}
+
+@media (max-width: 640px) {
+  .productContent .runSimpleLayout .runStatusDeck > header {
+    align-items: flex-start;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck > header button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .productContent .runSimpleLayout .runStatusCurrent,
+  .productContent .runSimpleLayout .runStatusTimeline,
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessHeader,
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessList {
+    padding-inline: 18px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessToggle span {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .productContent .runSimpleLayout .runStatusDeck .agentProcessLead {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .productContent .runSimpleLayout .completionSummary.tone-completed .completionLead {
+    min-height: 74px;
+    padding: 18px;
+  }
+
+  .completionSummary.tone-completed .completionSignals,
+  .completionSummary.tone-completed .completionDetails,
+  .completionSummary.tone-completed .completionEvidenceDisclosure {
+    margin-inline: 18px;
+  }
+}
