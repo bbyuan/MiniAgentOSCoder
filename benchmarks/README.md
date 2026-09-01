@@ -16,4 +16,14 @@ cd backend
 .venv/bin/python -m app.evaluation.benchmark --provider configured
 ```
 
+Scenario catalog:
+
+```text
+cd backend
+.venv/bin/python -m app.evaluation.benchmark --list
+# or: .venv/bin/python -m app.cli benchmark --list
+```
+
+The catalog prints the manifest path, supported variants, task ids, target fixture projects, validation commands, expected changed files, and fixture step counts without running any benchmark.
+
 Use `--variant full_context` or `--variant task_only` to select an ablation. Fixture results prove that the Harness and governed execution path are reproducible; they do not measure general model quality. Reports are written to `benchmarks/results/latest.json` and `latest.md` plus a timestamped directory.

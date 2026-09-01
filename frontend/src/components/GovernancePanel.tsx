@@ -29,6 +29,12 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
   const deniedTools = (governance?.tools ?? []).filter((tool) => tool.effective_policy === "deny").length;
   const executions = governance?.executions ?? [];
   const failedExecutions = executions.filter((execution) => execution.timed_out || (execution.returncode ?? 0) !== 0).length;
+  const hardLimits = governance?.capabilities.hard_limits?.length
+    ? governance.capabilities.hard_limits
+    : governance?.capabilities.guarantees ?? [];
+  const notClaimed = governance?.capabilities.not_claimed?.length
+    ? governance.capabilities.not_claimed
+    : governance?.capabilities.limitations ?? [];
 
   useEffect(() => {
     if (!governance) return;
@@ -117,8 +123,8 @@ export function GovernancePanel({ governance, busy, setupMode = false, onSave }:
               <div className="governanceTechnicalBody">
                 <div className="sandboxBackend"><Gauge size={13} /><span>{t("governance.backend")}</span><code>{governance?.capabilities.backend ?? "-"}</code></div>
                 <div className="capabilityColumns">
-                  <div><span>{t("governance.guarantees")}</span>{(governance?.capabilities.guarantees ?? []).map((item) => <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>)}</div>
-                  <div><span>{t("governance.limitations")}</span>{(governance?.capabilities.limitations ?? []).map((item) => <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>)}</div>
+                  <div><span>{t("governance.enforced")}</span>{hardLimits.map((item) => <p key={item}><Check size={11} />{translateKnownText(locale, item)}</p>)}</div>
+                  <div><span>{t("governance.notClaimed")}</span>{notClaimed.map((item) => <p key={item}><CircleSlash2 size={11} />{translateKnownText(locale, item)}</p>)}</div>
                 </div>
                 <div className="governanceRuntimeSummary">
                   <span>{failedExecutions > 0 ? <CircleAlert size={13} /> : <Check size={13} />}{t("governance.executions")}</span>

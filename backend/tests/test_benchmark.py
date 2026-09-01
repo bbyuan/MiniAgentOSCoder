@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.evaluation.benchmark import DEFAULT_CONFIG, DEFAULT_MANIFEST, load_benchmark_tasks, run_benchmark
+from app.evaluation.benchmark import DEFAULT_CONFIG, DEFAULT_MANIFEST, describe_benchmark_catalog, load_benchmark_tasks, run_benchmark
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -52,6 +52,20 @@ def test_benchmark_can_select_one_variant(tmp_path: Path) -> None:
     assert report["variants"] == ["task_only"]
     assert report["deltas"] is None
     assert len(report["results"]) == 2
+
+
+def test_benchmark_catalog_lists_runnable_scenarios() -> None:
+    catalog = describe_benchmark_catalog(DEFAULT_MANIFEST)
+
+    assert catalog["schema_version"] == "v1"
+    assert catalog["task_count"] == 2
+    assert catalog["variants"] == ["full_context", "task_only"]
+    first = catalog["tasks"][0]
+    assert first["id"] == "py-add-001"
+    assert first["mode"] == "Bugfix"
+    assert first["test_command"] == "python3 -B -m unittest discover -v"
+    assert first["expected_changed_files"] == ["calculator.py"]
+    assert first["fixture_steps"] == 5
 
 
 def test_benchmark_manifest_rejects_duplicate_ids(tmp_path: Path) -> None:

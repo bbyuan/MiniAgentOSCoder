@@ -108,6 +108,29 @@ def run_benchmark(
     return report
 
 
+def describe_benchmark_catalog(manifest_path: str | Path = DEFAULT_MANIFEST) -> dict[str, object]:
+    manifest = Path(manifest_path).expanduser().resolve()
+    tasks = load_benchmark_tasks(manifest)
+    return {
+        "schema_version": "v1",
+        "manifest": str(manifest),
+        "task_count": len(tasks),
+        "variants": list(VARIANTS),
+        "tasks": [
+            {
+                "id": task.task_id,
+                "project": task.project,
+                "mode": task.mode,
+                "task": task.task,
+                "test_command": " ".join(task.test_argv),
+                "expected_changed_files": task.expected_changed_files,
+                "fixture_steps": len(task.fixture_actions),
+            }
+            for task in tasks
+        ],
+    }
+
+
 def load_benchmark_tasks(path: str | Path) -> list[BenchmarkTask]:
     manifest = Path(path)
     tasks: list[BenchmarkTask] = []
@@ -416,11 +439,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--provider", choices=["fixture", "configured"], default="fixture")
     parser.add_argument("--variant", action="append", choices=list(VARIANTS))
+    parser.add_argument("--list", action="store_true", help="List benchmark scenarios without running them")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.list:
+        print(json.dumps(describe_benchmark_catalog(args.manifest), ensure_ascii=False, indent=2))
+        return 0
     report = run_benchmark(
         manifest_path=args.manifest,
         output_dir=args.output,

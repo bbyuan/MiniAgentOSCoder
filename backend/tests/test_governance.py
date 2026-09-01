@@ -133,3 +133,5 @@ def test_sandbox_capabilities_do_not_overclaim_kernel_isolation() -> None:
     assert "sanitized environment" in capabilities.guarantees
     assert "bounded returned output" in capabilities.guarantees
     assert "no kernel-level network namespace" in capabilities.limitations
+    assert "wall-time termination" in capabilities.hard_limits
+    assert "kernel-level network isolation" in capabilities.not_claimed

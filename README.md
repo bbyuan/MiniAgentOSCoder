@@ -232,6 +232,8 @@ Offline Benchmark and Context ablation:
 ```text
 make benchmark
 # or: cd backend && .venv/bin/python -m app.cli benchmark
+# inspect the available scenarios first:
+cd backend && .venv/bin/python -m app.cli benchmark --list
 ```
 
 The versioned tasks under `benchmarks/` run only in temporary fixture copies. The default Fixture Provider verifies the reproducibility of AgentRunLoop, Tool Gateway, Guard, Sandbox, Patch Pipeline, independent final tests, and report generation across `full_context` and `task_only`; it is deliberately labeled as runtime evidence rather than model quality. Use `--provider configured` only when you intentionally want to evaluate the locally configured model. JSON and Markdown reports include aligned metrics and candidate-minus-baseline deltas.

@@ -89,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--config")
     benchmark.add_argument("--provider", choices=["fixture", "configured"], default="fixture")
     benchmark.add_argument("--variant", action="append", choices=["full_context", "task_only"])
+    benchmark.add_argument("--list", action="store_true", help="List benchmark scenarios without running them")
     return parser
 
 
@@ -140,8 +141,10 @@ def execute(args: argparse.Namespace, client: DaemonClient) -> dict[str, Any]:
         suffix = f"?project_id={args.project}" if args.project else ""
         return client.request("GET", f"/evaluation/summary{suffix}")
     if command == "benchmark":
-        from app.evaluation.benchmark import DEFAULT_CONFIG, DEFAULT_MANIFEST, DEFAULT_OUTPUT, VARIANTS, run_benchmark
+        from app.evaluation.benchmark import DEFAULT_CONFIG, DEFAULT_MANIFEST, DEFAULT_OUTPUT, VARIANTS, describe_benchmark_catalog, run_benchmark
 
+        if args.list:
+            return describe_benchmark_catalog(args.manifest or DEFAULT_MANIFEST)
         return run_benchmark(
             manifest_path=args.manifest or DEFAULT_MANIFEST,
             output_dir=args.output or DEFAULT_OUTPUT,

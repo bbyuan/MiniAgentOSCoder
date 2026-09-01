@@ -53,6 +53,8 @@ class SandboxCapabilities(Serializable):
     backend: str
     guarantees: list[str] = field(default_factory=list)
     limitations: list[str] = field(default_factory=list)
+    hard_limits: list[str] = field(default_factory=list)
+    not_claimed: list[str] = field(default_factory=list)
     profiles: list[str] = field(default_factory=lambda: [profile.value for profile in SandboxProfile])
 
 
@@ -69,4 +71,3 @@ class SandboxExecution(Serializable):
     timed_out: bool = False
     output_truncated: bool = False
     termination_reason: str = "completed"
-

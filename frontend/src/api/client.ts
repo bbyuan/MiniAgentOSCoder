@@ -374,6 +374,8 @@ export interface GovernanceResponse {
     backend: string;
     guarantees: string[];
     limitations: string[];
+    hard_limits?: string[];
+    not_claimed?: string[];
     profiles: SandboxProfile[];
   };
   contract: {

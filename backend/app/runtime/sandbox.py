@@ -51,6 +51,19 @@ class SandboxExecutor:
                 "no syscall filtering",
                 "no read-only filesystem mount",
             ],
+            hard_limits=[
+                "argv execution without a shell",
+                "workspace-scoped current directory",
+                "sanitized environment",
+                "run-private HOME and TMPDIR",
+                "wall-time termination",
+                "bounded returned output",
+            ],
+            not_claimed=[
+                "kernel-level network isolation",
+                "syscall filtering",
+                "read-only filesystem mounts",
+            ],
         )
 
     def validate_argv(self, argv: list[str]) -> None:

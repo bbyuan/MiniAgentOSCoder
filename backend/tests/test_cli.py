@@ -112,3 +112,17 @@ def test_cli_benchmark_runs_locally_without_daemon_calls(tmp_path, monkeypatch) 
     assert captured["output_dir"] == str(tmp_path)
     assert captured["variants"] == ["full_context"]
     assert client.calls == []
+
+
+def test_cli_benchmark_lists_scenarios_without_daemon_calls(monkeypatch) -> None:
+    def fake_catalog(manifest_path):
+        return {"manifest": str(manifest_path), "task_count": 2, "tasks": []}
+
+    monkeypatch.setattr("app.evaluation.benchmark.describe_benchmark_catalog", fake_catalog)
+    client = FakeClient()
+    args = build_parser().parse_args(["benchmark", "--list", "--manifest", "benchmarks/tasks.jsonl"])
+
+    result = execute(args, client)
+
+    assert result == {"manifest": "benchmarks/tasks.jsonl", "task_count": 2, "tasks": []}
+    assert client.calls == []
