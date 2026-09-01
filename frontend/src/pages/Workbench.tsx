@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowUp, Check, CheckCircle2, ChevronDown, FileDiff, FolderOpen, RefreshCw, Server, UserRound, WifiOff, X } from "lucide-react";
 import {
   daemonApi,
@@ -57,27 +57,10 @@ import { TaskSetup } from "../components/TaskSetup";
 import { TopBar } from "../components/TopBar";
 import { WorkspaceFilesDialog, type WorkspaceChangeSet } from "../components/WorkspaceFilesDialog";
 import { chooseProjectDirectory, isDesktopHost, saveDesktopModelCredential } from "../desktop/runtime";
-import { localizeErrorMessage, translateKnownText, translateMode, type TranslationKey } from "../i18n";
+import { localizeErrorMessage, translateMode } from "../i18n";
 import { usePreferences } from "../preferences";
+import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
-
-const runCopy: Record<string, { title: TranslationKey; description: TranslationKey }> = {
-  running: { title: "run.runningTitle", description: "run.runningDescription" },
-  waiting_approval: { title: "run.approvalTitle", description: "run.approvalDescription" },
-  applying_patch: { title: "run.applyingTitle", description: "run.applyingDescription" },
-  testing: { title: "run.testingTitle", description: "run.testingDescription" },
-  repairing: { title: "run.repairingTitle", description: "run.repairingDescription" },
-  cancellation_requested: { title: "run.stoppingTitle", description: "run.runningDescription" },
-  completed: { title: "run.completedTitle", description: "run.completedDescription" },
-  failed: { title: "run.failedTitle", description: "run.failedDescription" },
-  cancelled: { title: "run.cancelledTitle", description: "run.cancelledDescription" },
-};
-
-const followUpTemplates: TranslationKey[] = [
-  "session.template.fixFailure",
-  "session.template.addTests",
-  "session.template.explainChanges",
-];
 
 export function Workbench() {
   const { locale, t } = usePreferences();
@@ -172,51 +155,32 @@ export function Workbench() {
     };
   }, [project?.project_id, mode]);
 
-  const displayContract = useMemo(() => {
-    if (!contract) return { effects: [], policies: [], budget: undefined };
-    return {
-      effects: contract.effects.allow,
-      policies: Object.entries(contract.policies).map(([name, value]) => ({ name, value })),
-      budget: contract.cost_envelope,
-    };
-  }, [contract]);
-
-  const displayPlan = artifacts?.plan ?? [];
-  const displayDiff = artifacts?.diff_summary ?? { files: 0, insertions: 0, deletions: 0, status: "Not run" };
-  const displayTests = artifacts?.test_summary ?? { command: "-", status: "Not run", passed: 0, failed: 0 };
-  const runIsActive = [
-    "running",
-    "waiting_approval",
-    "applying_patch",
-    "testing",
-    "repairing",
-    "cancellation_requested",
-  ].includes(runStatus);
-  const runIsPrepared = Boolean(runId && runStatus === "planning");
-  const displayStatus = runId ? runStatus : connection;
-  const copy = runId
-    ? runCopy[runStatus] ?? { title: "run.readyTitle" as TranslationKey, description: "run.readyDescription" as TranslationKey }
-    : { title: "run.idleTitle" as TranslationKey, description: "run.idleDescription" as TranslationKey };
-  const runTitle = t(copy.title);
-  const displayTask = translateKnownText(locale, task);
-
-  const terminal = ["completed", "failed", "cancelled"].includes(runStatus);
-  const visibleFollowUpTemplates = runStatus === "completed"
-    ? followUpTemplates.filter((template) => template !== "session.template.fixFailure")
-    : followUpTemplates.filter((template) => template !== "session.template.addTests");
-  const currentTurnIndex = conversation?.turns.find((turn) => turn.run_id === runId)?.turn_index ?? 0;
-  const steeringMessages = useMemo(() => {
-    const applied = new Set(traceEvents.flatMap((event) => {
-      const message = event.payload.message;
-      return event.event === "user.guidance.applied" && typeof message === "string" ? [message] : [];
-    }));
-    return traceEvents.flatMap((event) => {
-      const message = event.payload.message;
-      return event.event === "user.guidance.queued" && typeof message === "string"
-        ? [{ message, applied: applied.has(message) }]
-        : [];
-    });
-  }, [traceEvents]);
+  const {
+    currentTurnIndex,
+    displayContract,
+    displayDiff,
+    displayPlan,
+    displayStatus,
+    displayTask,
+    displayTests,
+    runIsActive,
+    runIsPrepared,
+    runTitle,
+    steeringMessages,
+    terminal,
+    visibleFollowUpTemplates,
+  } = useRunViewModel({
+    artifacts,
+    connection,
+    contract,
+    conversation,
+    locale,
+    runId,
+    runStatus,
+    task,
+    traceEvents,
+    t,
+  });
 
   async function refreshConnection() {
     setConnection("checking");

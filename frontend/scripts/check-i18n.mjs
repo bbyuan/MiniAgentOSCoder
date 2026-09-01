@@ -16,15 +16,20 @@ if (enStart === -1 || enEnd === -1 || zhStart === -1 || zhEnd === -1) {
 
 const enKeys = extractKeys(source.slice(enStart, enEnd));
 const zhKeys = extractKeys(source.slice(zhStart, zhEnd));
+const enCjkEntries = extractEntries(source.slice(enStart, enEnd))
+  .filter((entry) => /[\u3400-\u9fff]/.test(entry.value));
 
 const missingZh = enKeys.unique.filter((key) => !zhKeys.set.has(key));
 const extraZh = zhKeys.unique.filter((key) => !enKeys.set.has(key));
 const duplicated = [...enKeys.duplicates, ...zhKeys.duplicates];
 
-if (missingZh.length || extraZh.length || duplicated.length) {
+if (missingZh.length || extraZh.length || duplicated.length || enCjkEntries.length) {
   if (missingZh.length) console.error(`Missing zh keys:\n${missingZh.map((key) => `  - ${key}`).join("\n")}`);
   if (extraZh.length) console.error(`Extra zh keys:\n${extraZh.map((key) => `  - ${key}`).join("\n")}`);
   if (duplicated.length) console.error(`Duplicate keys:\n${duplicated.map((key) => `  - ${key}`).join("\n")}`);
+  if (enCjkEntries.length) {
+    console.error(`English strings contain CJK text:\n${enCjkEntries.map((entry) => `  - ${entry.key}: ${entry.value}`).join("\n")}`);
+  }
   process.exit(1);
 }
 
@@ -39,6 +44,11 @@ function extractKeys(block) {
     set: new Set(counts.keys()),
     duplicates: [...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key),
   };
+}
+
+function extractEntries(block) {
+  return [...block.matchAll(/^\s*"([^"]+)":\s*"((?:\\.|[^"\\])*)",?$/gm)]
+    .map((match) => ({ key: match[1], value: match[2] }));
 }
 
 function fail(message) {
