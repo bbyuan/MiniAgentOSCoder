@@ -24270,8 +24270,8 @@ summary:focus-visible {
 .completionSummary.tone-completed .completionDetails summary,
 .completionSummary.tone-completed .completionEvidenceDisclosure > summary {
   min-height: 56px;
-  margin-inline: -8px;
-  padding-inline: 8px;
+  margin-inline: 0;
+  padding-inline: 0 20px;
 }
 
 .completionSummary.tone-completed .completionDetails summary {
