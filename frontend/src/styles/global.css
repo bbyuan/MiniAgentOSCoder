@@ -21765,8 +21765,8 @@ button > svg {
 }
 
 .completionFullMessage.markdownDocument {
-  max-height: 420px;
-  overflow-x: hidden;
+  max-height: none;
+  overflow: visible;
   padding: 16px 18px 18px;
   color: var(--text-secondary);
   font-size: 13px;

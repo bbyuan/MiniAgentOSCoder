@@ -187,7 +187,8 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  overflow-x: hidden;
+  max-height: none;
+  overflow: visible;
   padding: 14px 12px 18px;
 }
 

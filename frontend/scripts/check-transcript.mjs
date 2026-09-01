@@ -192,10 +192,11 @@ assert(
   "Run surface styles should load after global styles.",
 );
 assert(globalStylesSource.includes("overflow-wrap: anywhere;"), "Markdown summaries should wrap long inline code and file names.");
-assert(globalStylesSource.includes("overflow-x: hidden;"), "Completion summaries should avoid horizontal overflow.");
+assert(globalStylesSource.includes("max-height: none;"), "Expanded completion summaries should not be clipped by an internal max height.");
 assert(runSurfaceSource.includes("Run surface v6"), "Run surface overrides should be consolidated in the dedicated run surface stylesheet.");
 assert(runSurfaceSource.includes("completionFullMessage.markdownDocument > *"), "Run-surface completion details should constrain markdown children.");
 assert(runSurfaceSource.includes("completionFullMessage.markdownDocument code"), "Run-surface completion details should wrap inline code tokens.");
+assert(runSurfaceSource.includes("max-height: none;"), "Run-surface completion details should stay fully expanded.");
 assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should align with the visible icon column.");
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
 assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
