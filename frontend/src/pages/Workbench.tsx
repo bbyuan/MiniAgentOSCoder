@@ -1407,6 +1407,7 @@ export function Workbench() {
                 </button>
               </div>
               <div className="followUpTemplates" aria-label={t("session.templates")}>
+                <span>{t("session.templatesShort")}</span>
                 {visibleFollowUpTemplates.map((template) => (
                   <button
                     type="button"

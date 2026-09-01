@@ -24570,21 +24570,30 @@ summary:focus-visible {
 }
 
 .productContent .runSimpleLayout .followUpTemplates {
-  margin-top: 9px;
+  margin-top: 10px;
   padding-left: 2px;
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  align-items: center;
+  gap: 6px;
+}
+
+.productContent .runSimpleLayout .followUpTemplates > span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 28px;
+  white-space: nowrap;
 }
 
 .productContent .runSimpleLayout .followUpTemplates button {
   width: auto;
   min-height: 28px;
-  padding: 0 10px;
+  padding: 0 7px;
   border: 0;
   border-radius: 7px;
   color: var(--text-secondary);
-  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
+  background: transparent;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -24592,7 +24601,7 @@ summary:focus-visible {
 
 .productContent .runSimpleLayout .followUpTemplates button:hover:not(:disabled) {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 58%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 44%, transparent);
 }
 
 @media (max-width: 640px) {
