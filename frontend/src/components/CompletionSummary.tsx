@@ -128,27 +128,22 @@ export function CompletionSummary({
         </section>
       ) : null}
       {showFinalChangeReview ? (
-        <section className={`finalChangeReview state-${changeDecision}`}>
-          <header>
-            <FileDiff size={18} />
-            <div>
+        <section className={`completionChangeLink state-${changeDecision}`}>
+          <div>
+            <FileDiff size={16} />
+            <span>
               <strong>{t(changeDecision === "accepted" ? "completion.changeReview.acceptedTitle" : changeDecision === "reverted" ? "completion.changeReview.revertedTitle" : "completion.changeReview.title")}</strong>
-              <p>{t(changeDecision === "accepted" ? "completion.changeReview.acceptedHint" : changeDecision === "reverted" ? "completion.changeReview.revertedHint" : "completion.changeReview.hint")}</p>
-            </div>
-          </header>
-          <div className="finalChangeStats">
+              <small>{t(changeDecision === "accepted" ? "completion.changeReview.acceptedHint" : changeDecision === "reverted" ? "completion.changeReview.revertedHint" : "completion.changeReview.hint")}</small>
+            </span>
+          </div>
+          <span className="completionChangeStats">
             <span>{t("diff.files", { count: diff?.files ?? 0 })}</span>
             <b className="positive">+{diff?.insertions ?? 0}</b>
             <b className="negative">-{diff?.deletions ?? 0}</b>
-          </div>
-          <div className="finalChangeActions">
-            {onInspectChanges ? (
-              <button type="button" className="secondary" onClick={onInspectChanges}>
-                <FileDiff size={15} />
-                {t("completion.changeReview.inspect")}
-              </button>
-            ) : null}
-          </div>
+          </span>
+          <button type="button" onClick={onInspectChanges}>
+            {t("completion.changeReview.inspect")}
+          </button>
         </section>
       ) : null}
       {showSignals ? (

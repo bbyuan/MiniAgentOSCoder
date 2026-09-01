@@ -21563,10 +21563,10 @@ button > svg {
   order: 5;
 }
 
-.finalChangeReview {
+.completionChangeLink {
   order: 1;
   min-width: 0;
-  padding: 12px 2px 2px;
+  padding: 12px 0 2px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
@@ -21576,46 +21576,35 @@ button > svg {
   background: transparent;
 }
 
-.finalChangeReview.state-accepted {
-  border-color: var(--hairline);
-  background: transparent;
-}
-
-.finalChangeReview.state-reverted {
-  border-color: var(--hairline);
-  background: transparent;
-}
-
-.finalChangeReview > header {
+.completionChangeLink > div {
   min-width: 0;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
 
-.finalChangeReview > header > svg {
-  width: 32px;
-  height: 32px;
+.completionChangeLink > div > svg {
+  width: 30px;
+  height: 30px;
   padding: 7px;
-  border: 0;
   border-radius: 8px;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+  background: color-mix(in srgb, var(--accent-soft) 44%, transparent);
 }
 
-.finalChangeReview.state-accepted > header > svg {
+.completionChangeLink.state-accepted > div > svg {
   color: var(--success);
-  background: color-mix(in srgb, var(--success-soft) 56%, var(--surface));
+  background: color-mix(in srgb, var(--success-soft) 58%, transparent);
 }
 
-.finalChangeReview.state-reverted > header > svg {
+.completionChangeLink.state-reverted > div > svg {
   color: var(--warning);
-  background: color-mix(in srgb, var(--warning-soft) 60%, var(--surface));
+  background: color-mix(in srgb, var(--warning-soft) 62%, transparent);
 }
 
-.finalChangeReview strong,
-.finalChangeReview p {
+.completionChangeLink strong,
+.completionChangeLink small {
   min-width: 0;
   overflow: hidden;
   margin: 0;
@@ -21623,19 +21612,22 @@ button > svg {
   white-space: nowrap;
 }
 
-.finalChangeReview strong {
+.completionChangeLink strong {
+  display: block;
   color: var(--text);
   font-size: 14px;
   font-weight: 800;
 }
 
-.finalChangeReview p {
-  margin-top: 4px;
+.completionChangeLink small {
+  display: block;
+  margin-top: 2px;
   color: var(--text-secondary);
   font-size: 12px;
+  font-weight: 560;
 }
 
-.finalChangeStats {
+.completionChangeStats {
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -21645,12 +21637,7 @@ button > svg {
   white-space: nowrap;
 }
 
-.finalChangeActions {
-  display: inline-flex;
-  gap: 8px;
-}
-
-.finalChangeActions button {
+.completionChangeLink > button {
   min-height: 34px;
   padding: 0 13px;
   display: inline-flex;
@@ -21666,15 +21653,9 @@ button > svg {
   white-space: nowrap;
 }
 
-.finalChangeActions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
-}
-
-.finalChangeReview > small {
-  grid-column: 1 / -1;
-  color: var(--text-tertiary);
-  font-size: 12px;
+.completionChangeLink > button:hover {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 52%, var(--surface));
 }
 
 .completionDetails {
@@ -21685,15 +21666,18 @@ button > svg {
 }
 
 @media (max-width: 920px) {
-  .finalChangeReview {
+  .completionChangeLink {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .finalChangeStats,
-  .finalChangeActions {
+  .completionChangeStats {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .completionChangeLink > button {
+    width: max-content;
   }
 }
 
