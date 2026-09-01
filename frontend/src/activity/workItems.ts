@@ -1,5 +1,6 @@
 import type { TraceEvent } from "../api/client";
 import { type Locale, type TranslationKey, translateKnownText } from "../i18n";
+import { focusedChangePath, focusedPatchHunk } from "../run/patchFocus";
 
 export type WorkItemKind =
   | "action"
@@ -51,6 +52,7 @@ export interface WorkItemChangeSet {
   patch: string;
   changedFiles: string[];
   focusPath?: string;
+  focusHunk?: string;
   insertions: number;
   deletions: number;
   kind: "pending" | "applied";
@@ -430,11 +432,14 @@ function activityChangeSet(event: TraceEvent, t: Translator): WorkItemChangeSet 
   const target = asRecord(approval?.target);
   const patch = stringValue(target?.patch);
   if (!patch) return undefined;
+  const changedFiles = arrayOfStrings(target?.files);
+  const focusPath = focusedChangePath(patch, changedFiles);
   return {
     title: t("workspaceFiles.pendingChanges"),
     patch,
-    changedFiles: arrayOfStrings(target?.files),
-    focusPath: focusedChangePath(patch, arrayOfStrings(target?.files)),
+    changedFiles,
+    focusPath,
+    focusHunk: focusedPatchHunk(patch, focusPath),
     insertions: Number(numberValue(target?.additions) ?? 0),
     deletions: Number(numberValue(target?.deletions) ?? 0),
     kind: "pending",
@@ -457,19 +462,6 @@ function numberValue(value: unknown): string | undefined {
 
 function arrayOfStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function focusedChangePath(patch: string, changedFiles: string[]): string | undefined {
-  return changedFiles[0] ?? firstPatchPath(patch);
-}
-
-function firstPatchPath(patch: string): string | undefined {
-  const plusPath = patch.match(/^\+\+\+\s+b\/(.+)$/m)?.[1];
-  if (plusPath && plusPath !== "/dev/null") return plusPath.trim();
-  const diffPath = patch.match(/^diff --git\s+a\/\S+\s+b\/(.+)$/m)?.[1];
-  if (diffPath && diffPath !== "/dev/null") return diffPath.trim();
-  const minusPath = patch.match(/^---\s+a\/(.+)$/m)?.[1];
-  return minusPath && minusPath !== "/dev/null" ? minusPath.trim() : undefined;
 }
 
 function compactText(value: string, max = 128): string {

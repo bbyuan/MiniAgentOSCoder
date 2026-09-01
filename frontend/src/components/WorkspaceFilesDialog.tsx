@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, Check, FileCode2, FileDiff, FileText, Folder, FolderTree, LoaderCircle, RefreshCw, RotateCcw, Search, X } from "lucide-react";
 import { daemonApi, type ChangeReview, type OpenProjectResponse, type WorkspaceFileContent, type WorkspaceFileItem } from "../api/client";
 import { localizeErrorMessage, type TranslationKey } from "../i18n";
@@ -10,6 +10,7 @@ export interface WorkspaceChangeSet {
   patch: string;
   changedFiles: string[];
   focusPath?: string;
+  focusHunk?: string;
   insertions: number;
   deletions: number;
   kind?: "pending" | "applied";
@@ -44,6 +45,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
   const [error, setError] = useState("");
+  const focusedHunkRef = useRef<HTMLElement | null>(null);
 
   const files = useMemo(() => items.filter((item) => item.kind === "file"), [items]);
   const changed = useMemo(() => buildDiffFiles(changeSet?.patch ?? "", changeSet?.changedFiles ?? []), [changeSet]);
@@ -74,6 +76,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
   }, [changedByPath, displayFiles, fileScope, hasChanges]);
   const selectedItem = displayFiles.find((item) => item.path === selectedPath);
   const selectedDiff = changedByPath.get(selectedPath);
+  const focusedHunkIndex = selectedDiff ? diffFocusIndex(selectedDiff.lines, changeSet?.focusHunk) : -1;
   const reviewStatus = normalizeReviewStatus(reviewActions?.review?.status);
   const canReview = hasChanges && Boolean(reviewActions?.onAccept || reviewActions?.onReject);
   const isPendingPatch = changeSet?.kind === "pending";
@@ -89,7 +92,7 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
     setFileScope(changeSet ? "changes" : "all");
     setContent(undefined);
     void loadFiles("");
-  }, [open, project?.project_id, changeSet?.title, changeSet?.focusPath]);
+  }, [open, project?.project_id, changeSet?.title, changeSet?.patch, changeSet?.focusPath, changeSet?.focusHunk]);
 
   useEffect(() => {
     if (!open || !project) return;
@@ -121,6 +124,14 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
       cancelled = true;
     };
   }, [open, project?.project_id, selectedPath, files]);
+
+  useEffect(() => {
+    if (!open || previewMode !== "diff" || focusedHunkIndex < 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      focusedHunkRef.current?.scrollIntoView({ block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, previewMode, selectedPath, focusedHunkIndex, changeSet?.focusHunk]);
 
   if (!open || !project) return null;
 
@@ -257,7 +268,11 @@ export function WorkspaceFilesDialog({ open, project, changeSet, reviewActions, 
                     {selectedDiff.hasPatch ? (
                       <pre tabIndex={0}>
                         {selectedDiff.lines.map((line, index) => (
-                          <code className={`line-${classifyDiffLine(line)}`} key={`${selectedDiff.path}-${index}-${line}`}>
+                          <code
+                            className={`line-${classifyDiffLine(line)}${index === focusedHunkIndex ? " focusedHunk" : ""}`}
+                            ref={index === focusedHunkIndex ? (node) => { focusedHunkRef.current = node; } : undefined}
+                            key={`${selectedDiff.path}-${index}-${line}`}
+                          >
                             {line || " "}
                           </code>
                         ))}
@@ -358,6 +373,14 @@ function classifyDiffLine(line: string): "add" | "delete" | "meta" | "context" {
   if (line.startsWith("+")) return "add";
   if (line.startsWith("-")) return "delete";
   return "context";
+}
+
+function diffFocusIndex(lines: string[], focusHunk: string | undefined): number {
+  if (focusHunk) {
+    const exact = lines.findIndex((line) => line === focusHunk);
+    if (exact >= 0) return exact;
+  }
+  return lines.findIndex((line) => line.startsWith("@@"));
 }
 
 function normalizeReviewStatus(status: string | undefined): "pending" | "accepted" | "reverted" {

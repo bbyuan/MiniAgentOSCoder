@@ -60,8 +60,6 @@ const ITEM_ICONS: Record<WorkItemKind, LucideIcon> = {
   user: UserRound,
 };
 
-const PHASE_ORDER: WorkItemPhase[] = ["context", "inspect", "change", "validate", "summary"];
-
 function ActivityItem({ item, onInspectChangeSet }: { item: WorkItem; onInspectChangeSet?: (changeSet: WorkItemChangeSet) => void }) {
   const { t } = usePreferences();
   const Icon = ITEM_ICONS[item.kind] ?? Activity;
@@ -159,7 +157,7 @@ export function ActivityFeed({ events, status, embedded = false, onInspectChange
       ) : expanded ? (
         <div className="agentPhaseList">
           {buildPhaseGroups(visibleItems).map((group) => (
-            <details className={`agentPhaseGroup phase-${group.phase}`} open key={group.phase}>
+            <details className={`agentPhaseGroup phase-${group.phase}`} open key={group.key}>
               <summary>
                 <span>{t(`activity.phase.${group.phase}` as TranslationKey)}</span>
                 <small>{t("activity.phaseCount", { count: group.items.length })} · {phaseTimeRange(group.items)}</small>
@@ -177,16 +175,17 @@ export function ActivityFeed({ events, status, embedded = false, onInspectChange
   );
 }
 
-function buildPhaseGroups(items: WorkItem[]): Array<{ phase: WorkItemPhase; items: WorkItem[] }> {
-  const grouped = new Map<WorkItemPhase, WorkItem[]>();
-  items.forEach((item) => {
-    const group = grouped.get(item.phase) ?? [];
-    group.push(item);
-    grouped.set(item.phase, group);
-  });
-  return PHASE_ORDER
-    .filter((phase) => grouped.has(phase))
-    .map((phase) => ({ phase, items: grouped.get(phase) ?? [] }));
+function buildPhaseGroups(items: WorkItem[]): Array<{ key: string; phase: WorkItemPhase; items: WorkItem[] }> {
+  const groups: Array<{ key: string; phase: WorkItemPhase; items: WorkItem[] }> = [];
+  for (const item of items) {
+    const current = groups[groups.length - 1];
+    if (current?.phase === item.phase) {
+      current.items.push(item);
+      continue;
+    }
+    groups.push({ key: `${groups.length}-${item.phase}-${item.time}`, phase: item.phase, items: [item] });
+  }
+  return groups;
 }
 
 function phaseTimeRange(items: WorkItem[]): string {

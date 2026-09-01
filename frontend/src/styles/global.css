@@ -17591,6 +17591,14 @@ button.controlSignal.active {
   background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
 }
 
+.workspaceDiffPreview .focusedHunk {
+  color: var(--accent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 34%, transparent), transparent 28%),
+    color-mix(in srgb, var(--accent-soft) 64%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 .workspaceFilesLoading,
 .workspaceFilesEmpty,
 .workspaceFilePlaceholder,

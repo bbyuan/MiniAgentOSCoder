@@ -8,6 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workItemsSource = readFileSync(resolve(root, "src/activity/workItems.ts"), "utf8");
 const activityFeedSource = readFileSync(resolve(root, "src/components/ActivityFeed.tsx"), "utf8");
 const workspaceFilesSource = readFileSync(resolve(root, "src/components/WorkspaceFilesDialog.tsx"), "utf8");
+const patchFocusSource = readFileSync(resolve(root, "src/run/patchFocus.ts"), "utf8");
 const mainSource = readFileSync(resolve(root, "src/main.tsx"), "utf8");
 const runSurfaceSource = readFileSync(resolve(root, "src/styles/run-surface.css"), "utf8");
 
@@ -23,6 +24,10 @@ const testableWorkItems = workItemsSource
       "type TranslationKey = string;",
       "const translateKnownText = (_locale: Locale, value: string) => value;",
     ].join("\n"),
+  )
+  .replace(
+    'import { focusedChangePath, focusedPatchHunk } from "../run/patchFocus";',
+    patchFocusSource.replace(/export /g, ""),
   );
 
 const compiled = ts.transpileModule(testableWorkItems, {
@@ -125,11 +130,13 @@ assert(patchItems[0].phase === "change", "Patch approvals should appear in the c
 assert(patchItems[0].changeSet?.kind === "pending", "Patch approval events should carry a pending workspace change set.");
 assert(patchItems[0].changeSet?.changedFiles[0] === "calculator.py", "Patch change sets should preserve changed file names.");
 assert(patchItems[0].changeSet?.focusPath === "calculator.py", "Patch change sets should focus the triggering file.");
+assert(patchItems[0].changeSet?.focusHunk === "@@ -1 +1 @@", "Patch change sets should focus the triggering hunk.");
 
 assert(/function MetadataChip/.test(activityFeedSource), "ActivityFeed should keep transcript metadata chips as a dedicated component.");
 assert(activityFeedSource.includes("category-${item.category}"), "ActivityFeed should expose activity categories to the DOM.");
 assert(activityFeedSource.includes("agentPhaseGroup"), "The transcript should render collapsible phase groups.");
 assert(activityFeedSource.includes("buildPhaseGroups(visibleItems)"), "The transcript should group activity by phase.");
+assert(activityFeedSource.includes("current?.phase === item.phase"), "Phase groups should preserve timeline order instead of sorting event types.");
 assert(activityFeedSource.includes("agentProcessLink"), "Patch activity items should offer a lightweight link to changed files.");
 assert(activityFeedSource.includes("workBreakdown(workItems, t)"), "The transcript header should summarize activity categories.");
 assert(
@@ -137,7 +144,9 @@ assert(
   "Metadata chips should split localized labels from values.",
 );
 assert(workspaceFilesSource.includes("focusPath?: string;"), "Workspace change sets should support a focused file.");
+assert(workspaceFilesSource.includes("focusHunk?: string;"), "Workspace change sets should support a focused diff hunk.");
 assert(workspaceFilesSource.includes("changeSet?.focusPath ?? firstChanged"), "Workspace file review should open on the requested focused file.");
+assert(workspaceFilesSource.includes("scrollIntoView({ block: \"center\" })"), "Workspace file review should scroll the focused hunk into view.");
 
 assert(
   mainSource.indexOf('import "./styles/global.css";') < mainSource.indexOf('import "./styles/run-surface.css";'),
@@ -148,6 +157,7 @@ assert(runSurfaceSource.includes("left: 14px;"), "The transcript rail should ali
 assert(!runSurfaceSource.includes("margin-left: -37px"), "Timeline icons must not use negative offsets that clip at the card edge.");
 assert(runSurfaceSource.includes(".agentProcessItem.category-command"), "Transcript categories should have visual hooks.");
 assert(runSurfaceSource.includes(".agentPhaseGroup"), "Phase groups should have dedicated run-surface styling.");
+assert(runSurfaceSource.includes("summary::before"), "Phase groups should have a compact visual anchor.");
 assert(runSurfaceSource.includes(".agentProcessLink"), "Changed-file links should be styled inside the transcript.");
 assert(runSurfaceSource.includes(".activityChips em code"), "Metadata chip values should have dedicated readable styling.");
 

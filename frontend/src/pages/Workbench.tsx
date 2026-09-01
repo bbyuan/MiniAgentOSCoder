@@ -65,6 +65,7 @@ import { useAgentPackState } from "../run/useAgentPackState";
 import { loadRunResources, type RunResources } from "../run/resources";
 import { useRunSubscription } from "../run/useRunSubscription";
 import { useWorkspaceReview } from "../run/useWorkspaceReview";
+import { focusedChangePath, focusedPatchHunk } from "../run/patchFocus";
 import { useRunViewModel } from "../run/viewModel";
 import { parseTaskCommand } from "../taskCommands";
 
@@ -201,12 +202,16 @@ export function Workbench() {
     setError,
     loadProjectRuns,
   });
+  const pendingPatchFocusPath = approval?.target.tool === "apply_patch"
+    ? focusedChangePath(approval.target.patch, approval.target.files ?? [])
+    : undefined;
   const pendingPatchChangeSet = approval?.target.tool === "apply_patch"
     ? {
         title: t("workspaceFiles.pendingChanges"),
         patch: approval.target.patch,
         changedFiles: approval.target.files ?? [],
-        focusPath: approval.target.files?.[0],
+        focusPath: pendingPatchFocusPath,
+        focusHunk: focusedPatchHunk(approval.target.patch, pendingPatchFocusPath),
         insertions: approval.target.additions,
         deletions: approval.target.deletions,
         kind: "pending" as const,
