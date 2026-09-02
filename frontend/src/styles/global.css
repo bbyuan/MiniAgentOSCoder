@@ -27104,3 +27104,48 @@ summary:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Extension details must never collapse the title into a one-character column. */
+.extensionTechnical > summary {
+  grid-template-columns: minmax(0, 1fr) 22px;
+  gap: 12px;
+}
+
+.extensionTechnical > summary > .extensionTechnicalTitle {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.extensionTechnical > summary > .extensionTechnicalTitle svg {
+  flex: 0 0 auto;
+}
+
+.extensionTechnical > summary > .extensionTechnicalTitle strong {
+  min-width: max-content;
+  overflow: visible;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 780;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.extensionTechnical > summary > .extensionTechnicalTitle > span {
+  min-width: max-content;
+  overflow: visible;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 720;
+  text-align: left;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.extensionTechnical > summary > svg:last-child {
+  justify-self: end;
+}
