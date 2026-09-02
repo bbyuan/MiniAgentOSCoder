@@ -5376,6 +5376,10 @@
   text-align: left;
 }
 
+.productContent .runSimpleLayout .agentControlPlane.variant-manifest .controlPlaneSignals.manifestGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .productContent .runSimpleLayout .agentControlPlane.variant-manifest button.controlSignal:hover {
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border-strong));
   background:
@@ -6199,6 +6203,10 @@
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   text-align: left;
+}
+
+.productContent .preflightSimpleLayout .agentControlPlane.variant-manifest .controlPlaneSignals.manifestGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .productContent .preflightSimpleLayout .controlSignalIcon {

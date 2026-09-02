@@ -233,15 +233,23 @@ export function AgentOSControlPlane({
         </span>
       </header>
 
-      <div className="controlPlaneSignals">
-        {primarySignals.map(renderSignal)}
-      </div>
-      {secondarySignals.length ? (
-        <div className="controlPlaneMore">
-          <div className="controlPlaneMoreLabel">{t("control.showAdvanced")}</div>
-          <div className="controlPlaneSignals secondary">{secondarySignals.map(renderSignal)}</div>
+      {variant === "manifest" ? (
+        <div className="controlPlaneSignals manifestGrid">
+          {signals.map(renderSignal)}
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="controlPlaneSignals">
+            {primarySignals.map(renderSignal)}
+          </div>
+          {secondarySignals.length ? (
+            <div className="controlPlaneMore">
+              <div className="controlPlaneMoreLabel">{t("control.showAdvanced")}</div>
+              <div className="controlPlaneSignals secondary">{secondarySignals.map(renderSignal)}</div>
+            </div>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }
