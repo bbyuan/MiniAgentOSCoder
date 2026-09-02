@@ -6677,3 +6677,436 @@
 .productContent .runSimpleLayout .agentControlPlane.variant-manifest .controlSignalCopy {
   gap: 6px;
 }
+
+/* Preflight advanced settings: rebuild as a clear settings panel. */
+.productContent .preflightSimpleLayout .advancedSetup {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border-strong) 36%, transparent);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, var(--surface) 0, color-mix(in srgb, var(--surface-subtle) 30%, var(--surface)) 100%);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.035),
+    0 14px 36px rgba(15, 23, 42, 0.035);
+}
+
+.productContent .preflightSimpleLayout .advancedSetupHeader {
+  min-height: 78px;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 26%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 72%, var(--surface)), var(--surface));
+}
+
+.productContent .preflightSimpleLayout .advancedSetupIcon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 11px;
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .advancedSetupIcon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupHeader h2 {
+  font-size: 22px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupHeader p {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 520;
+  line-height: 1.45;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBadge {
+  min-height: 34px;
+  padding-inline: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 24%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-raised) 46%, var(--surface));
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: transparent;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav {
+  padding: 14px 18px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 250px));
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 24%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 38%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button {
+  min-height: 48px;
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 32%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025);
+  text-align: left;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button svg {
+  width: 18px;
+  height: 18px;
+  justify-self: center;
+  color: currentColor;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button span {
+  display: grid;
+  gap: 2px;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button strong {
+  color: inherit;
+  font-size: 15px;
+  font-weight: 790;
+  line-height: 1.22;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button small {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.28;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav button.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 42%, var(--surface)), var(--surface));
+  color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 6px 16px rgba(37, 99, 235, 0.06);
+}
+
+.productContent .preflightSimpleLayout .advancedSetupNav > p {
+  grid-column: 1 / -1;
+  width: min(100%, 720px);
+  margin: 2px auto 0;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 20%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 540;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBody {
+  padding: 18px;
+  background: color-mix(in srgb, var(--surface-subtle) 28%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBody .inspectorSection {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBody .sectionHeader {
+  margin: 0 0 14px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBody .sectionHeader h3 {
+  font-size: 20px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.productContent .preflightSimpleLayout .advancedSetupBody .sectionHeader span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.productContent .preflightSimpleLayout .governanceSection,
+.productContent .preflightSimpleLayout .extensionSection {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.productContent .preflightSimpleLayout :is(.governanceHeading, .extensionHeading),
+.productContent .preflightSimpleLayout :is(.governanceAdvanced, .extensionTechnical) {
+  grid-column: 1 / -1;
+}
+
+.productContent .preflightSimpleLayout :is(
+  .governanceOverview,
+  .extensionOverview,
+  .governanceLevel,
+  .extensionCapabilityList,
+  .extensionCreator,
+  .governanceAdvanced,
+  .extensionTechnical
+) {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 28%, transparent);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025);
+}
+
+.productContent .preflightSimpleLayout .governanceOverview,
+.productContent .preflightSimpleLayout .extensionOverview {
+  min-height: 112px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+.productContent .preflightSimpleLayout :is(.governanceOverview, .extensionOverview) > span {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 10px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 48%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .governanceOverview strong,
+.productContent .preflightSimpleLayout .extensionOverview strong,
+.productContent .preflightSimpleLayout .governanceLevel header strong,
+.productContent .preflightSimpleLayout .extensionGroupTitle strong,
+.productContent .preflightSimpleLayout .extensionMain > strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 790;
+  line-height: 1.25;
+}
+
+.productContent .preflightSimpleLayout .governanceOverview small,
+.productContent .preflightSimpleLayout .extensionOverview small,
+.productContent .preflightSimpleLayout .governanceLevel header span,
+.productContent .preflightSimpleLayout .extensionGroupTitle span,
+.productContent .preflightSimpleLayout .extensionMain > small,
+.productContent .preflightSimpleLayout .extensionMeta {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.42;
+}
+
+.productContent .preflightSimpleLayout .governanceLevel {
+  min-height: 112px;
+}
+
+.productContent .preflightSimpleLayout .governanceLevel > header {
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 22%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 32%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button {
+  min-height: 82px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 28%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 16%, var(--surface));
+  text-align: left;
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button span {
+  grid-row: span 2;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-raised) 42%, var(--surface));
+  color: var(--text-tertiary);
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 790;
+  line-height: 1.22;
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button small {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 28%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .sandboxProfileControl button.active span {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .governanceAdvanced > summary,
+.productContent .preflightSimpleLayout .extensionTechnical > summary {
+  min-height: 56px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-strong) 24%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 44%, var(--surface)), var(--surface));
+}
+
+.productContent .preflightSimpleLayout .governanceAdvanced > summary strong,
+.productContent .preflightSimpleLayout .extensionTechnical > summary strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.22;
+}
+
+.productContent .preflightSimpleLayout .governanceAdvanced > summary small,
+.productContent .preflightSimpleLayout .extensionTechnical > summary small {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.productContent .preflightSimpleLayout .governanceTools {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.productContent .preflightSimpleLayout .governanceTools article {
+  min-height: 88px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 24%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 14%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .governanceTools article strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 780;
+  line-height: 1.24;
+}
+
+.productContent .preflightSimpleLayout .governanceTools article small,
+.productContent .preflightSimpleLayout .governanceTools article p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.38;
+}
+
+.productContent .preflightSimpleLayout .governanceTools select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 30%, transparent);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.productContent .preflightSimpleLayout .extensionCapabilityList {
+  grid-column: 1 / -1;
+  padding: 0;
+}
+
+.productContent .preflightSimpleLayout .extensionCapabilityList .extensionGroup {
+  padding: 14px;
+}
+
+.productContent .preflightSimpleLayout .extensionRow {
+  min-height: 82px;
+  padding: 13px 14px;
+  border-radius: 10px;
+}
+
+@media (max-width: 1180px) {
+  .productContent .preflightSimpleLayout .governanceSection,
+  .productContent .preflightSimpleLayout .extensionSection,
+  .productContent .preflightSimpleLayout .governanceTools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .productContent .preflightSimpleLayout .advancedSetupHeader {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .productContent .preflightSimpleLayout .advancedSetupBadge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .productContent .preflightSimpleLayout .advancedSetupNav,
+  .productContent .preflightSimpleLayout .sandboxProfileControl,
+  .productContent .preflightSimpleLayout .governanceTools article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productContent .preflightSimpleLayout .governanceTools article {
+    align-items: stretch;
+  }
+}
