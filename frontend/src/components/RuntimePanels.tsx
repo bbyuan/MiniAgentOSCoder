@@ -431,6 +431,7 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
     ? program.semantic_trace_rules
     : program.trace_rules.map((rule) => ({ event: "", rule: rule.split(":")[0] ?? rule, label: rule, description: "" }));
   const boundary = program.capability_boundary ?? [];
+  const hasExportableDsl = Boolean(program.dsl_text);
 
   async function copyDsl() {
     if (!program?.dsl_text) return;
@@ -461,11 +462,29 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
       </div>
 
       <div className="formalProgramCanvas">
-        <div className="programPrimaryColumn">
+        <section className="programContractBlock">
+          <div className="programTypeRow">
+            <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
+            <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
+            <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
+          </div>
+          <article className="programGradeCard">
+            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
+            <p>{program.grade.expression}</p>
+            <div>
+              <code>steps &lt;= {program.grade.steps}</code>
+              <code>tools &lt;= {program.grade.tool_calls}</code>
+              <code>models &lt;= {program.grade.model_calls}</code>
+              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+            </div>
+          </article>
+        </section>
+
+        <div className="programWorkbenchGrid">
           <details className="programDslBlock" open>
             <summary>
-              <div><Braces size={15} /><strong>{t("program.dsl")}</strong></div>
-              <span>{t("program.dslBadge")}</span>
+              <div><Braces size={15} /><strong>{hasExportableDsl ? t("program.dsl") : t("program.term")}</strong></div>
+              <span>{hasExportableDsl ? t("program.dslBadge") : program.calculus}</span>
             </summary>
             <pre>{program.dsl_text || program.term}</pre>
           </details>
@@ -478,25 +497,7 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
           </div>
         </div>
 
-        <aside className="programSideColumn">
-          <section className="programContractBlock">
-            <div className="programTypeRow">
-              <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
-              <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
-              <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
-            </div>
-            <article className="programGradeCard">
-              <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
-              <p>{program.grade.expression}</p>
-              <div>
-                <code>steps &lt;= {program.grade.steps}</code>
-                <code>tools &lt;= {program.grade.tool_calls}</code>
-                <code>models &lt;= {program.grade.model_calls}</code>
-                <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
-              </div>
-            </article>
-          </section>
-
+        <div className="programEvidenceColumns">
           <section className="programBoundaryBlock">
             <header>
               <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
@@ -547,7 +548,7 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
               ))}
             </div>
           </section>
-        </aside>
+        </div>
       </div>
     </section>
   );
