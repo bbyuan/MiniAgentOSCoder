@@ -6,7 +6,7 @@ These fixtures are intentionally small, local, and dependency-light so they can 
 | --- | --- | --- | --- |
 | `python-bugfix` | Bugfix | failing unittest | Classic calculator repair, patch approval, test repair loop |
 | `deepseek-bugfix` | Bugfix | failing pytest | Decimal rounding bug with external model routing demo |
-| `feature-contact-book` | Feature | failing unittest | Add missing product behavior and verify with tests |
+| `feature-contact-book` | Feature | passing unittest | Completed contact import behavior with normalized merge and CSV export |
 | `review-auth-service` | Review | passing unittest | Read-only code review with security findings and no patch |
 | `skill-invoice-rules` | Bugfix | failing unittest | Project Skill, optional Hook/MCP catalog, domain rule context |
 | `spec-cache-ttl` | Spec | failing unittest | OpenSpec-style change implementation with acceptance tests |
