@@ -460,92 +460,94 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
         </div>
       </div>
 
-      <div className="formalProgramShowcase">
-        <article className="programDslBlock">
-          <header>
-            <div><Braces size={15} /><strong>{t("program.dsl")}</strong></div>
-            <span>{t("program.dslBadge")}</span>
-          </header>
-          <pre>{program.dsl_text || program.term}</pre>
-        </article>
+      <div className="formalProgramCanvas">
+        <div className="programPrimaryColumn">
+          <details className="programDslBlock" open>
+            <summary>
+              <div><Braces size={15} /><strong>{t("program.dsl")}</strong></div>
+              <span>{t("program.dslBadge")}</span>
+            </summary>
+            <pre>{program.dsl_text || program.term}</pre>
+          </details>
 
-        <aside className="programContractBlock">
-          <div className="programTypeRow">
-            <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
-            <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
-            <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
+          <div className="programTree">
+            <header><GitBranch size={15} /><strong>{t("program.structure")}</strong></header>
+            <ol>
+              {program.nodes.map((node) => <ProgramNodeItem node={node} key={node.id} />)}
+            </ol>
           </div>
-          <article className="programGradeCard">
-            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
-            <p>{program.grade.expression}</p>
-            <div>
-              <code>steps &lt;= {program.grade.steps}</code>
-              <code>tools &lt;= {program.grade.tool_calls}</code>
-              <code>models &lt;= {program.grade.model_calls}</code>
-              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+        </div>
+
+        <aside className="programSideColumn">
+          <section className="programContractBlock">
+            <div className="programTypeRow">
+              <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
+              <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
+              <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
             </div>
-          </article>
+            <article className="programGradeCard">
+              <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
+              <p>{program.grade.expression}</p>
+              <div>
+                <code>steps &lt;= {program.grade.steps}</code>
+                <code>tools &lt;= {program.grade.tool_calls}</code>
+                <code>models &lt;= {program.grade.model_calls}</code>
+                <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+              </div>
+            </article>
+          </section>
+
+          <section className="programBoundaryBlock">
+            <header>
+              <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
+              <span>{t("program.boundaryHint")}</span>
+            </header>
+            <div>
+              {boundary.map((item) => (
+                <article key={item.id}>
+                  <strong>{item.title}</strong>
+                  <code>{item.expression}</code>
+                  <p>{item.description}</p>
+                  <small>{item.evidence}</small>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="programSemanticBlock">
+            <header>
+              <div><Activity size={15} /><strong>{t("program.traceRules")}</strong></div>
+              <span>{t("program.traceHint")}</span>
+            </header>
+            <div>
+              {semanticRules.map((rule) => (
+                <article key={`${rule.rule}-${rule.event}`}>
+                  <code>{rule.rule}</code>
+                  <strong>{rule.event || rule.label}</strong>
+                  <p>{rule.description || rule.label}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="programLintPanel">
+            <div className="programLintHeader">
+              <strong>{t("program.semanticLint")}</strong>
+              <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
+            </div>
+            <div className="programLintGrid">
+              {program.lints.map((lint) => (
+                <article className={`state-${lint.status}`} key={lint.id}>
+                  <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
+                  <div>
+                    <strong>{lint.summary}</strong>
+                    <small>{lint.evidence}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
         </aside>
-      </div>
-
-      <div className="programBoundaryBlock">
-        <header>
-          <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
-          <span>{t("program.boundaryHint")}</span>
-        </header>
-        <div>
-          {boundary.map((item) => (
-            <article key={item.id}>
-              <strong>{item.title}</strong>
-              <code>{item.expression}</code>
-              <p>{item.description}</p>
-              <small>{item.evidence}</small>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <div className="programSemanticBlock">
-        <header>
-          <div><Activity size={15} /><strong>{t("program.traceRules")}</strong></div>
-          <span>{t("program.traceHint")}</span>
-        </header>
-        <div>
-          {semanticRules.map((rule) => (
-            <article key={`${rule.rule}-${rule.event}`}>
-              <code>{rule.rule}</code>
-              <strong>{rule.event || rule.label}</strong>
-              <p>{rule.description || rule.label}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <div className="formalProgramMain">
-        <div className="programTree">
-          <header><GitBranch size={15} /><strong>{t("program.structure")}</strong></header>
-          <ol>
-            {program.nodes.map((node) => <ProgramNodeItem node={node} key={node.id} />)}
-          </ol>
-        </div>
-
-        <div className="programLintPanel">
-          <div className="programLintHeader">
-            <strong>{t("program.semanticLint")}</strong>
-            <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
-          </div>
-          <div className="programLintGrid">
-            {program.lints.map((lint) => (
-              <article className={`state-${lint.status}`} key={lint.id}>
-                <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
-                <div>
-                  <strong>{lint.summary}</strong>
-                  <small>{lint.evidence}</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );
