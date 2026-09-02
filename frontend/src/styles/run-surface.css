@@ -6054,6 +6054,103 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.productContent .preflightSimpleLayout .modelRouteUnified {
+  margin: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.1fr) minmax(260px, 1fr) minmax(220px, 0.85fr);
+  align-items: stretch;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 24%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 18%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain,
+.productContent .preflightSimpleLayout .modelRouteUnifiedMeta {
+  min-width: 0;
+  padding: 10px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 18%, transparent);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain {
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  align-content: initial;
+  gap: 10px;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain .routeStep {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: 999px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 42%, var(--surface));
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain .routeStep svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  margin: 0;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnified small,
+.productContent .preflightSimpleLayout .modelRouteUnifiedMeta > span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnified strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 820;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMain span:not(.routeStep),
+.productContent .preflightSimpleLayout .modelRouteUnifiedMeta small {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMeta div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.productContent .preflightSimpleLayout .modelRouteUnifiedMeta em {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.2;
+}
+
 .productContent .preflightSimpleLayout :is(.admissionMetric, .modelRoutePhase, .controlSignal) {
   min-height: 70px;
   padding: 10px;
@@ -6467,6 +6564,10 @@
   .productContent .preflightSimpleLayout :is(.modelRoutePhases, .controlPlaneSignals, .controlPlaneSignals.secondary),
   .productContent .preflightSimpleLayout .admissionBasisGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .productContent .preflightSimpleLayout .modelRouteUnified {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

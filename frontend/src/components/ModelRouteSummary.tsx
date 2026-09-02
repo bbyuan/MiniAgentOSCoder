@@ -13,6 +13,9 @@ export function ModelRouteSummary({ plan }: ModelRouteSummaryProps) {
   const { t } = usePreferences();
   if (!plan) return null;
 
+  const routeList = phases.map((phase) => plan.routes[phase]).filter(Boolean);
+  const unifiedRoute = getUnifiedRoute(routeList);
+  const showProfileRegistry = plan.profiles.length > 1 || plan.decision === "blocked";
   const icon = plan.decision === "blocked"
     ? <ShieldAlert size={17} />
     : plan.decision === "fallback"
@@ -32,25 +35,29 @@ export function ModelRouteSummary({ plan }: ModelRouteSummaryProps) {
         <span className="modelRouteDecision">{icon}{t(`modelRoute.badge.${plan.decision}` as TranslationKey)}</span>
       </header>
 
-      <div className="modelRoutePhases">
-        {phases.map((phase, index) => {
-          const route = plan.routes[phase];
-          return (
-            <div key={phase} className={`modelRoutePhase ${route?.configured ? "" : "blocked"} ${route?.fallback ? "fallback" : ""}`}>
-              <span className="routeStep">{index + 1}</span>
-              <div>
-                <small>{t(`modelRoute.phase.${phase}` as TranslationKey)}</small>
-                <strong>{route?.model || t("modelRoute.unavailable")}</strong>
-                <span>{route ? t("modelRoute.profile", { profile: route.profile_id }) : t("modelRoute.noProfile")}</span>
+      {unifiedRoute ? (
+        <UnifiedRouteCard route={unifiedRoute} />
+      ) : (
+        <div className="modelRoutePhases">
+          {phases.map((phase, index) => {
+            const route = plan.routes[phase];
+            return (
+              <div key={phase} className={`modelRoutePhase ${route?.configured ? "" : "blocked"} ${route?.fallback ? "fallback" : ""}`}>
+                <span className="routeStep">{index + 1}</span>
+                <div>
+                  <small>{t(`modelRoute.phase.${phase}` as TranslationKey)}</small>
+                  <strong>{route?.model || t("modelRoute.unavailable")}</strong>
+                  <span>{route ? t("modelRoute.profile", { profile: route.profile_id }) : t("modelRoute.noProfile")}</span>
+                </div>
+                {route ? <RouteReason route={route} /> : null}
+                {!route?.configured ? <em>{t("modelRoute.blocked")}</em> : null}
               </div>
-              {route ? <RouteReason route={route} /> : null}
-              {!route?.configured ? <em>{t("modelRoute.blocked")}</em> : null}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {plan.profiles.length ? (
+      {showProfileRegistry ? (
         <div className="modelRouteProfiles">
           <div className="modelRouteProfilesHeader">
             <Database size={15} />
@@ -83,6 +90,37 @@ export function ModelRouteSummary({ plan }: ModelRouteSummaryProps) {
   );
 }
 
+function UnifiedRouteCard({ route }: { route: ModelRouteSelection }) {
+  const { t } = usePreferences();
+  return (
+    <div className={`modelRouteUnified ${route.configured ? "" : "blocked"} ${route.fallback ? "fallback" : ""}`}>
+      <div className="modelRouteUnifiedMain">
+        <span className="routeStep"><CheckCircle2 size={16} /></span>
+        <div>
+          <small>{t("modelRoute.unifiedLabel")}</small>
+          <strong>{route.model || t("modelRoute.unavailable")}</strong>
+          <span>{t("modelRoute.profile", { profile: route.profile_id })}</span>
+        </div>
+      </div>
+      <div className="modelRouteUnifiedMeta">
+        <span>{t("modelRoute.unifiedCoverage")}</span>
+        <div>
+          {phases.map((phase) => (
+            <em key={phase}>{t(`modelRoute.phase.${phase}` as TranslationKey)}</em>
+          ))}
+        </div>
+      </div>
+      <div className="modelRouteUnifiedMeta">
+        <span>{t("modelRoute.routeBasis")}</span>
+        <strong>{t(`modelRoute.reason.${route.reason}` as TranslationKey)}</strong>
+        <small>{route.context_window
+          ? t("modelRoute.contextWindow", { count: route.context_window })
+          : t("modelRoute.contextUnknown")}</small>
+      </div>
+    </div>
+  );
+}
+
 function RouteReason({ route }: { route: ModelRouteSelection }) {
   const { t } = usePreferences();
   return (
@@ -90,4 +128,22 @@ function RouteReason({ route }: { route: ModelRouteSelection }) {
       {t(`modelRoute.reason.${route.reason}` as TranslationKey)}
     </em>
   );
+}
+
+function getUnifiedRoute(routes: ModelRouteSelection[]): ModelRouteSelection | undefined {
+  if (routes.length !== phases.length) return undefined;
+  const [first] = routes;
+  if (!first) return undefined;
+  return routes.every((route) =>
+    route.profile_id === first.profile_id
+    && route.model === first.model
+    && route.provider === first.provider
+    && route.reason === first.reason
+    && route.fallback === first.fallback
+    && route.configured === first.configured
+    && route.context_window === first.context_window
+    && route.issues.join("\n") === first.issues.join("\n"),
+  )
+    ? first
+    : undefined;
 }
