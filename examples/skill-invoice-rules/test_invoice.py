@@ -27,6 +27,15 @@ class InvoiceRuleTests(unittest.TestCase):
         self.assertEqual(invoice["tax_cents"], 0)
         self.assertEqual(invoice["total_cents"], 2598)
 
+    def test_or_physical_goods_have_no_tax(self) -> None:
+        invoice = build_invoice(
+            [LineItem("notebook", unit_cents=500, quantity=3)],
+            "OR",
+        )
+
+        self.assertEqual(invoice["tax_cents"], 0)
+        self.assertEqual(invoice["total_cents"], 1500)
+
     def test_ca_digital_goods_are_not_exempt(self) -> None:
         invoice = build_invoice(
             [LineItem("template", unit_cents=1999, quantity=1, digital=True)],
