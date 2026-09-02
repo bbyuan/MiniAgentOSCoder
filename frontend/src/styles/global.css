@@ -26777,3 +26777,165 @@ summary:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Final layout guards for advanced setup and formal program readability. */
+.advancedSetupBody .extensionTechnical > summary,
+.runSettingsPage .advancedSetupBody .extensionTechnical > summary {
+  min-height: 56px;
+  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 12px;
+}
+
+.advancedSetupBody .extensionTechnicalTitle,
+.runSettingsPage .advancedSetupBody .extensionTechnicalTitle {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.advancedSetupBody .extensionTechnicalTitle svg,
+.runSettingsPage .advancedSetupBody .extensionTechnicalTitle svg {
+  flex: 0 0 auto;
+}
+
+.advancedSetupBody .extensionTechnicalTitle strong,
+.runSettingsPage .advancedSetupBody .extensionTechnicalTitle strong {
+  min-width: max-content;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.advancedSetupBody .extensionTechnicalTitle > span,
+.runSettingsPage .advancedSetupBody .extensionTechnicalTitle > span {
+  min-width: max-content;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.advancedSetupBody .extensionTechnical > summary > svg:last-child,
+.runSettingsPage .advancedSetupBody .extensionTechnical > summary > svg:last-child {
+  justify-self: end;
+}
+
+.inspectorBody .memoryScopes,
+.advancedSetupBody .memoryScopes {
+  height: auto;
+  min-height: 54px;
+  padding: 4px;
+  overflow: visible;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  border-radius: 10px;
+}
+
+.inspectorBody .memoryScopes button,
+.advancedSetupBody .memoryScopes button {
+  min-height: 44px;
+  padding: 0 12px;
+  gap: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.inspectorBody .memoryScopes button span,
+.advancedSetupBody .memoryScopes button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspectorBody .memoryScopes button strong,
+.advancedSetupBody .memoryScopes button strong {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.inspectorBody .memoryList .emptyText,
+.advancedSetupBody .memoryList .emptyText {
+  margin: 0;
+  padding: 18px 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.inspectorBody .memoryConfirmation,
+.advancedSetupBody .memoryConfirmation {
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.inspectorBody .memoryConfirmation input,
+.advancedSetupBody .memoryConfirmation input {
+  width: 18px;
+  height: 18px;
+}
+
+.inspectorBody .memoryConfirmation span,
+.advancedSetupBody .memoryConfirmation span {
+  min-width: 0;
+  display: inline-flex;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.formalProgramCanvas {
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 16px;
+}
+
+.programSideColumn {
+  align-content: start;
+}
+
+.programDslBlock pre {
+  max-height: 520px;
+  font-size: 11.5px;
+}
+
+.programSemanticBlock article,
+.programBoundaryBlock article {
+  grid-template-columns: minmax(96px, 0.32fr) minmax(0, 1fr);
+}
+
+.programSemanticBlock article p,
+.programBoundaryBlock article p,
+.programBoundaryBlock article small,
+.programLintGrid small {
+  font-size: 11.5px;
+}
+
+@media (max-width: 860px) {
+  .formalProgramCanvas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .advancedSetupBody .extensionTechnicalTitle,
+  .runSettingsPage .advancedSetupBody .extensionTechnicalTitle {
+    flex-wrap: wrap;
+  }
+
+  .advancedSetupBody .extensionTechnicalTitle strong,
+  .advancedSetupBody .extensionTechnicalTitle > span,
+  .runSettingsPage .advancedSetupBody .extensionTechnicalTitle strong,
+  .runSettingsPage .advancedSetupBody .extensionTechnicalTitle > span {
+    min-width: 0;
+  }
+}
