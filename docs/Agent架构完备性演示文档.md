@@ -168,10 +168,12 @@ Completion Guard 防止模型只靠一句“完成了”结束任务。不同模
 为了让 AgentOS 和 λA 的思想不是只停留在介绍里，系统现在会在准备运行时生成 Formal Agent Program：
 
 - Term：展示 `Memory(Guard(Loop(... Route(ActionIR.type) ...)))` 的程序骨架。
+- DSL：展示并可复制本次运行的 `MiniAgentCoderProgram`，把 AgentContract、Loop、Route、Guard、Memory、Effect、Grade 和 Restrict 统一为可导出的 IR。
 - Effect：展示本次 Agent 可触达的 `fs.read/fs.write/shell.exec/test.run/state.memory/mcp.call` 等副作用边界。
 - Grade：展示步骤、模型调用、工具调用、Token 和最长运行时间上限。
+- Skill / Restrict：展示项目规则如何作为能力注入，沙箱和工具策略如何作为运行上界。
 - Semantic lint：检查有界循环、写文件审批、命令审批、工作区逃逸禁止、Secret 读取禁止、扩展引用可解析等条件。
-- Trace rules：说明哪些运行事件对应 `C-LLM`、`C-Route`、`C-Tool`、`C-Guard`、`C-Mem`。
+- Trace rules：说明哪些运行事件对应 `C-LLM`、`C-Route`、`C-Tool`、`C-Guard`、`C-Mem`，回放时会把事件标注为对应的小步语义规则。
 
 演示重点：
 

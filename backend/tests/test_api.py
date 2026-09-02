@@ -191,6 +191,11 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert "Route(ActionIR.type" in run["formal_program"]["term"]
     assert formal_program["effect"].startswith("allow(")
     assert formal_program["grade"]["steps"] == 20
+    assert formal_program["dsl"]["kind"] == "MiniAgentCoderProgram"
+    assert "MiniAgentCoderProgram" in formal_program["dsl_text"]
+    assert formal_program["dsl"]["term"]["Memory"]["body"]["Guard"]["body"]["Loop"]["max_steps"] == 20
+    assert {item["title"] for item in formal_program["capability_boundary"]} >= {"Skill", "Restrict"}
+    assert any(rule["rule"] == "C-Route" for rule in formal_program["semantic_trace_rules"])
     assert trace["events"][0]["event"] == "run.created"
     assert context["required_items"] == ["user_task", "project_profile", "current_plan"]
     assert context["explanation"][0]["id"] == "user_task"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from app.models.base import Serializable
 
@@ -34,6 +35,23 @@ class FormalProgramGrade(Serializable):
 
 
 @dataclass(slots=True)
+class FormalSemanticTraceRule(Serializable):
+    event: str
+    rule: str
+    label: str
+    description: str
+
+
+@dataclass(slots=True)
+class FormalCapabilityBoundary(Serializable):
+    id: str
+    title: str
+    expression: str
+    description: str
+    evidence: str
+
+
+@dataclass(slots=True)
 class FormalAgentProgram(Serializable):
     run_id: str
     calculus: str
@@ -43,7 +61,11 @@ class FormalAgentProgram(Serializable):
     term: str
     effect: str
     grade: FormalProgramGrade
+    dsl: dict[str, Any] = field(default_factory=dict)
+    dsl_text: str = ""
     nodes: list[FormalProgramNode] = field(default_factory=list)
     lints: list[FormalProgramLint] = field(default_factory=list)
     trace_rules: list[str] = field(default_factory=list)
+    semantic_trace_rules: list[FormalSemanticTraceRule] = field(default_factory=list)
+    capability_boundary: list[FormalCapabilityBoundary] = field(default_factory=list)
     highlights: list[str] = field(default_factory=list)

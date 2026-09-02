@@ -13,7 +13,14 @@ from app.models.extensions import (
     MCPServerManifest,
     SkillManifest,
 )
-from app.models.formal_program import FormalAgentProgram, FormalProgramGrade, FormalProgramLint, FormalProgramNode
+from app.models.formal_program import (
+    FormalAgentProgram,
+    FormalCapabilityBoundary,
+    FormalProgramGrade,
+    FormalProgramLint,
+    FormalProgramNode,
+    FormalSemanticTraceRule,
+)
 from app.models.memory import MemoryEntry, MemoryScope
 from app.models.model_routing import ModelRoutePlan, ModelRouteProfile, ModelRouteSelection
 from app.models.governance import (
@@ -62,9 +69,11 @@ __all__ = [
     "ExtensionCatalog",
     "ExtensionSettings",
     "FormalAgentProgram",
+    "FormalCapabilityBoundary",
     "FormalProgramGrade",
     "FormalProgramLint",
     "FormalProgramNode",
+    "FormalSemanticTraceRule",
     "GovernanceSettings",
     "GuardDecision",
     "HookEvent",

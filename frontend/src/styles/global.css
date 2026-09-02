@@ -25991,3 +25991,586 @@ summary:focus-visible {
   font-size: 12px;
   font-weight: 720;
 }
+
+/* Formal runtime view: Agent DSL, type/effect grade, and semantic trace evidence. */
+.formalProgramPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.formalProgramHeader {
+  min-height: 86px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 54%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.formalProgramHeader h3 {
+  margin: 4px 0 5px;
+  color: var(--text);
+  font-size: 21px;
+  line-height: 1.18;
+  font-weight: 780;
+}
+
+.formalProgramHeader p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.formalProgramHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.formalProgramHeaderActions > strong,
+.formalProgramHeaderActions > button {
+  min-height: 36px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.formalProgramHeaderActions > strong {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.formalProgramHeaderActions > button {
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.formalProgramShowcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.75fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.programDslBlock,
+.programContractBlock,
+.programBoundaryBlock,
+.programSemanticBlock,
+.programTree,
+.programLintPanel {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 50%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.programDslBlock {
+  display: grid;
+  grid-template-rows: auto minmax(320px, 1fr);
+  overflow: hidden;
+}
+
+.programDslBlock > header,
+.programBoundaryBlock > header,
+.programSemanticBlock > header,
+.programTree > header,
+.programGradeCard > header,
+.programLintHeader {
+  min-height: 48px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.programDslBlock > header > div,
+.programBoundaryBlock > header > div,
+.programSemanticBlock > header > div,
+.programTree > header,
+.programGradeCard > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.programDslBlock > header strong,
+.programBoundaryBlock > header strong,
+.programSemanticBlock > header strong,
+.programTree > header strong,
+.programGradeCard > header strong,
+.programLintHeader strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.programDslBlock > header span,
+.programBoundaryBlock > header span,
+.programSemanticBlock > header span,
+.programLintHeader span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.programDslBlock pre {
+  min-height: 320px;
+  max-height: none;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  color: var(--text-secondary);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 34%),
+    color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.programContractBlock {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.programTypeRow {
+  display: grid;
+  gap: 10px;
+}
+
+.programTypeRow span {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-subtle) 46%, transparent);
+}
+
+.programTypeRow small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.programTypeRow strong {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 730;
+}
+
+.programGradeCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  border-radius: 9px;
+}
+
+.programGradeCard p {
+  margin: 0;
+  padding: 12px 14px 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.programGradeCard div {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.programGradeCard code,
+.programBoundaryBlock code,
+.programSemanticBlock code {
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 7px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.programGradeCard code {
+  padding: 5px 7px;
+}
+
+.programBoundaryBlock {
+  overflow: hidden;
+}
+
+.programBoundaryBlock > div {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.programBoundaryBlock article {
+  min-width: 0;
+  padding: 13px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 9px;
+  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+}
+
+.programBoundaryBlock article strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 770;
+}
+
+.programBoundaryBlock article code {
+  padding: 7px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.programBoundaryBlock article p,
+.programBoundaryBlock article small,
+.programSemanticBlock article p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.48;
+}
+
+.programBoundaryBlock article small {
+  color: var(--text-tertiary);
+  font-weight: 700;
+}
+
+.programSemanticBlock {
+  overflow: hidden;
+}
+
+.programSemanticBlock > div {
+  padding: 12px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.programSemanticBlock article {
+  min-width: 0;
+  padding: 11px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 42%, transparent);
+}
+
+.programSemanticBlock article code {
+  width: fit-content;
+  padding: 4px 7px;
+}
+
+.programSemanticBlock article strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 740;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formalProgramMain {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.programTree {
+  overflow: hidden;
+}
+
+.programTree ol {
+  margin: 0;
+  padding: 12px 14px 14px;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.programTree li {
+  min-width: 0;
+}
+
+.programTree li > div {
+  min-width: 0;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 36%, transparent);
+}
+
+.programTree li > div code {
+  grid-row: 1 / 3;
+  align-self: start;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.programTree li > div strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 740;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.programTree li > div small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.programTree li ol {
+  padding: 8px 0 0 18px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.programLintPanel {
+  overflow: hidden;
+}
+
+.programLintGrid {
+  padding: 12px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.programLintGrid article {
+  min-width: 0;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.programLintGrid article > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.programLintGrid article.state-warning > span,
+.programLintGrid article.state-failed > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.programLintGrid strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 740;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.programLintGrid small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.traceOverviewGrid span {
+  font-size: 11px;
+}
+
+.traceOverviewGrid strong {
+  font-size: 16px;
+}
+
+.traceReplayShell:not(.traceReplayShell-idle) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.replayCurrent {
+  padding: 14px;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 9px;
+}
+
+.replayCurrentHeader {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+.replayCurrentHeader span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.replayCurrent .replaySemanticRule span {
+  width: auto;
+  height: auto;
+  display: block;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.replayCurrent strong {
+  font-size: 13px;
+}
+
+.replayCurrent time,
+.replayCurrent > small {
+  font-size: 11px;
+}
+
+.replaySemanticRule {
+  margin: 11px 0;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 48%, transparent);
+}
+
+.replaySemanticRule code {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.replaySemanticRule span {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.replayCurrent pre {
+  max-height: 360px;
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.replayTimeline {
+  max-height: 460px;
+  margin-top: 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 46%, transparent);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.replayTimeline > div {
+  min-height: 38px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  padding: 0 9px;
+  border-left-width: 3px;
+}
+
+.replayTimeline span,
+.replayTimeline code {
+  font-size: 11px;
+}
+
+.replayTimeline em {
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 730;
+}
+
+@media (max-width: 1100px) {
+  .formalProgramShowcase,
+  .formalProgramMain,
+  .traceReplayShell:not(.traceReplayShell-idle) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .programBoundaryBlock > div,
+  .programSemanticBlock > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .formalProgramHeader,
+  .formalProgramHeaderActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .programBoundaryBlock > div,
+  .programSemanticBlock > div,
+  .programLintGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

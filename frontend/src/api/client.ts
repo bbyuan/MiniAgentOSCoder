@@ -96,6 +96,21 @@ export interface FormalProgramGrade {
   expression: string;
 }
 
+export interface FormalSemanticTraceRule {
+  event: string;
+  rule: string;
+  label: string;
+  description: string;
+}
+
+export interface FormalCapabilityBoundary {
+  id: string;
+  title: string;
+  expression: string;
+  description: string;
+  evidence: string;
+}
+
 export interface FormalAgentProgram {
   run_id: string;
   calculus: string;
@@ -105,9 +120,13 @@ export interface FormalAgentProgram {
   term: string;
   effect: string;
   grade: FormalProgramGrade;
+  dsl: Record<string, unknown>;
+  dsl_text: string;
   nodes: FormalProgramNode[];
   lints: FormalProgramLint[];
   trace_rules: string[];
+  semantic_trace_rules: FormalSemanticTraceRule[];
+  capability_boundary: FormalCapabilityBoundary[];
   highlights: string[];
 }
 

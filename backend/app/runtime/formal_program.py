@@ -3,7 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from app.models import AgentContract, ExtensionCatalog, ExtensionSettings, GovernanceSettings
-from app.models.formal_program import FormalAgentProgram, FormalProgramGrade, FormalProgramLint, FormalProgramNode
+from app.models.formal_program import (
+    FormalAgentProgram,
+    FormalCapabilityBoundary,
+    FormalProgramGrade,
+    FormalProgramLint,
+    FormalProgramNode,
+    FormalSemanticTraceRule,
+)
 
 
 ACTION_EFFECTS: dict[str, str] = {
@@ -106,6 +113,16 @@ def compile_formal_program(
         nodes.append(FormalProgramNode(id="hooks", op="Hook", label="Effect handlers", detail=f"{len(hook_nodes)} enabled", children=hook_nodes))
 
     term = _term(contract, allowed_actions, skill_nodes, mcp_nodes, hook_nodes)
+    dsl = _dsl_artifact(
+        run_id=run_id,
+        contract=contract,
+        governance=governance,
+        actions=allowed_actions,
+        skills=skill_nodes,
+        mcp=mcp_nodes,
+        hooks=hook_nodes,
+    )
+    semantic_trace_rules = _semantic_trace_rules()
     return FormalAgentProgram(
         run_id=run_id,
         calculus="MiniAgent DSL / λA projection",
@@ -127,6 +144,8 @@ def compile_formal_program(
                 f"≤ {contract.cost_envelope.max_tool_calls} tool calls"
             ),
         ),
+        dsl=dsl,
+        dsl_text=_dump_yaml(dsl),
         nodes=nodes,
         lints=_semantic_lints(contract, governance, extensions, extension_settings),
         trace_rules=[
@@ -136,6 +155,8 @@ def compile_formal_program(
             "C-Guard: policy.evaluated/action.rejected",
             "C-Mem: memory.loaded/memory.written",
         ],
+        semantic_trace_rules=semantic_trace_rules,
+        capability_boundary=_capability_boundary(contract, governance, skill_nodes, mcp_nodes, hook_nodes),
         highlights=[
             "Prompt layers compile into the planner term.",
             "Tool calls are checked by inferred effects before execution.",
@@ -193,6 +214,94 @@ def _term(
     )
 
 
+def _dsl_artifact(
+    *,
+    run_id: str,
+    contract: AgentContract,
+    governance: GovernanceSettings | None,
+    actions: list[str],
+    skills: list[FormalProgramNode],
+    mcp: list[FormalProgramNode],
+    hooks: list[FormalProgramNode],
+) -> dict[str, object]:
+    sandbox = getattr(governance.sandbox_profile, "value", "standard") if governance else "standard"
+    tool_overrides = governance.tool_overrides if governance else {}
+    return {
+        "kind": "MiniAgentCoderProgram",
+        "version": "0.1",
+        "run_id": run_id,
+        "agent": {
+            "id": contract.agent_id,
+            "mode": contract.program.mode,
+            "input": "Task x Workspace x Memory",
+            "output": "Patch x Evidence x FinalMessage",
+        },
+        "term": {
+            "Memory": {
+                "store": ["context_pack", "project_memory", "long_term_memory"],
+                "body": {
+                    "Guard": {
+                        "predicate": "sandbox && policies && completion_guard",
+                        "body": {
+                            "Loop": {
+                                "max_steps": contract.cost_envelope.max_steps,
+                                "body": [
+                                    {"Lam": f"model[{contract.program.mode}]"},
+                                    {
+                                        "Route": {
+                                            "on": "ActionIR.type",
+                                            "cases": [
+                                                {
+                                                    "case": action,
+                                                    "term": ACTION_LABELS[action],
+                                                    "effect": ACTION_EFFECTS[action],
+                                                    "policy": _policy_for(action, contract),
+                                                }
+                                                for action in actions
+                                            ],
+                                        }
+                                    },
+                                    {"Observe": "ActionObservation"},
+                                    {"Guard": "CompletionEvidence"},
+                                ],
+                            }
+                        },
+                    }
+                },
+            }
+        },
+        "effects": {
+            "allow": sorted({ACTION_EFFECTS[action] for action in actions if ACTION_EFFECTS[action] != "pure"}),
+            "deny": contract.effects.deny,
+            "ceiling": _effect_ceiling(actions),
+        },
+        "grade": {
+            "max_steps": contract.cost_envelope.max_steps,
+            "max_model_calls": contract.cost_envelope.max_model_calls,
+            "max_tool_calls": contract.cost_envelope.max_tool_calls,
+            "max_input_tokens": contract.cost_envelope.max_input_tokens,
+            "max_output_tokens": contract.cost_envelope.max_output_tokens,
+            "max_wall_time_seconds": contract.cost_envelope.max_wall_time_seconds,
+        },
+        "restrict": {
+            "sandbox": sandbox,
+            "tool_policy": {action: _policy_for(action, contract) for action in actions},
+            "run_overrides": tool_overrides,
+        },
+        "skills": [node.label for node in skills],
+        "mcp": [node.label for node in mcp],
+        "handlers": [node.label for node in hooks] or ["production_trace_handler"],
+        "proof_obligations": [
+            "bounded_loop",
+            "route_total_for_allowed_actions",
+            "effect_within_contract",
+            "guarded_writes",
+            "completion_evidence_required",
+            "cost_monotone",
+        ],
+    }
+
+
 def _effect_expression(contract: AgentContract, actions: list[str]) -> str:
     effects = []
     for action in actions:
@@ -202,6 +311,71 @@ def _effect_expression(contract: AgentContract, actions: list[str]) -> str:
     denied = ", ".join(contract.effects.deny) if contract.effects.deny else "∅"
     allowed = " ⊔ ".join(effects) if effects else "pure"
     return f"allow({allowed}) ∧ deny({denied})"
+
+
+def _effect_ceiling(actions: list[str]) -> str:
+    ordered = ["pure", "state.memory", "fs.read", "test.run", "fs.write", "mcp.call", "shell.exec"]
+    effects = {ACTION_EFFECTS[action] for action in actions}
+    for effect in reversed(ordered):
+        if effect in effects:
+            return effect
+    return "pure"
+
+
+def _semantic_trace_rules() -> list[FormalSemanticTraceRule]:
+    return [
+        FormalSemanticTraceRule("model.requested", "C-LLM", "LLM oracle call", "The planner term yields to the configured model."),
+        FormalSemanticTraceRule("model.responded", "C-LLMRet", "LLM return", "The oracle response resumes the reduction with ActionIR text."),
+        FormalSemanticTraceRule("action.parsed", "C-Route", "Route action", "ActionIR.type selects one reachable DSL branch."),
+        FormalSemanticTraceRule("policy.evaluated", "C-Guard", "Check guard", "The tool effect is checked against the contract and overrides."),
+        FormalSemanticTraceRule("tool.executed", "C-Tool", "Invoke tool", "A permitted external operation is lifted into the term."),
+        FormalSemanticTraceRule("tool.failed", "C-ToolFail", "Tool fault", "A failed oracle call returns an observation without escaping the loop."),
+        FormalSemanticTraceRule("memory.loaded", "C-Mem", "Read store", "Project memory is injected into the runtime store."),
+        FormalSemanticTraceRule("memory.written", "C-MemRet", "Write store", "A governed memory update extends the store."),
+        FormalSemanticTraceRule("completion.assessed", "C-GuardOK", "Completion proof", "The finish value satisfies the evidence predicate."),
+        FormalSemanticTraceRule("run.completed", "C-Halt", "Halt", "The bounded program terminates with reportable evidence."),
+    ]
+
+
+def _capability_boundary(
+    contract: AgentContract,
+    governance: GovernanceSettings | None,
+    skills: list[FormalProgramNode],
+    mcp: list[FormalProgramNode],
+    hooks: list[FormalProgramNode],
+) -> list[FormalCapabilityBoundary]:
+    sandbox = getattr(governance.sandbox_profile, "value", "standard") if governance else "standard"
+    override_count = len(governance.tool_overrides) if governance else 0
+    return [
+        FormalCapabilityBoundary(
+            id="base-coder",
+            title="BaseCoder",
+            expression=f"Task ->^{_effect_expression(contract, _allowed_actions(contract))} PatchEvidence",
+            description="The core coding loop can inspect, edit, validate, and finish only through registered ActionIR tools.",
+            evidence=f"{len(_allowed_actions(contract))} routed actions under AgentContract",
+        ),
+        FormalCapabilityBoundary(
+            id="skill",
+            title="Skill",
+            expression=f"Skill(BaseCoder) with {len(skills)} active transforms",
+            description="Project rules are treated as capability-injecting term transforms, not hidden prompt text.",
+            evidence=", ".join(node.label for node in skills) if skills else "no active skill transform",
+        ),
+        FormalCapabilityBoundary(
+            id="restrict",
+            title="Restrict",
+            expression=f"Restrict(effect <= {_effect_ceiling(_allowed_actions(contract))}, sandbox={sandbox})",
+            description="Sandbox profile, denied effects, and per-tool policies form the upper bound of this run.",
+            evidence=f"{override_count} run override(s), {len(contract.effects.deny)} denied effect(s)",
+        ),
+        FormalCapabilityBoundary(
+            id="handler",
+            title="EffectHandler",
+            expression=f"TraceHandler + {len(mcp)} MCP + {len(hooks)} hook handler(s)",
+            description="Effects keep the same program shape while the runtime chooses production, trace, or extension handlers.",
+            evidence="trace events preserve each observable effect",
+        ),
+    ]
 
 
 def _semantic_lints(
@@ -285,6 +459,49 @@ def _mcp_nodes(extensions: ExtensionCatalog | None, settings: ExtensionSettings 
         for server_id in settings.enabled_mcp_server_ids
         if (server := by_id.get(server_id)) is not None
     ]
+
+
+def _dump_yaml(value: object, indent: int = 0) -> str:
+    space = "  " * indent
+    if isinstance(value, dict):
+        lines: list[str] = []
+        for key, item in value.items():
+            if isinstance(item, dict):
+                lines.append(f"{space}{key}:")
+                lines.append(_dump_yaml(item, indent + 1))
+            elif isinstance(item, list):
+                lines.append(f"{space}{key}:")
+                if item:
+                    lines.append(_dump_yaml(item, indent + 1))
+                else:
+                    lines.append(f"{space}  []")
+            else:
+                lines.append(f"{space}{key}: {_yaml_scalar(item)}")
+        return "\n".join(lines)
+    if isinstance(value, list):
+        lines = []
+        for item in value:
+            if isinstance(item, dict):
+                rendered = _dump_yaml(item, indent + 1).splitlines()
+                lines.append(f"{space}- {rendered[0].lstrip()}")
+                lines.extend(f"{space}  {line}" for line in rendered[1:])
+            else:
+                lines.append(f"{space}- {_yaml_scalar(item)}")
+        return "\n".join(lines)
+    return f"{space}{_yaml_scalar(value)}"
+
+
+def _yaml_scalar(value: object) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float):
+        return str(value)
+    text = str(value)
+    if not text or any(char in text for char in ":#{}[],&*?|<>=!%@`"):
+        return repr(text)
+    return text
 
 
 def _hook_nodes(extensions: ExtensionCatalog | None, settings: ExtensionSettings | None) -> list[FormalProgramNode]:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, Braces, BrainCircuit, Check, CircleAlert, CircleGauge, Database, FlaskConical, FileText, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Activity, Braces, BrainCircuit, Check, CircleAlert, CircleGauge, Copy, Database, FlaskConical, FileText, Gauge, GitBranch, GitPullRequest, Layers3, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
 import type {
   ContextCompactionResponse,
   ContextPack,
@@ -418,6 +418,7 @@ export function RuntimePanels({
 
 function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
   const { t } = usePreferences();
+  const [copied, setCopied] = useState(false);
   const passed = program?.lints.filter((lint) => lint.status === "passed").length ?? 0;
   if (!program) {
     return (
@@ -425,6 +426,21 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
         <div className="agentPackLoading">{t("program.pending")}</div>
       </section>
     );
+  }
+  const semanticRules = program.semantic_trace_rules?.length
+    ? program.semantic_trace_rules
+    : program.trace_rules.map((rule) => ({ event: "", rule: rule.split(":")[0] ?? rule, label: rule, description: "" }));
+  const boundary = program.capability_boundary ?? [];
+
+  async function copyDsl() {
+    if (!program?.dsl_text) return;
+    try {
+      await navigator.clipboard.writeText(program.dsl_text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
@@ -435,64 +451,102 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
           <h3>{t("program.title")}</h3>
           <p>{t("program.description")}</p>
         </div>
-        <strong>{t("program.lintScore", { passed, total: program.lints.length })}</strong>
+        <div className="formalProgramHeaderActions">
+          <strong>{t("program.lintScore", { passed, total: program.lints.length })}</strong>
+          <button type="button" onClick={() => void copyDsl()} disabled={!program.dsl_text}>
+            <Copy size={14} />
+            {copied ? t("program.copied") : t("program.copyDsl")}
+          </button>
+        </div>
+      </div>
+
+      <div className="formalProgramShowcase">
+        <article className="programDslBlock">
+          <header>
+            <div><Braces size={15} /><strong>{t("program.dsl")}</strong></div>
+            <span>{t("program.dslBadge")}</span>
+          </header>
+          <pre>{program.dsl_text || program.term}</pre>
+        </article>
+
+        <aside className="programContractBlock">
+          <div className="programTypeRow">
+            <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
+            <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
+            <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
+          </div>
+          <article className="programGradeCard">
+            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
+            <p>{program.grade.expression}</p>
+            <div>
+              <code>steps &lt;= {program.grade.steps}</code>
+              <code>tools &lt;= {program.grade.tool_calls}</code>
+              <code>models &lt;= {program.grade.model_calls}</code>
+              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+            </div>
+          </article>
+        </aside>
+      </div>
+
+      <div className="programBoundaryBlock">
+        <header>
+          <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
+          <span>{t("program.boundaryHint")}</span>
+        </header>
+        <div>
+          {boundary.map((item) => (
+            <article key={item.id}>
+              <strong>{item.title}</strong>
+              <code>{item.expression}</code>
+              <p>{item.description}</p>
+              <small>{item.evidence}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="programSemanticBlock">
+        <header>
+          <div><Activity size={15} /><strong>{t("program.traceRules")}</strong></div>
+          <span>{t("program.traceHint")}</span>
+        </header>
+        <div>
+          {semanticRules.map((rule) => (
+            <article key={`${rule.rule}-${rule.event}`}>
+              <code>{rule.rule}</code>
+              <strong>{rule.event || rule.label}</strong>
+              <p>{rule.description || rule.label}</p>
+            </article>
+          ))}
+        </div>
       </div>
 
       <div className="formalProgramMain">
-        <div className="programTermBlock">
-          <header><Braces size={15} /><strong>{t("program.term")}</strong></header>
-          <pre>{program.term}</pre>
-        </div>
-
         <div className="programTree">
           <header><GitBranch size={15} /><strong>{t("program.structure")}</strong></header>
           <ol>
             {program.nodes.map((node) => <ProgramNodeItem node={node} key={node.id} />)}
           </ol>
         </div>
+
+        <div className="programLintPanel">
+          <div className="programLintHeader">
+            <strong>{t("program.semanticLint")}</strong>
+            <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
+          </div>
+          <div className="programLintGrid">
+            {program.lints.map((lint) => (
+              <article className={`state-${lint.status}`} key={lint.id}>
+                <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
+                <div>
+                  <strong>{lint.summary}</strong>
+                  <small>{lint.evidence}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
-
-      <aside className="formalProgramSide">
-        <div className="programTypeRow">
-          <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
-          <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
-          <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
-        </div>
-
-        <div className="programEvidenceGrid">
-          <article>
-            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
-            <p>{program.grade.expression}</p>
-            <div>
-              <code>steps &lt;= {program.grade.steps}</code>
-              <code>tools &lt;= {program.grade.tool_calls}</code>
-              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
-            </div>
-          </article>
-          <article>
-            <header><ShieldCheck size={15} /><strong>{t("program.traceRules")}</strong></header>
-            <ul>
-              {program.trace_rules.map((rule) => <li key={rule}>{rule}</li>)}
-            </ul>
-          </article>
-        </div>
-
-        <div className="programLintHeader">
-          <strong>{t("program.semanticLint")}</strong>
-          <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
-        </div>
-        <div className="programLintGrid">
-          {program.lints.map((lint) => (
-            <article className={`state-${lint.status}`} key={lint.id}>
-              <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
-              <div>
-                <strong>{lint.summary}</strong>
-                <small>{lint.evidence}</small>
-              </div>
-            </article>
-          ))}
-        </div>
-      </aside>
     </section>
   );
 }

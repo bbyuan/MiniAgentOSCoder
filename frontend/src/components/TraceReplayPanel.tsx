@@ -23,6 +23,7 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
   const canReplay = Boolean(runId) && TERMINAL_STATUSES.has(runStatus);
   const replayEvents = snapshot?.events ?? [];
   const current = replayEvents[cursor];
+  const currentRule = current ? semanticRuleForEvent(current.event) : undefined;
   const eventGroups = useMemo(() => [
     { label: "replay.group.prompt" as TranslationKey, count: events.filter((event) => event.event === "model.requested").length },
     { label: "replay.group.agents" as TranslationKey, count: events.filter((event) => event.event.startsWith("agent.")).length },
@@ -193,10 +194,14 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
           <div className="traceReplayShell">
             {current ? (
               <article className="replayCurrent">
-                <div>
+                <div className="replayCurrentHeader">
                   <span>{String(cursor + 1).padStart(2, "0")}</span>
                   <strong>{translateKnownText(locale, current.event)}</strong>
                   <time dateTime={current.time}>{formatEventTime(current.time)}</time>
+                </div>
+                <div className="replaySemanticRule">
+                  <code>{currentRule?.rule ?? "C-Step"}</code>
+                  <span>{currentRule?.description ?? t("replay.semanticGeneric")}</span>
                 </div>
                 <small>{current.role}</small>
                 <pre>{JSON.stringify(current.payload, null, 2)}</pre>
@@ -208,6 +213,7 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
                 <div className={index === cursor ? "active" : ""} key={`${event.time}-${event.event}-${index}`}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <code>{translateKnownText(locale, event.event)}</code>
+                  <em>{semanticRuleForEvent(event.event)?.rule ?? "C-Step"}</em>
                 </div>
               ))}
             </div>
@@ -216,6 +222,21 @@ export function TraceReplayPanel({ runId, runStatus, events }: TraceReplayPanelP
       )}
     </section>
   );
+}
+
+function semanticRuleForEvent(event: string): { rule: string; description: string } | undefined {
+  if (event === "model.requested") return { rule: "C-LLM", description: "Planner yields to the model oracle." };
+  if (event === "model.responded") return { rule: "C-LLMRet", description: "The model response resumes ActionIR reduction." };
+  if (event === "action.parsed") return { rule: "C-Route", description: "ActionIR selects one route branch." };
+  if (event === "policy.evaluated" || event === "action.rejected") return { rule: "C-Guard", description: "Policy and sandbox predicates guard the effect." };
+  if (event === "tool.executed") return { rule: "C-Tool", description: "A registered external tool is invoked." };
+  if (event === "tool.failed") return { rule: "C-ToolFail", description: "The failed tool returns a bounded observation." };
+  if (event.startsWith("memory.")) return { rule: "C-Mem", description: "Runtime store is read or extended." };
+  if (event === "completion.assessed") return { rule: "C-GuardOK", description: "Completion evidence satisfies the finish predicate." };
+  if (event === "run.completed") return { rule: "C-Halt", description: "The bounded agent program terminates." };
+  if (event.startsWith("skill.")) return { rule: "C-Skill", description: "A project skill transforms the base agent term." };
+  if (event.startsWith("mcp.") || event.startsWith("hook.")) return { rule: "C-Handler", description: "An extension handler observes or handles an effect." };
+  return undefined;
 }
 
 function formatEventTime(value: string): string {
