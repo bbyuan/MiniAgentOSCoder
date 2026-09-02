@@ -7347,3 +7347,69 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Formal program details must show complete calculus terms. This file loads after global.css. */
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 pre {
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Code pre {
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2BoundaryTitle code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2RuleTitle code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Grade code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2LintGrid small {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Boundary > div,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Semantic > div,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2LintGrid {
+  max-height: none;
+  overflow: visible;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Boundary article,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Semantic article,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2LintGrid article {
+  min-height: 0;
+  overflow: visible;
+  align-content: start;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2RuleTitle {
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+}
+
+@media (max-width: 1320px) {
+  .productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Evidence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Lint {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .formalProgramV2 .formalV2Evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

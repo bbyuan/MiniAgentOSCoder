@@ -21,13 +21,24 @@ def test_compile_formal_program_projects_contract_to_dsl() -> None:
         extension_settings=settings,
     )
 
-    assert program.calculus == "MiniAgent DSL / λA projection"
-    assert "Loop(max_steps=20" in program.term
-    assert "Route(ActionIR.type" in program.term
-    assert "Guard(Tool[apply_patch], approval)" in program.term
+    assert program.calculus == "MiniAgent DSL / AOS + λA projection"
+    assert "fix_20" in program.term
+    assert "(lam p_Bugfix θ_default) x" in program.term
+    assert "case ((lam p_Bugfix θ_default) x) of" in program.term
+    assert program.dsl["judgment"] == "Γ; Σ ⊢ A_run : Str -ε→ (Str × Str × Str)"
+    assert program.dsl["term"]["mem"]["store"] == "σ_project,long_term"
+    assert program.dsl["term"]["mem"]["body"]["guard"]["body"]["fix"]["index"] == 20
+    assert program.dsl["constructs"] == ["lam", "tool", "fix_n", "case", "guard", "mem", "»"]
+    assert program.dsl_text == program.term
+    assert "kind:" not in program.dsl_text
+    assert program.input_type == "Str"
+    assert program.output_type == "Str × Str × Str"
+    assert "apply_patch =>\n            guard(tool[apply_patch], P_approval)\n            » self" in program.term
+    assert "ε =" in program.term
+    assert "γ =" in program.term
     assert "fs.write" in program.effect
     assert program.grade.tool_calls == 60
-    assert any(node.op == "Skill" for node in program.nodes)
+    assert any(node.op == "compose" and node.label == "Skill transforms" for node in program.nodes)
     assert all(lint.status == "passed" for lint in program.lints)
 
 

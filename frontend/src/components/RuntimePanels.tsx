@@ -9,7 +9,10 @@ import type {
   ExtensionResponse,
   ExtensionSettings,
   FormalAgentProgram,
+  FormalCapabilityBoundary,
+  FormalProgramLint,
   FormalProgramNode,
+  FormalSemanticTraceRule,
   GovernanceResponse,
   MemoryInput,
   MemoryResponse,
@@ -422,7 +425,7 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
   const passed = program?.lints.filter((lint) => lint.status === "passed").length ?? 0;
   if (!program) {
     return (
-      <section className="inspectorSection formalProgramPanel">
+      <section className="inspectorSection formalProgramV2">
         <div className="agentPackLoading">{t("program.pending")}</div>
       </section>
     );
@@ -432,11 +435,21 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
     : program.trace_rules.map((rule) => ({ event: "", rule: rule.split(":")[0] ?? rule, label: rule, description: "" }));
   const boundary = program.capability_boundary ?? [];
   const hasExportableDsl = Boolean(program.dsl_text);
+  const displayArtifact = program.dsl_text || normalizeFormalTerm(program);
+  const copyableDsl = displayArtifact;
+  const effectGroups = parseEffectExpression(program.effect);
+  const calculusLabel = localizeProgramCalculus(program.calculus, t);
+  const gradeChips = [
+    { label: t("program.grade.steps"), value: program.grade.steps },
+    { label: t("program.grade.tools"), value: program.grade.tool_calls },
+    { label: t("program.grade.models"), value: program.grade.model_calls },
+    { label: t("program.grade.wall"), value: `${Math.ceil(program.grade.wall_time_seconds / 60)}m` },
+  ];
 
   async function copyDsl() {
-    if (!program?.dsl_text) return;
+    if (!copyableDsl) return;
     try {
-      await navigator.clipboard.writeText(program.dsl_text);
+      await writeClipboardText(copyableDsl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
     } catch {
@@ -445,106 +458,132 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
   }
 
   return (
-    <section className="inspectorSection formalProgramPanel">
-      <div className="formalProgramHeader">
+    <section className="inspectorSection formalProgramV2">
+      <div className="formalV2Header">
         <div>
-          <span className="stageEyebrow">{program.calculus}</span>
+          <span className="stageEyebrow">{calculusLabel}</span>
           <h3>{t("program.title")}</h3>
           <p>{t("program.description")}</p>
         </div>
-        <div className="formalProgramHeaderActions">
+        <div className="formalV2Actions">
           <strong>{t("program.lintScore", { passed, total: program.lints.length })}</strong>
-          <button type="button" onClick={() => void copyDsl()} disabled={!program.dsl_text}>
+          <button type="button" onClick={() => void copyDsl()} disabled={!copyableDsl}>
             <Copy size={14} />
             {copied ? t("program.copied") : t("program.copyDsl")}
           </button>
         </div>
       </div>
 
-      <div className="formalProgramCanvas">
-        <section className="programContractBlock">
-          <div className="programTypeRow">
-            <span><small>{t("program.input")}</small><strong>{program.input_type}</strong></span>
-            <span><small>{t("program.output")}</small><strong>{program.output_type}</strong></span>
-            <span><small>{t("program.effect")}</small><strong>{program.effect}</strong></span>
-          </div>
-          <article className="programGradeCard">
-            <header><Gauge size={15} /><strong>{t("program.grade")}</strong></header>
-            <p>{program.grade.expression}</p>
+      <div className="formalV2Canvas">
+        <section className="formalV2Summary">
+          <article className="formalV2Metric formalV2Input">
+            <small>{t("program.input")}</small>
+            <strong>{program.input_type}</strong>
+          </article>
+          <article className="formalV2Metric formalV2Output">
+            <small>{t("program.output")}</small>
+            <strong>{program.output_type}</strong>
+          </article>
+          <article className="formalV2Metric formalV2Grade">
+            <header><Gauge size={14} /><small>{t("program.grade")}</small></header>
             <div>
-              <code>steps &lt;= {program.grade.steps}</code>
-              <code>tools &lt;= {program.grade.tool_calls}</code>
-              <code>models &lt;= {program.grade.model_calls}</code>
-              <code>wall &lt;= {Math.ceil(program.grade.wall_time_seconds / 60)}m</code>
+              {gradeChips.map((item) => (
+                <code key={item.label}>{item.label} &lt;= {item.value}</code>
+              ))}
             </div>
+          </article>
+          <article className="formalV2Metric formalV2Effect">
+            <small>{t("program.effect")}</small>
+            {effectGroups.parsed ? (
+              <div className="formalV2EffectGroups" title={program.effect}>
+                <span className="formalV2EffectGroup">
+                  <b>{t("program.effect.allow")}</b>
+                  <span className="formalV2EffectTokens">
+                    {effectGroups.allow.map((effect) => <code key={`allow-${effect}`}>{effect}</code>)}
+                  </span>
+                </span>
+                <span className="formalV2EffectGroup">
+                  <b>{t("program.effect.deny")}</b>
+                  <span className="formalV2EffectTokens">
+                    {effectGroups.deny.length ? effectGroups.deny.map((effect) => <code key={`deny-${effect}`}>{effect}</code>) : <code>∅</code>}
+                  </span>
+                </span>
+              </div>
+            ) : <code className="formalV2EffectRaw" title={program.effect}>{program.effect}</code>}
           </article>
         </section>
 
-        <div className="programWorkbenchGrid">
-          <details className="programDslBlock" open>
+        <div className="formalV2Workbench">
+          <details className="formalV2Code" open>
             <summary>
               <div><Braces size={15} /><strong>{hasExportableDsl ? t("program.dsl") : t("program.term")}</strong></div>
-              <span>{hasExportableDsl ? t("program.dslBadge") : program.calculus}</span>
+              <span>{hasExportableDsl ? t("program.dslBadge") : calculusLabel}</span>
             </summary>
-            <pre>{program.dsl_text || program.term}</pre>
+            <pre>{displayArtifact}</pre>
           </details>
 
-          <div className="programTree">
+          <div className="formalV2Tree">
             <header><GitBranch size={15} /><strong>{t("program.structure")}</strong></header>
             <ol>
-              {program.nodes.map((node) => <ProgramNodeItem node={node} key={node.id} />)}
+              {program.nodes.map((node) => <ProgramNodeItem node={node} t={t} key={node.id} />)}
             </ol>
           </div>
         </div>
 
-        <div className="programEvidenceColumns">
-          <section className="programBoundaryBlock">
-            <header>
-              <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
-              <span>{t("program.boundaryHint")}</span>
-            </header>
-            <div>
-              {boundary.map((item) => (
-                <article key={item.id}>
-                  <strong>{item.title}</strong>
-                  <code>{item.expression}</code>
-                  <p>{item.description}</p>
-                  <small>{item.evidence}</small>
-                </article>
-              ))}
-            </div>
-          </section>
+        <div className="formalV2Evidence">
+          {boundary.length ? (
+            <section className="formalV2EvidenceCard formalV2Boundary">
+              <header>
+                <div><ShieldCheck size={15} /><strong>{t("program.boundary")}</strong></div>
+                <span>{t("program.boundaryHint")}</span>
+              </header>
+              <div>
+                {boundary.map((item) => {
+                  const copy = localizeBoundaryItem(item, t);
+                  return (
+                    <article key={item.id}>
+                      <div className="formalV2BoundaryTitle">
+                        <strong>{copy.title}</strong>
+                        <code>{item.expression}</code>
+                      </div>
+                      <p>{copy.description}</p>
+                      <small>{copy.evidence}</small>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
-          <section className="programSemanticBlock">
+          <section className="formalV2EvidenceCard formalV2Semantic">
             <header>
               <div><Activity size={15} /><strong>{t("program.traceRules")}</strong></div>
               <span>{t("program.traceHint")}</span>
             </header>
             <div>
-              {semanticRules.map((rule) => (
-                <article key={`${rule.rule}-${rule.event}`}>
-                  <code>{rule.rule}</code>
-                  <strong>{rule.event || rule.label}</strong>
-                  <p>{rule.description || rule.label}</p>
-                </article>
-              ))}
+              {semanticRules.map((rule) => {
+                const copy = localizeSemanticRule(rule, t);
+                return (
+                  <article key={`${rule.rule}-${rule.event}`}>
+                    <div className="formalV2RuleTitle">
+                      <code>{rule.rule}</code>
+                      <strong>{copy.title}</strong>
+                    </div>
+                    {copy.description ? <p>{copy.description}</p> : null}
+                  </article>
+                );
+              })}
             </div>
           </section>
 
-          <section className="programLintPanel">
-            <div className="programLintHeader">
+          <section className="formalV2EvidenceCard formalV2Lint">
+            <div className="formalV2LintHeader">
               <strong>{t("program.semanticLint")}</strong>
               <span>{t("program.lintScore", { passed, total: program.lints.length })}</span>
             </div>
-            <div className="programLintGrid">
+            <div className="formalV2LintGrid">
               {program.lints.map((lint) => (
-                <article className={`state-${lint.status}`} key={lint.id}>
-                  <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
-                  <div>
-                    <strong>{lint.summary}</strong>
-                    <small>{lint.evidence}</small>
-                  </div>
-                </article>
+                <LocalizedLintItem lint={lint} t={t} key={lint.id} />
               ))}
             </div>
           </section>
@@ -554,17 +593,327 @@ function FormalProgramPanel({ program }: { program?: FormalAgentProgram }) {
   );
 }
 
-function ProgramNodeItem({ node }: { node: FormalProgramNode }) {
+function normalizeFormalTerm(program: FormalAgentProgram): string {
+  if (!program.term.includes("Memory(") && !program.term.includes("Loop(max_steps=") && !program.term.includes("Route(ActionIR.type")) {
+    return program.term;
+  }
+
+  const mode = program.term.match(/λmodel\[([^\]]+)\]/)?.[1] ?? "Agent";
+  const maxSteps = program.grade.steps || Number(program.term.match(/Loop\(max_steps=(\d+)/)?.[1] ?? 0) || 20;
+  const routes = extractLegacyRoutes(program.term);
+  const routeLines = routes.length
+    ? routes.map((route) => `          | ${route.action} -> ${rewriteLegacyTerm(route.term)}`).join("\n")
+    : "          | finish -> guard(finish, evidence)";
+
+  return [
+    "mem_{project,long_term}(",
+    "  guard_{sandbox ∧ policies ∧ budget ∧ completion}(",
+    `    fix_${maxSteps}(`,
+    "      λself: Str -> Str. λx: Str.",
+    `        lam[model=${mode}](x)`,
+    "        » parse<ActionIR>",
+    "        » case ActionIR.type of",
+    routeLines,
+    "        » observe",
+    "        » update_env",
+    "        » continue_or_finish",
+    "    )",
+    "  )",
+    ")",
+  ].join("\n");
+}
+
+function extractLegacyRoutes(term: string): Array<{ action: string; term: string }> {
+  return term
+    .split("\n")
+    .map((line) => line.trim())
+    .map((line) => line.match(/^\|\s*([a-zA-Z0-9_]+)\s*->\s*(.+)$/))
+    .filter((match): match is RegExpMatchArray => Boolean(match))
+    .map((match) => ({ action: match[1], term: match[2] }));
+}
+
+function rewriteLegacyTerm(term: string): string {
+  return term
+    .replace(/^Tool\[([^\]]+)\]$/, "tool[$1]")
+    .replace(/^Guard\(Tool\[([^\]]+)\],\s*([^)]+)\)$/, "guard(tool[$1], $2)")
+    .replace(/^Guard\(Memory\.write,\s*([^)]+)\)$/, "guard(mem.write, $1)")
+    .replace(/^Guard\(Finish,\s*([^)]+)\)$/, "guard(finish, $1)");
+}
+
+async function writeClipboardText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error("Clipboard copy failed");
+}
+
+function parseEffectExpression(effect: string): { parsed: boolean; allow: string[]; deny: string[] } {
+  const match = effect.match(/^allow\((.*)\)\s*∧\s*deny\((.*)\)$/);
+  if (!match) return { parsed: false, allow: [effect], deny: [] };
+  return {
+    parsed: true,
+    allow: splitEffectTerms(match[1], "⊔"),
+    deny: splitEffectTerms(match[2], ","),
+  };
+}
+
+function splitEffectTerms(value: string, separator: "⊔" | ","): string[] {
+  const normalized = value.trim();
+  if (!normalized || normalized === "∅") return [];
+  return normalized.split(separator === "⊔" ? /\s*⊔\s*/ : /\s*,\s*/).map((item) => item.trim()).filter(Boolean);
+}
+
+function localizeProgramCalculus(
+  calculus: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  if (calculus === "MiniAgent DSL / AOS + λA projection") {
+    return t("program.calculus");
+  }
+  if (calculus === "MiniAgent DSL / λA projection") {
+    return t("program.calculusLegacy");
+  }
+  return calculus;
+}
+
+function localizeSemanticRule(
+  rule: FormalSemanticTraceRule,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): { title: string; description: string } {
+  const key = rule.rule.replace(/[^a-zA-Z0-9]/g, "");
+  const known: Record<string, { title: TranslationKey; description: TranslationKey }> = {
+    CLLM: { title: "program.trace.CLLM.title", description: "program.trace.CLLM.description" },
+    CLLMRet: { title: "program.trace.CLLMRet.title", description: "program.trace.CLLMRet.description" },
+    CRoute: { title: "program.trace.CRoute.title", description: "program.trace.CRoute.description" },
+    CGuard: { title: "program.trace.CGuard.title", description: "program.trace.CGuard.description" },
+    CTool: { title: "program.trace.CTool.title", description: "program.trace.CTool.description" },
+    CToolFail: { title: "program.trace.CToolFail.title", description: "program.trace.CToolFail.description" },
+    CMem: { title: "program.trace.CMem.title", description: "program.trace.CMem.description" },
+    CMemRet: { title: "program.trace.CMemRet.title", description: "program.trace.CMemRet.description" },
+    CGuardOK: { title: "program.trace.CGuardOK.title", description: "program.trace.CGuardOK.description" },
+    CHalt: { title: "program.trace.CHalt.title", description: "program.trace.CHalt.description" },
+  };
+  const copy = known[key];
+  if (copy) return { title: t(copy.title), description: t(copy.description) };
+  return { title: rule.event || rule.label, description: rule.description || "" };
+}
+
+function localizeBoundaryItem(
+  item: FormalCapabilityBoundary,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): { title: string; description: string; evidence: string } {
+  if (item.id === "base-coder") {
+    const count = Number(item.evidence.match(/\d+/)?.[0] ?? 0);
+    return {
+      title: t("program.boundary.baseCoder.title"),
+      description: t("program.boundary.baseCoder.description"),
+      evidence: t("program.boundary.baseCoder.evidence", { count }),
+    };
+  }
+
+  if (item.id === "skill") {
+    const active = !item.evidence.includes("no active");
+    return {
+      title: t("program.boundary.skill.title"),
+      description: t("program.boundary.skill.description"),
+      evidence: active
+        ? t("program.boundary.skill.evidence", { skills: item.evidence })
+        : t("program.boundary.skill.empty"),
+    };
+  }
+
+  if (item.id === "restrict") {
+    const [overrides = "0", denied = "0"] = item.evidence.match(/\d+/g) ?? [];
+    return {
+      title: t("program.boundary.restrict.title"),
+      description: t("program.boundary.restrict.description"),
+      evidence: t("program.boundary.restrict.evidence", { overrides, denied }),
+    };
+  }
+
+  if (item.id === "handler") {
+    return {
+      title: t("program.boundary.handler.title"),
+      description: t("program.boundary.handler.description"),
+      evidence: t("program.boundary.handler.evidence"),
+    };
+  }
+
+  return {
+    title: item.title,
+    description: item.description,
+    evidence: item.evidence,
+  };
+}
+
+function localizeLint(
+  lint: FormalProgramLint,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): { summary: string; evidence: string } {
+  const known: Record<string, { summary: TranslationKey; evidence: TranslationKey }> = {
+    bounded_loop: { summary: "program.lint.boundedLoop.summary", evidence: "program.lint.boundedLoop.evidence" },
+    model_budget: { summary: "program.lint.modelBudget.summary", evidence: "program.lint.modelBudget.evidence" },
+    tool_budget: { summary: "program.lint.toolBudget.summary", evidence: "program.lint.toolBudget.evidence" },
+    write_guard: { summary: "program.lint.writeGuard.summary", evidence: "program.lint.writeGuard.evidence" },
+    command_guard: { summary: "program.lint.commandGuard.summary", evidence: "program.lint.commandGuard.evidence" },
+    memory_guard: { summary: "program.lint.memoryGuard.summary", evidence: "program.lint.memoryGuard.evidence" },
+    workspace_escape_denied: { summary: "program.lint.workspaceEscape.summary", evidence: "program.lint.workspaceEscape.evidence" },
+    secret_read_denied: { summary: "program.lint.secretRead.summary", evidence: "program.lint.secretRead.evidence" },
+    completion_guard: { summary: "program.lint.completionGuard.summary", evidence: "program.lint.completionGuard.evidence" },
+    sandbox_declared: { summary: "program.lint.sandboxDeclared.summary", evidence: "program.lint.sandboxDeclared.evidence" },
+    skills_resolve: { summary: "program.lint.skillsResolve.summary", evidence: "program.lint.skillsResolve.evidence" },
+    mcp_resolve: { summary: "program.lint.mcpResolve.summary", evidence: "program.lint.mcpResolve.evidence" },
+    hooks_resolve: { summary: "program.lint.hooksResolve.summary", evidence: "program.lint.hooksResolve.evidence" },
+  };
+  const copy = known[lint.id];
+  if (!copy) return { summary: lint.summary, evidence: lint.evidence };
+  if (["skills_resolve", "mcp_resolve", "hooks_resolve"].includes(lint.id)) {
+    return {
+      summary: t(copy.summary),
+      evidence: localizeResolveEvidence(lint.evidence, t),
+    };
+  }
+  return {
+    summary: t(copy.summary),
+    evidence: t(copy.evidence, extractLintVariables(lint.evidence, t)),
+  };
+}
+
+function extractLintVariables(
+  evidence: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): Record<string, string | number> {
+  const numberValue = Number(evidence.match(/\d+/)?.[0] ?? 0);
+  const value = evidence.split("=").slice(1).join("=").trim() || evidence;
+  return {
+    count: numberValue,
+    value: localizePolicyValue(value, t),
+  };
+}
+
+function localizePolicyValue(
+  value: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  const policyLabels: Record<string, TranslationKey> = {
+    approval_required: "program.policy.approvalRequired",
+    confirm_if_long_term: "program.policy.confirmLongTerm",
+    depends_on_effect: "program.policy.dependsOnEffect",
+    auto: "program.policy.auto",
+    standard: "program.policy.standard",
+    strict: "program.policy.strict",
+  };
+  const key = policyLabels[value];
+  return key ? t(key) : value;
+}
+
+function localizeResolveEvidence(
+  evidence: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  if (evidence === "all selected entries resolve") {
+    return t("program.lint.resolve.all");
+  }
+  if (evidence.startsWith("missing:")) {
+    return t("program.lint.resolve.missing", { value: evidence.replace(/^missing:\s*/, "") });
+  }
+  return evidence;
+}
+
+function localizeProgramNode(
+  node: FormalProgramNode,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): { label: string; detail: string } {
+  if (node.id === "memory") return { label: node.label, detail: t("program.node.memory.detail") };
+  if (node.id === "guard") return { label: node.label, detail: localizeSandboxDetail(node.detail, t) };
+  if (node.id === "loop") return { label: node.label, detail: t("program.node.loop.detail") };
+  if (node.id === "planner") return { label: node.label, detail: t("program.node.planner.detail") };
+  if (node.id === "route") {
+    const count = Number(node.detail.match(/\d+/)?.[0] ?? 0);
+    return { label: node.label, detail: t("program.node.route.detail", { count }) };
+  }
+  if (node.id === "skills") return { label: t("program.node.skills.label"), detail: localizeCountDetail(node.detail, "program.node.skills.detail", t) };
+  if (node.id === "mcp") return { label: t("program.node.mcp.label"), detail: localizeCountDetail(node.detail, "program.node.mcp.detail", t) };
+  if (node.id === "hooks") return { label: t("program.node.hooks.label"), detail: localizeCountDetail(node.detail, "program.node.hooks.detail", t) };
+  if (node.id.startsWith("action-")) return { label: node.label, detail: localizeActionDetail(node.detail, t) };
+  return { label: node.label, detail: node.detail };
+}
+
+function localizeSandboxDetail(
+  detail: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  const value = detail.split("=").slice(1).join("=").trim() || detail;
+  return t("program.node.guard.detail", { value });
+}
+
+function localizeCountDetail(
+  detail: string,
+  key: TranslationKey,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  const count = Number(detail.match(/\d+/)?.[0] ?? 0);
+  return t(key, { count });
+}
+
+function localizeActionDetail(
+  detail: string,
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string,
+): string {
+  const [effect = "", policy = ""] = detail.split("·").map((item) => item.trim());
+  return t("program.node.action.detail", { effect, policy: localizePolicyValue(policy.replace(/^policy=/, ""), t) });
+}
+
+function LocalizedLintItem({
+  lint,
+  t,
+}: {
+  lint: FormalProgramLint;
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string;
+}) {
+  const copy = localizeLint(lint, t);
   return (
-    <li>
+    <article className={`state-${lint.status}`} key={lint.id}>
+      <span>{lint.status === "passed" ? <Check size={13} /> : <CircleAlert size={13} />}</span>
+      <div>
+        <strong>{copy.summary}</strong>
+        <small>{copy.evidence}</small>
+      </div>
+    </article>
+  );
+}
+
+function ProgramNodeItem({
+  node,
+  t,
+}: {
+  node: FormalProgramNode;
+  t: (key: TranslationKey, variables?: Record<string, string | number>) => string;
+}) {
+  const copy = localizeProgramNode(node, t);
+  return (
+    <li className="formalV2Node">
       <div>
         <code>{node.op}</code>
-        <strong>{node.label}</strong>
-        {node.detail ? <small>{node.detail}</small> : null}
+        <strong>{copy.label}</strong>
+        {copy.detail ? <small>{copy.detail}</small> : null}
       </div>
       {node.children.length ? (
-        <ol>
-          {node.children.map((child) => <ProgramNodeItem node={child} key={child.id} />)}
+        <ol className="formalV2NodeChildren">
+          {node.children.map((child) => <ProgramNodeItem node={child} t={t} key={child.id} />)}
         </ol>
       ) : null}
     </li>

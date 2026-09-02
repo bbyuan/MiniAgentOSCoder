@@ -187,13 +187,17 @@ def test_create_run_and_read_trace(tmp_path: Path) -> None:
     assert run["artifacts"]["plan"][0]["title"] == "Scan workspace"
     assert run["admission"]["can_start"] is True
     assert run["admission"]["basis"] in {"heuristic", "hybrid", "history"}
-    assert run["formal_program"]["calculus"] == "MiniAgent DSL / λA projection"
-    assert "Route(ActionIR.type" in run["formal_program"]["term"]
+    assert run["formal_program"]["calculus"] == "MiniAgent DSL / AOS + λA projection"
+    assert "case ((lam p_Bugfix θ_default) x) of" in run["formal_program"]["term"]
     assert formal_program["effect"].startswith("allow(")
     assert formal_program["grade"]["steps"] == 20
-    assert formal_program["dsl"]["kind"] == "MiniAgentCoderProgram"
-    assert "MiniAgentCoderProgram" in formal_program["dsl_text"]
-    assert formal_program["dsl"]["term"]["Memory"]["body"]["Guard"]["body"]["Loop"]["max_steps"] == 20
+    assert formal_program["dsl"]["judgment"] == "Γ; Σ ⊢ A_run : Str -ε→ (Str × Str × Str)"
+    assert formal_program["dsl"]["term"]["mem"]["body"]["guard"]["body"]["fix"]["index"] == 20
+    assert formal_program["dsl"]["constructs"] == ["lam", "tool", "fix_n", "case", "guard", "mem", "»"]
+    assert formal_program["dsl"]["effects"].startswith("(state(σ_project,long_term)")
+    assert formal_program["dsl_text"] == formal_program["term"]
+    assert "kind:" not in formal_program["dsl_text"]
+    assert "write_patch =>\n            guard(tool[write_patch], P_approval)\n            » self" in formal_program["dsl_text"]
     assert {item["title"] for item in formal_program["capability_boundary"]} >= {"Skill", "Restrict"}
     assert any(rule["rule"] == "C-Route" for rule in formal_program["semantic_trace_rules"])
     assert trace["events"][0]["event"] == "run.created"

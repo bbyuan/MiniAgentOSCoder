@@ -37,7 +37,7 @@ AgentContract + Skill/MCP/Hook + Governance
 -> Trace rules
 ```
 
-它把 Coder Agent 投影成一个接近 AgentOS/λA 思想的程序表示：`Loop` 表示有界 ReAct 循环，`Route(ActionIR.type)` 表示模型输出后的动作分派，`Guard(Tool, policy)` 表示工具调用必须先过策略和沙箱，`Memory` 表示项目/长期记忆参与上下文。前端“运行画像”中的“形式化程序”卡片和运行详情里的 Agent Program 页，就是这套后端编译结果的可视化证据。
+它把 Coder Agent 投影成一个接近 AgentOS formal representation 与 `λA` typed lambda calculus 的程序表示：`fix_n` 表示有界 ReAct 循环，`lam` 表示 LLM oracle call，`case ActionIR.type` 表示模型输出后的动作分派，`tool[f]` 表示外部函数调用，`guard` 表示工具调用必须先过策略和沙箱，`mem` 表示项目/长期记忆参与环境。前端“运行画像”中的“形式化程序”卡片和运行详情里的 Agent Program 页，就是这套后端编译结果的可视化证据。
 
 实现锚点可以这样讲：
 
@@ -165,10 +165,10 @@ Completion Guard 防止模型只靠一句“完成了”结束任务。不同模
 
 ### 3.8 形式化程序表示
 
-为了让 AgentOS 和 λA 的思想不是只停留在介绍里，系统现在会在准备运行时生成 Formal Agent Program：
+为了让 AgentOS formal representation 和 `λA` typed lambda calculus 的思想不是只停留在介绍里，系统现在会在准备运行时生成 Formal Agent Program：
 
-- Term：展示 `Memory(Guard(Loop(... Route(ActionIR.type) ...)))` 的程序骨架。
-- DSL：展示并可复制本次运行的 `MiniAgentCoderProgram`，把 AgentContract、Loop、Route、Guard、Memory、Effect、Grade 和 Restrict 统一为可导出的 IR。
+- Term：展示 `mem(guard(fix_n(... case ActionIR.type ...)))` 的程序骨架。
+- DSL：展示并可复制本次运行的 `MiniAgentCoderProgram`，把 AgentContract、`λA` term、Effect、Grade、Guard、Memory 和 Restrict 统一为可导出的 IR。
 - Effect：展示本次 Agent 可触达的 `fs.read/fs.write/shell.exec/test.run/state.memory/mcp.call` 等副作用边界。
 - Grade：展示步骤、模型调用、工具调用、Token 和最长运行时间上限。
 - Skill / Restrict：展示项目规则如何作为能力注入，沙箱和工具策略如何作为运行上界。
@@ -188,7 +188,7 @@ Completion Guard 防止模型只靠一句“完成了”结束任务。不同模
 | 展示区域 | 评委能看到什么 | 对应后端实现 |
 | --- | --- | --- |
 | 运行设置 | 模型、Sandbox、工具策略、Skill/MCP/Hook 开关 | AgentContract、Policy、Extension Catalog |
-| 形式化程序 | DSL term、effect、grade、语义检查、Trace 规则 | Formal Program Compiler、AgentOS/λA 投影 |
+| 形式化程序 | DSL term、effect、grade、语义检查、Trace 规则 | Formal Program Compiler、AgentOS / λA 投影 |
 | 运行过程 | 按阶段展示模型请求、读文件、命令、审批、验证 | Trace Event、Action IR、Observation |
 | 项目文件 | 工作区文件树和文件内容 | Workspace Tool、路径安全检查 |
 | 变更审阅 | 修改文件、diff、接受/拒绝粒度 | Patch Pipeline、Approval Gate |

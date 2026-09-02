@@ -18773,7 +18773,7 @@ button.controlSignal.active {
   min-height: 42px;
   padding: 0 12px;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  grid-template-columns: minmax(0, 1fr) 16px;
   align-items: center;
   gap: 7px;
   color: var(--text-secondary);
@@ -18781,6 +18781,13 @@ button.controlSignal.active {
   font-weight: 680;
   cursor: pointer;
   list-style: none;
+}
+
+.extensionTechnical > summary > .extensionTechnicalTitle {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .extensionTechnical > summary::-webkit-details-marker {
@@ -20191,11 +20198,57 @@ button > svg {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Runtime detail dialog: this reuses .inspector, but must not inherit the narrow run drawer geometry. */
+.runtimeConfigBackdrop {
+  padding: clamp(16px, 2vw, 28px);
+  place-items: center;
+  overflow: auto;
+}
+
+.productContent .runSimpleLayout .runtimeConfigBoard,
+.runtimeConfigBoard {
+  width: min(1760px, calc(100vw - 48px));
+  min-width: 0;
+  max-width: calc(100vw - 48px);
+  height: min(920px, calc(100dvh - 48px));
+  min-height: min(620px, calc(100dvh - 48px));
+  max-height: calc(100dvh - 48px);
+  margin: 0;
+  position: relative;
+  inset: auto;
+  top: auto;
+  z-index: auto;
+  justify-self: center;
+  align-self: center;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.24);
+}
+
+.productContent .runSimpleLayout .runtimeConfigBoard .inspectorBody,
+.runtimeConfigBoard .inspectorBody {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 @media (max-width: 560px) {
   .productContent .runSimpleLayout .inspector {
     width: 100vw;
     max-width: none;
     border-left: 0;
+  }
+
+  .productContent .runSimpleLayout .runtimeConfigBoard,
+  .runtimeConfigBoard {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
   }
 
   .productContent .runSimpleLayout .runtimeFocusSummary {
@@ -27148,4 +27201,683 @@ summary:focus-visible {
 
 .extensionTechnical > summary > svg:last-child {
   justify-self: end;
+}
+
+/* Formal program v2: isolated from legacy program* rules. */
+.formalProgramV2 {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 22px 24px 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  background: color-mix(in srgb, var(--surface-subtle) 82%, var(--surface));
+  box-sizing: border-box;
+}
+
+.formalProgramV2 > * {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  justify-self: stretch;
+  box-sizing: border-box;
+}
+
+.formalV2Header {
+  min-height: 96px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.formalV2Header h3 {
+  margin: 4px 0 5px;
+  color: var(--text);
+  font-size: 21px;
+  line-height: 1.18;
+  font-weight: 780;
+}
+
+.formalV2Header p {
+  max-width: 860px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.formalV2Actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.formalV2Actions > strong,
+.formalV2Actions > button {
+  min-height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.formalV2Actions > strong {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.formalV2Actions > button {
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.formalV2Canvas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.formalV2Summary {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.formalV2Input {
+  grid-column: span 3;
+}
+
+.formalV2Output {
+  grid-column: span 4;
+}
+
+.formalV2Grade {
+  grid-column: span 5;
+}
+
+.formalV2Effect {
+  grid-column: 1 / -1;
+}
+
+.formalV2Metric {
+  min-width: 0;
+  min-height: 92px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 42%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.formalV2Metric small {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 760;
+}
+
+.formalV2Metric strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 15.5px;
+  line-height: 1.32;
+  font-weight: 780;
+  overflow-wrap: break-word;
+}
+
+.formalV2EffectRaw {
+  display: block;
+  overflow-x: auto;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.48;
+  font-weight: 680;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.formalV2EffectGroups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 10px 14px;
+}
+
+.formalV2EffectGroup {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.formalV2EffectGroup b {
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 760;
+}
+
+.formalV2EffectGroup:nth-child(2) b {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.formalV2EffectTokens {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.formalV2EffectTokens code {
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 36%, transparent);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-subtle) 66%, var(--surface));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.formalV2Grade header {
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+}
+
+.formalV2Grade div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(136px, 1fr));
+  gap: 7px;
+}
+
+.formalV2Grade code {
+  min-width: 0;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 7px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 74%, var(--surface));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 740;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.formalV2Workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.formalV2Code,
+.formalV2Tree,
+.formalV2EvidenceCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 46%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.formalV2Code > summary,
+.formalV2Tree > header,
+.formalV2EvidenceCard > header,
+.formalV2LintHeader {
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.formalV2Code > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.formalV2Code > summary::-webkit-details-marker {
+  display: none;
+}
+
+.formalV2Code > summary > div,
+.formalV2EvidenceCard > header > div,
+.formalV2Tree > header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formalV2Code strong,
+.formalV2Tree header strong,
+.formalV2EvidenceCard header strong,
+.formalV2LintHeader strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 760;
+}
+
+.formalV2Code summary span,
+.formalV2EvidenceCard header span,
+.formalV2LintHeader span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.formalV2Code pre {
+  min-height: 390px;
+  max-height: 560px;
+  margin: 0;
+  padding: 16px 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-subtle) 58%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.formalV2Tree {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.formalV2Tree > header {
+  justify-content: flex-start;
+}
+
+.formalV2Tree > ol {
+  margin: 0;
+  padding: 14px 14px 16px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.formalV2Tree ol {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.formalV2Node {
+  min-width: 0;
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.formalV2Node > div {
+  min-width: 0;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-raised) 82%, var(--surface));
+}
+
+.formalV2Node code {
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.formalV2Node strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 760;
+  overflow-wrap: break-word;
+}
+
+.formalV2Node small {
+  min-width: 0;
+  grid-column: 2;
+  color: var(--text-tertiary);
+  font-size: 11.5px;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+.formalV2NodeChildren {
+  margin: 0 0 0 14px;
+  padding-left: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+.formalV2Evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.formalV2Boundary > div,
+.formalV2Semantic > div,
+.formalV2LintGrid {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.formalV2Boundary article,
+.formalV2Semantic article,
+.formalV2LintGrid article {
+  min-width: 0;
+  padding: 10px 11px;
+  display: grid;
+  gap: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-raised) 80%, var(--surface));
+}
+
+.formalV2Boundary article,
+.formalV2Semantic article {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.formalV2Boundary article strong,
+.formalV2Semantic article strong,
+.formalV2LintGrid article strong {
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.35;
+  font-weight: 750;
+  overflow-wrap: break-word;
+}
+
+.formalV2BoundaryTitle,
+.formalV2RuleTitle {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+}
+
+.formalV2RuleTitle {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.formalV2BoundaryTitle strong,
+.formalV2RuleTitle strong {
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.formalV2Boundary article code,
+.formalV2Semantic article code {
+  width: auto;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-radius: 6px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 730;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  word-break: normal;
+  box-sizing: border-box;
+}
+
+.formalV2Boundary article code {
+  width: 100%;
+  justify-self: start;
+}
+
+.formalV2Semantic article code {
+  min-width: 0;
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.formalV2Boundary article p,
+.formalV2Boundary article small,
+.formalV2Semantic article p,
+.formalV2LintGrid article small {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 11.5px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+.formalV2LintGrid article {
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+}
+
+.formalV2LintGrid article > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.formalV2LintGrid article strong,
+.formalV2LintGrid article small {
+  display: block;
+}
+
+.formalV2LintGrid article small {
+  padding-top: 1px;
+}
+
+.formalV2LintGrid article > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.formalV2LintGrid article.state-warning > span,
+.formalV2LintGrid article.state-failed > span {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+@media (max-width: 1100px) {
+  .formalV2Evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formalV2Summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formalV2Input,
+  .formalV2Output,
+  .formalV2Grade,
+  .formalV2Effect {
+    grid-column: auto;
+  }
+
+  .formalV2Workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .formalProgramV2 {
+    padding: 18px 16px 24px;
+  }
+
+  .formalV2Header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formalV2Actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .formalV2Summary,
+  .formalV2Evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formalV2EffectGroups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Formal program readability guards: complete formulas, localized labels, balanced evidence cards. */
+.runtimeConfigBoard .formalProgramV2 .formalV2Evidence,
+.formalProgramV2 .formalV2Evidence {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2EvidenceCard,
+.formalProgramV2 .formalV2EvidenceCard {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2Boundary > div,
+.runtimeConfigBoard .formalProgramV2 .formalV2Semantic > div,
+.runtimeConfigBoard .formalProgramV2 .formalV2LintGrid,
+.formalProgramV2 .formalV2Boundary > div,
+.formalProgramV2 .formalV2Semantic > div,
+.formalProgramV2 .formalV2LintGrid {
+  max-height: none;
+  overflow: visible;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2Boundary article,
+.runtimeConfigBoard .formalProgramV2 .formalV2Semantic article,
+.runtimeConfigBoard .formalProgramV2 .formalV2LintGrid article,
+.formalProgramV2 .formalV2Boundary article,
+.formalProgramV2 .formalV2Semantic article,
+.formalProgramV2 .formalV2LintGrid article {
+  min-height: 0;
+  align-content: start;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2BoundaryTitle,
+.runtimeConfigBoard .formalProgramV2 .formalV2RuleTitle,
+.formalProgramV2 .formalV2BoundaryTitle,
+.formalProgramV2 .formalV2RuleTitle {
+  width: 100%;
+  min-width: 0;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2BoundaryTitle code,
+.runtimeConfigBoard .formalProgramV2 .formalV2RuleTitle code,
+.runtimeConfigBoard .formalProgramV2 .formalV2LintGrid small,
+.formalProgramV2 .formalV2BoundaryTitle code,
+.formalProgramV2 .formalV2RuleTitle code,
+.formalProgramV2 .formalV2LintGrid small {
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2BoundaryTitle code,
+.formalProgramV2 .formalV2BoundaryTitle code {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  line-height: 1.5;
+}
+
+.runtimeConfigBoard .formalProgramV2 .formalV2BoundaryTitle strong,
+.runtimeConfigBoard .formalProgramV2 .formalV2RuleTitle strong,
+.formalProgramV2 .formalV2BoundaryTitle strong,
+.formalProgramV2 .formalV2RuleTitle strong {
+  white-space: normal;
+  overflow-wrap: normal;
+}
+
+@media (max-width: 1320px) {
+  .runtimeConfigBoard .formalProgramV2 .formalV2Evidence,
+  .formalProgramV2 .formalV2Evidence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .runtimeConfigBoard .formalProgramV2 .formalV2Lint,
+  .formalProgramV2 .formalV2Lint {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .runtimeConfigBoard .formalProgramV2 .formalV2Evidence,
+  .formalProgramV2 .formalV2Evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
