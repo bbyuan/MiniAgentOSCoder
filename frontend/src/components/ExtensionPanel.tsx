@@ -316,7 +316,7 @@ export function ExtensionPanel({
 
           {(extensions?.catalog.diagnostics.length ?? 0) > 0 ? (
             <div className="extensionDiagnostics"><AlertTriangle size={14} /><span>{extensions?.catalog.diagnostics.map((item) => translateExtensionDiagnostic(locale, item)).join(" · ")}</span></div>
-          ) : <p className="extensionTechnicalEmpty">{t("extensions.noDiagnostics")}</p>}
+          ) : null}
           {!setupMode ? (
             <div className="extensionEvidence">
               <div className="extensionGroupTitle"><CircleDashed size={14} /><strong>{t("extensions.evidence")}</strong><span>{extensions?.evidence.length ?? 0}</span></div>
