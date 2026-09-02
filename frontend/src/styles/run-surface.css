@@ -7006,6 +7006,33 @@
     linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 44%, var(--surface)), var(--surface));
 }
 
+.productContent .preflightSimpleLayout .extensionTechnical > summary {
+  grid-template-columns: minmax(0, 1fr) 18px;
+}
+
+.productContent .preflightSimpleLayout .extensionTechnicalTitle {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 18px auto max-content;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+}
+
+.productContent .preflightSimpleLayout .extensionTechnicalTitle > span {
+  min-height: 24px;
+  padding: 0 8px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 48%, var(--surface));
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .productContent .preflightSimpleLayout .governanceAdvanced > summary strong,
 .productContent .preflightSimpleLayout .extensionTechnical > summary strong {
   color: var(--text);

@@ -198,7 +198,14 @@ export function ExtensionPanel({
       </div>
 
       <details className="extensionTechnical" open>
-        <summary><Braces size={15} /><span>{t("extensions.advancedTitle", { enabled: advancedEnabled, available: advancedAvailable })}</span><ChevronDown size={14} /></summary>
+        <summary>
+          <span className="extensionGroupTitle extensionTechnicalTitle">
+            <Braces size={16} />
+            <strong>{t("extensions.advancedLabel")}</strong>
+            <span>{t("extensions.advancedCount", { enabled: advancedEnabled, available: advancedAvailable })}</span>
+          </span>
+          <ChevronDown size={14} />
+        </summary>
         <div>
           {creatingAllowed ? (
             <div className="extensionCreator">
