@@ -7413,3 +7413,82 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Final result/report text is evidence, not a preview: never truncate it. */
+.productContent .runSimpleLayout .completionSummary.tone-completed,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailsStatic,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionDetailsStatic > div,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportSection,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 22px 28px 28px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.78;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument > *,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument p,
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument li,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument p,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument li {
+  display: block;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument p,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument p {
+  margin-top: 12px;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument code {
+  display: inline;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument pre,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument pre {
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
+  white-space: pre-wrap;
+}
+
+.productContent .runSimpleLayout .completionSummary.tone-completed .completionFullMessage.markdownDocument pre code,
+.productContent .runSimpleLayout .runtimeConfigBackdrop .runtimeConfigBoard .reportDocument.markdownDocument pre code {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
